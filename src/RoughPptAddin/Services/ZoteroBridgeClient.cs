@@ -47,12 +47,17 @@ namespace RoughPptAddin.Services
     		return SendActionResult("selectParentItemByImageId", imageId);
     	}
     
-    	public ZoteroBridgeResult SelectPdfAttachmentByImageIdResult(string imageId)
-    	{
-    		return SendActionResult("selectPdfAttachmentByImageId", imageId);
-    	}
-    
-    	private ZoteroBridgeResult SendActionResult(string action, string imageId)
+		public ZoteroBridgeResult SelectPdfAttachmentByImageIdResult(string imageId)
+		{
+			return SendActionResult("selectPdfAttachmentByImageId", imageId);
+		}
+
+		public ZoteroBridgeResult RefreshLibraryResult(string pdfAttachmentKey = null)
+		{
+			return SendActionResult("refreshLibrary", null, pdfAttachmentKey);
+		}
+
+		private ZoteroBridgeResult SendActionResult(string action, string imageId, string pdfAttachmentKey = null)
     	{
     		ZoteroBridgeResult result = new ZoteroBridgeResult
     		{
@@ -60,23 +65,24 @@ namespace RoughPptAddin.Services
     		};
     		try
     		{
-    			string token = ReadBridgeState("token");
-    			string status = ReadBridgeState("status");
-    			if (IsBridgeDisabledState(token, status))
-    			{
-    				result.BridgeUnavailable = true;
-    				result.Error = "Zotero 本地连接当前未启用或未注册。";
+			string token = ReadBridgeState("token");
+			string status = ReadBridgeState("status");
+			string endpoint = ReadBridgeState("endpoint");
+			if (IsBridgeDisabledState(token, status) || !IsAllowedBridgeEndpoint(endpoint))
+			{
+				result.BridgeUnavailable = true;
+				result.Error = "Zotero 本地连接当前未启用或未注册。";
     				result.ResponseText = status ?? string.Empty;
     				return result;
     			}
-    			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(ResolveBridgeEndpoint(ReadBridgeState("endpoint")));
+			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(ResolveBridgeEndpoint(endpoint));
     			request.Method = "POST";
     			request.ContentType = "application/x-www-form-urlencoded; charset=utf-8";
     			request.Timeout = 1200;
     			request.ReadWriteTimeout = 1200;
     			request.Headers["X-Rough-Ppt-Token"] = token ?? string.Empty;
     			string command = ((action == "getStatus") ? "status" : action);
-    			string payload = "token=" + HttpUtility.UrlEncode(token ?? string.Empty) + "&command=" + HttpUtility.UrlEncode(command) + "&image_id=" + HttpUtility.UrlEncode(imageId ?? string.Empty);
+				string payload = "token=" + HttpUtility.UrlEncode(token ?? string.Empty) + "&command=" + HttpUtility.UrlEncode(command) + "&image_id=" + HttpUtility.UrlEncode(imageId ?? string.Empty) + "&pdf_attachment_key=" + HttpUtility.UrlEncode(pdfAttachmentKey ?? string.Empty);
     			byte[] bytes = Encoding.UTF8.GetBytes(payload);
     			request.ContentLength = bytes.Length;
     			using (Stream stream = request.GetRequestStream())
@@ -207,12 +213,19 @@ namespace RoughPptAddin.Services
     		return false;
     	}
     
-    	private static string ResolveBridgeEndpoint(string endpoint)
+	private static string ResolveBridgeEndpoint(string endpoint)
     	{
     		if (string.Equals((endpoint ?? string.Empty).Trim(), "/pdf-image-saver/bridge", StringComparison.Ordinal))
     		{
     			return "http://127.0.0.1:23119/pdf-image-saver/bridge";
-    		}
+	}
+
+	private static bool IsAllowedBridgeEndpoint(string endpoint)
+	{
+		string normalized = (endpoint ?? string.Empty).Trim();
+		return string.Equals(normalized, "/pdf-image-saver/bridge", StringComparison.Ordinal)
+			|| string.Equals(normalized, DefaultEndpoint, StringComparison.OrdinalIgnoreCase);
+	}
     		string.Equals((endpoint ?? string.Empty).Trim(), "http://127.0.0.1:23119/pdf-image-saver/bridge", StringComparison.OrdinalIgnoreCase);
     		return "http://127.0.0.1:23119/pdf-image-saver/bridge";
     	}

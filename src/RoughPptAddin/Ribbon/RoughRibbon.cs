@@ -1381,6 +1381,14 @@ public class RoughRibbon : IRibbonExtensibility
 
 	private static string BuildConsolidatedRibbonXml(string sourceXml)
 	{
+		const string libraryButton = "<button id='openPaperImageLibrary' label='打开论文图片库' getImage='GetFunctionalImage' showImage='true' onAction='OpenPaperImageLibrary' screentip='打开 Zotero 论文图片库' supertip='运行中的 Zotero 会先刷新同一完整图库；离线时只读打开上次生成页。PPT 不复制图库界面，也不直接执行删除、导入或分享。'/>";
+		string exportAssetsButton = "<button id='exportAssets'";
+		int exportAssetsIndex = sourceXml.IndexOf(exportAssetsButton, StringComparison.Ordinal);
+		if (exportAssetsIndex < 0)
+		{
+			throw new InvalidOperationException("Ribbon control is missing: exportAssets");
+		}
+		sourceXml = sourceXml.Insert(exportAssetsIndex, libraryButton);
 		XmlDocument source = new XmlDocument();
 		source.LoadXml(sourceXml);
 		XmlDocument output = new XmlDocument();
@@ -1392,7 +1400,7 @@ public class RoughRibbon : IRibbonExtensibility
 		AppendExistingRibbonGroup(source, output, tab, "roughQuickGroup");
 		AppendRibbonGroup(source, output, tab, "roughStyleGroup", "风格", new string[4] { "startStylePresetMenu", "startStyleComboMenu", "primaryFillMenu", "primaryLineMenu" }, forceLarge: true);
 		AppendRibbonGroup(source, output, tab, "roughResearchGroup", "论文与特征", new string[10] { "paperSuiteMenu", "insertFeatureBlock2D", "insertFeatureBlock3D", "insertRoughFeatureBlock", "featurePresetPaperMatrix", "featurePresetPaperVolume", "featurePresetAttentionMap", "featureMorePresetMenu", "featureDirectionMenu", "saveFeatureDefault" });
-		AppendRibbonGroup(source, output, tab, "roughLibraryGroup", "素材", new string[5] { "saveAsset", "startRecentAssetMenu", "startRefreshAssets", "importAssets", "exportAssets" });
+		AppendRibbonGroup(source, output, tab, "roughLibraryGroup", "素材", new string[6] { "saveAsset", "startRecentAssetMenu", "startRefreshAssets", "importAssets", "exportAssets", "openPaperImageLibrary" });
 		return output.OuterXml;
 	}
 
@@ -1713,6 +1721,11 @@ public class RoughRibbon : IRibbonExtensibility
 		{
 			Controller?.ShowTaskPane();
 		}
+	}
+
+	public void OpenPaperImageLibrary(IRibbonControl control)
+	{
+		Controller?.OpenPaperImageLibrary();
 	}
 
 	public void InsertQuickShape(IRibbonControl control)

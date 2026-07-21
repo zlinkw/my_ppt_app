@@ -11,6 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Text;
@@ -851,10 +852,48 @@ namespace RoughPptAddin.Services
     		return zoteroImages.InsertImage(application, imageId);
     	}
     
-    	public string OpenZoteroImagePdf(string imageId)
-    	{
-    		return zoteroImages.OpenPdfSource(imageId);
-    	}
+		public string OpenZoteroImagePdf(string imageId)
+		{
+			return zoteroImages.OpenPdfSource(imageId);
+		}
+
+		public void OpenPaperImageLibrary()
+		{
+			try
+			{
+				string tempRoot = Path.GetFullPath(Path.GetTempPath());
+				string libraryPath = Path.GetFullPath(Path.Combine(tempRoot, "pdf-image-saver", "paper-image-library-view", "paper-image-library.html"));
+				string allowedRoot = Path.GetFullPath(Path.Combine(tempRoot, "pdf-image-saver", "paper-image-library-view")) + Path.DirectorySeparatorChar;
+				if (!libraryPath.StartsWith(allowedRoot, StringComparison.OrdinalIgnoreCase) || !string.Equals(Path.GetFileName(libraryPath), "paper-image-library.html", StringComparison.OrdinalIgnoreCase))
+				{
+					throw new InvalidOperationException("论文图片库路径校验失败。");
+				}
+				ZoteroBridgeResult refresh = zoteroImages.RefreshFullLibrary();
+				if (refresh.Success)
+				{
+					if (!File.Exists(libraryPath))
+					{
+						NotifyUi("Zotero 已刷新论文图片库，但未找到生成页面。请在 Zotero 中点击“全部图库”后重试。", isError: true);
+						return;
+					}
+					Process.Start(new ProcessStartInfo(libraryPath) { UseShellExecute = true });
+					NotifyUi("已刷新并打开 Zotero 论文图片库。");
+					return;
+				}
+				if (File.Exists(libraryPath))
+				{
+					Process.Start(new ProcessStartInfo(libraryPath) { UseShellExecute = true });
+					NotifyUi("Zotero 当前未运行或连接未就绪，已只读打开上次生成的论文图片库；内容无法刷新，可能不是最新。");
+					return;
+				}
+				NotifyUi("尚未生成论文图片库。请启动 Zotero，在 PDF 阅读器中点击“全部图库”，或通过 Zotero 菜单打开全部论文图片库后重试。", isError: true);
+			}
+			catch (Exception ex)
+			{
+				AddInLogger.Error("打开 Zotero 论文图片库失败。", ex);
+				NotifyUi("打开论文图片库失败：" + ex.Message, isError: true);
+			}
+		}
     
     	public string SelectZoteroImageItem(string imageId)
     	{

@@ -442,6 +442,11 @@ public sealed class ZoteroImageLibraryService
 		return "无法直接打开 PDF，已复制溯源编号，可粘贴查看。";
 	}
 
+	public ZoteroBridgeResult RefreshFullLibrary()
+	{
+		return bridgeClient.RefreshLibraryResult();
+	}
+
 	public string SelectParentItem(string imageId)
 	{
 		ZoteroTraceInfo trace = GetTrace(imageId);
