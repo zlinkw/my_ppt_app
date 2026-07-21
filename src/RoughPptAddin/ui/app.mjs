@@ -3879,6 +3879,7 @@ function buildMiniPlotDom(preset, points) {
 
 function renderChartPresetStrip() {
   if (!els.chartPresetStrip) return;
+  initHorizontalDragScroll();
   const active = currentChartPreset();
   els.chartPresetStrip.innerHTML = "";
   els.chartPresetStrip.dataset.activePreset = active.id;
@@ -8336,6 +8337,67 @@ function safeInitStep(label, fn) {
   }
 }
 
+function initHorizontalDragScroll() {
+  const containers = document.querySelectorAll(
+    ".connection-health-strip, .simple-connection-note, .chart-preset-strip"
+  );
+  for (const container of containers) {
+    if (container.dataset.dragScrollReady === "true") continue;
+    container.dataset.dragScrollReady = "true";
+    container.classList.add("horizontal-drag-scroll");
+    if (!container.hasAttribute("tabindex")) container.tabIndex = 0;
+
+    let pointerId = null;
+    let startX = 0;
+    let startScrollLeft = 0;
+    let dragged = false;
+    let suppressClickUntil = 0;
+
+    const finishDrag = event => {
+      if (pointerId === null || (event.pointerId != null && event.pointerId !== pointerId)) return;
+      const finishedPointerId = pointerId;
+      pointerId = null;
+      container.classList.remove("is-dragging");
+      if (dragged) suppressClickUntil = Date.now() + 250;
+      if (container.hasPointerCapture?.(finishedPointerId)) container.releasePointerCapture(finishedPointerId);
+    };
+
+    container.addEventListener("pointerdown", event => {
+      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      if (container.scrollWidth <= container.clientWidth + 1) return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startScrollLeft = container.scrollLeft;
+      dragged = false;
+      container.setPointerCapture?.(pointerId);
+    });
+    container.addEventListener("pointermove", event => {
+      if (event.pointerId !== pointerId) return;
+      const deltaX = event.clientX - startX;
+      if (!dragged && Math.abs(deltaX) < 4) return;
+      dragged = true;
+      container.classList.add("is-dragging");
+      container.scrollLeft = startScrollLeft - deltaX;
+      event.preventDefault();
+    });
+    container.addEventListener("pointerup", finishDrag);
+    container.addEventListener("pointercancel", finishDrag);
+    container.addEventListener("lostpointercapture", finishDrag);
+    container.addEventListener("click", event => {
+      if (Date.now() > suppressClickUntil) return;
+      event.preventDefault();
+      event.stopPropagation();
+      suppressClickUntil = 0;
+    }, true);
+    container.addEventListener("keydown", event => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (container.scrollWidth <= container.clientWidth + 1) return;
+      event.preventDefault();
+      container.scrollBy({ left: event.key === "ArrowLeft" ? -120 : 120, behavior: "smooth" });
+    });
+  }
+}
+
 safeInitStep("功能图标", () => hydrateFunctionIcons());
 safeInitStep("上下文下一步", () => updateSelectionNextStep("none"));
 safeInitStep("风格参数分组", () => groupStyleParamControls());
@@ -8359,6 +8421,7 @@ safeInitStep("粘性顶栏度量", () => {
 });
 
 safeInitStep("工作流导航", () => initWorkflowNavigation());
+safeInitStep("横向拖动滚动", () => initHorizontalDragScroll());
 safeInitStep("科研图预设条", () => renderChartPresetStrip());
 safeInitStep("参数回填", () => applyParamsToControls(state.params));
 safeInitStep("嵌套参数可用性", () => syncNestedParamAvailability());

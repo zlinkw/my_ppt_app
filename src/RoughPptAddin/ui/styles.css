@@ -10493,3 +10493,128 @@ body.ux-simple .topbar .status:not(.expanded) {
   text-overflow: clip;
   overflow-wrap: anywhere;
 }
+
+/* B503: preserve readable horizontal controls and permit mouse drag scrolling. */
+.horizontal-drag-scroll {
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.horizontal-drag-scroll.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none !important;
+  user-select: none;
+}
+
+.connection-health-strip,
+.simple-connection-note {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 6px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+body.ux-simple .simple-connection-note {
+  display: flex;
+}
+
+body.ux-full .connection-health-strip {
+  display: flex !important;
+}
+
+.connection-health-strip > .connection-chip {
+  flex: 1 0 176px;
+  width: auto;
+  min-width: 176px;
+  max-width: 280px;
+  min-height: 38px;
+  padding-block: 4px;
+}
+
+.connection-health-strip .connection-copy {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: 1px;
+}
+
+.connection-health-strip .connection-copy strong,
+.connection-health-strip .connection-copy small {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  writing-mode: horizontal-tb;
+}
+
+.simple-connection-note > .simple-connection-chip {
+  flex: 1 0 156px;
+  width: auto;
+  min-width: 156px;
+  max-width: 240px;
+}
+
+.simple-connection-note > #simpleModeFullSwitch {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.chart-preset-shell > .chart-preset-strip {
+  display: grid;
+  grid-template-columns: none !important;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(168px, 190px) !important;
+  align-items: stretch;
+  gap: 8px;
+  padding: 3px 1px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+
+.chart-preset-shell .chart-preset-card {
+  width: 100%;
+  min-width: 168px;
+  min-height: 96px;
+  grid-template-rows: 32px auto minmax(0, 1fr);
+  align-content: start;
+  overflow: visible;
+}
+
+.chart-preset-shell .chart-preset-card strong,
+.chart-preset-shell .chart-preset-card small {
+  display: block;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  writing-mode: horizontal-tb;
+  -webkit-line-clamp: initial;
+}
+
+.chart-preset-shell .chart-preset-thumb,
+.chart-preset-shell .chart-mini-plot {
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-preset-shell .chart-preset-preview-head {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.chart-preset-shell .chart-preset-preview-head > * {
+  flex: 1 1 180px;
+  overflow-wrap: anywhere;
+}

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 const root = process.cwd();
 const uiRoot = path.join(root, "src", "RoughPptAddin", "ui");
@@ -32,6 +32,20 @@ try {
     if (layout.hasHorizontalOverflow) violations.push(`${width}px: 页面存在横向滚动`);
     if (layout.offscreen.length) violations.push(`${width}px: 可见元素超出视口 ${layout.offscreen.slice(0, 5).join(", ")}`);
     if (layout.zeroButtons.length) violations.push(`${width}px: 可见按钮尺寸异常 ${layout.zeroButtons.slice(0, 5).join(", ")}`);
+  }
+
+  for (const width of widths) {
+    await client.send("Emulation.setDeviceMetricsOverride", {
+      width,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: width <= 420
+    });
+    const readable = await evaluate(client, horizontalControlProbe());
+    if (!readable.connectionScrollable) violations.push(`${width}px: 连接状态条未保留可读宽度或横向滚动 ${JSON.stringify(readable.connectionDebug)}`);
+    if (!readable.chartScrollable) violations.push(`${width}px: 科研图预设轨道未保留可读宽度或横向滚动`);
+    if (!readable.dragReady) violations.push(`${width}px: 横向轨道未启用鼠标拖动滚动`);
+    if (!readable.cardsReadable) violations.push(`${width}px: 科研图预设卡片文字被裁切或压缩`);
   }
 
   for (const keyword of keywords) {
@@ -221,13 +235,23 @@ function waitForExit(child) {
 }
 
 function removeDirWithRetry(dir) {
-  for (let attempt = 0; attempt < 8; attempt++) {
-    try {
-      fs.rmSync(dir, { recursive: true, force: true, maxRetries: 2, retryDelay: 100 });
-      return;
-    } catch {
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 120);
-    }
+  if (!dir || !fs.existsSync(dir)) return;
+  const tempRoot = path.resolve(os.tmpdir()) + path.sep;
+  const target = path.resolve(dir);
+  if (!target.startsWith(tempRoot) || !path.basename(target).startsWith("rough-ppt-ui-")) {
+    throw new Error(`拒绝清理非验证临时目录：${target}`);
+  }
+  const script = [
+    "Add-Type -AssemblyName Microsoft.VisualBasic",
+    "$target = [Environment]::GetEnvironmentVariable('ROUGH_RECYCLE_TARGET')",
+    "[Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($target, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)"
+  ].join("; ");
+  const result = spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], {
+    encoding: "utf8",
+    env: { ...process.env, ROUGH_RECYCLE_TARGET: target }
+  });
+  if (result.status !== 0) {
+    throw new Error(`验证临时目录无法移入回收站：${target} ${result.stderr || result.stdout}`.trim());
   }
 }
 
@@ -243,7 +267,8 @@ function layoutProbe() {
     for (const element of document.querySelectorAll('body *')) {
       if (!visible(element)) continue;
       const rect = element.getBoundingClientRect();
-      if (rect.left < -2 || rect.right > innerWidth + 2) offscreen.push(element.id || element.className || element.tagName);
+      const scrollContainer = element.closest('.horizontal-drag-scroll');
+      if (!scrollContainer && (rect.left < -2 || rect.right > innerWidth + 2)) offscreen.push(element.id || element.className || element.tagName);
       if (element.tagName === 'BUTTON' && (rect.width < 18 || rect.height < 18)) zeroButtons.push(element.id || element.textContent.trim());
     }
     return {
@@ -306,5 +331,46 @@ function dropdownSearchProbe() {
     return {
       filtered: buttons.length > 0 && buttons.length < 60
     };
+  })()`;
+}
+
+function horizontalControlProbe() {
+  return `(() => {
+    const visible = element => {
+      if (!element) return false;
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    };
+    const rect = element => element?.getBoundingClientRect();
+    const setFullMode = () => document.querySelector('#uiModeFull')?.click();
+    setFullMode();
+    const strip = document.querySelector('#connectionHealthStrip');
+    const chartShell = document.querySelector('#chartPresetShell');
+    if (chartShell) chartShell.open = true;
+    const chart = document.querySelector('#chartPresetStrip');
+    const chips = [...(strip?.querySelectorAll('.connection-chip') ?? [])].filter(visible);
+    const cards = [...(chart?.querySelectorAll('.chart-preset-card') ?? [])].filter(visible);
+    const connectionDebug = {
+      visible: visible(strip),
+      chipCount: chips.length,
+      chipWidths: chips.map(chip => Math.round(rect(chip).width)),
+      clientWidth: strip?.clientWidth ?? 0,
+      scrollWidth: strip?.scrollWidth ?? 0
+    };
+    const connectionScrollable = Boolean(connectionDebug.visible && connectionDebug.chipCount >= 2 && connectionDebug.chipWidths.every(width => width >= 175) && (connectionDebug.scrollWidth > connectionDebug.clientWidth + 1 || connectionDebug.chipWidths.reduce((sum, width) => sum + width, 0) <= connectionDebug.clientWidth));
+    const chartScrollable = Boolean(visible(chart) && cards.length >= 3 && cards.every(card => rect(card).width >= 167) && chart.scrollWidth > chart.clientWidth + 1);
+    const dragReady = Boolean(
+      strip?.classList.contains('horizontal-drag-scroll') && strip?.dataset.dragScrollReady === 'true' &&
+      chart?.classList.contains('horizontal-drag-scroll') && chart?.dataset.dragScrollReady === 'true'
+    );
+    const cardsReadable = cards.length >= 3 && cards.every(card => {
+      const title = card.querySelector('strong');
+      const summary = card.querySelector('small');
+      return card.scrollWidth <= card.clientWidth + 1 && card.scrollHeight <= card.clientHeight + 1 &&
+        (!title || (title.scrollWidth <= title.clientWidth + 1 && title.scrollHeight <= title.clientHeight + 1)) &&
+        (!summary || (summary.scrollWidth <= summary.clientWidth + 1 && summary.scrollHeight <= summary.clientHeight + 1));
+    });
+    return { connectionScrollable, connectionDebug, chartScrollable, dragReady, cardsReadable };
   })()`;
 }
