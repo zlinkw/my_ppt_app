@@ -17,6 +17,7 @@ const externalDatabaseProtocol = read("docs/ZOTERO_EXTERNAL_DATABASE_PROTOCOL.md
 const sourceConstraints = read("scripts/validate-source-constraints.mjs");
 const packageJson = JSON.parse(read("package.json"));
 const targetPlan = read("docs/target-mode-plan.md");
+const ribbon = read("src/RoughPptAddin/Ribbon/RoughRibbon.cs");
 
 function requireIncludes(text, snippet, label) {
   if (!text.includes(snippet)) violations.push(label);
@@ -73,6 +74,17 @@ if (service.includes("zotero.sqlite")) {
 for (const method of ["GetStatus", "OpenPdfByImageId", "SelectParentItemByImageId"]) {
   requireIncludes(bridge, method, `ZoteroBridgeClient missing ${method}`);
 }
+for (const snippet of [
+  "RefreshLibraryResult",
+  'SendActionResult("refreshLibrary"',
+  'IsAllowedBridgeEndpoint(endpoint)',
+  'X-Rough-Ppt-Token'
+]) {
+  requireIncludes(bridge, snippet, `ZoteroBridgeClient missing complete-library bridge contract: ${snippet}`);
+}
+for (const forbidden of ['SendActionResult("deleteImages"', 'SendActionResult("exportImages"', 'SendActionResult("importImages"']) {
+  if (bridge.includes(forbidden)) violations.push(`PPT bridge must not send Zotero management command: ${forbidden}`);
+}
 requireIncludes(bridge, "/pdf-image-saver/bridge", "ZoteroBridgeClient missing PDF Image Saver bridge endpoint");
 requireIncludes(service, "bridgeClient.OpenPdfByImageId", "Open PDF must prefer bridge before URI fallback");
 requireIncludes(service, "TryShellExecute(trace.ZoteroOpenPdfUri)", "Open PDF must fallback to zotero_open_pdf_uri");
@@ -80,6 +92,7 @@ requireIncludes(service, "Clipboard.SetText(BuildTraceText(trace))", "Trace copy
 
 for (const type of [
   "listZoteroImages",
+  "getZoteroPalette",
   "insertZoteroImage",
   "openZoteroImagePdf",
   "selectZoteroImageItem",
@@ -90,6 +103,35 @@ for (const type of [
   requireIncludes(contract, `${type}: "${type}"`, `bridge-contract missing ${type}`);
   requireIncludes(taskPane, `type == "${type}"`, `TaskPane missing handler ${type}`);
   requireIncludes(app, `type: "${type}"`, `app.mjs missing postHost ${type}`);
+}
+
+for (const snippet of [
+  "GetPaletteByImageId",
+  "activeZoteroReferenceImageId",
+  "activeZoteroPaletteSaved",
+  "skipReferenceChangePromptForSession",
+  "覆盖未保存的参考图配色？",
+  "本次 PowerPoint 会话不再询问",
+  'type: "saveZoteroPalette", imageId:',
+  'message.type === "zoteroPaletteSaved"'
+]) {
+  requireIncludes(service + app + taskPane, snippet, `single-image Zotero palette contract missing: ${snippet}`);
+}
+if (/localStorage[^\n]*(?:skipReferenceChangePromptForSession|ZoteroReference)/i.test(app)) {
+  violations.push("Zotero reference change prompt preference must remain in current PowerPoint session memory");
+}
+
+for (const snippet of [
+  "OpenPaperImageLibrary",
+  'Path.Combine(tempRoot, "pdf-image-saver", "paper-image-library-view", "paper-image-library.html")',
+  'Path.GetFileName(libraryPath), "paper-image-library.html"',
+  "zoteroImages.RefreshFullLibrary()",
+  "已只读打开上次生成的论文图片库",
+  "尚未生成论文图片库",
+  "openPaperImageLibrary",
+  "打开论文图片库"
+]) {
+  requireIncludes(controller + ribbon, snippet, `PPT complete-library reuse contract missing: ${snippet}`);
 }
 
 for (const hostType of ["zoteroImages", "zoteroPalette", "zoteroTraceStatus"]) {

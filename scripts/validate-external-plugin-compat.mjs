@@ -11,6 +11,7 @@ const local = {
   zoteroResolver: readLocal("src/RoughPptAddin/Services/ZoteroImageLibraryPathResolver.cs"),
   zoteroService: readLocal("src/RoughPptAddin/Services/ZoteroImageLibraryService.cs"),
   zoteroBridge: readLocal("src/RoughPptAddin/Services/ZoteroBridgeClient.cs"),
+  ribbon: readLocal("src/RoughPptAddin/Ribbon/RoughRibbon.cs"),
   architecture: readLocal("docs/ARCHITECTURE.md"),
   validation: readLocal("docs/VALIDATION.md"),
   packageJson: readLocal("package.json"),
@@ -168,6 +169,7 @@ function validateZoteroImageSaver() {
   }
   const saver = readExternal(zoteroRoot, "content/pdf-image-saver.js");
   const tests = readExternal(zoteroRoot, "tests/open-pdf-uri.test.js");
+  const accessProtocol = readExternal(zoteroRoot, "docs/IMAGE_LIBRARY_ACCESS_AND_UI_PROTOCOL.md");
 
   for (const snippet of [
     "SHARED_DB_SCHEMA_VERSION = 2",
@@ -195,6 +197,21 @@ function validateZoteroImageSaver() {
     "CREATE TABLE IF NOT EXISTS bridge_state"
   ]) {
     requireIncludes(saver, snippet, `external Zotero pdf-image-saver.js drift: missing ${snippet}`);
+  }
+  for (const snippet of [
+    'GLOBAL_LIBRARY_VIEW_VERSION = "37"',
+    'GLOBAL_LIBRARY_DIRECTORY_NAME = "paper-image-library-view"',
+    'command === "refreshLibrary"',
+    'openGlobalImageLibrary'
+  ]) {
+    requireIncludes(saver, snippet, `external Zotero full-library contract drift: missing ${snippet}`);
+  }
+  for (const snippet of [
+    "PPT 插件必须复用 Zotero 生成的完整图库界面",
+    "%TEMP%\\pdf-image-saver\\paper-image-library-view\\paper-image-library.html",
+    "PPT 不得发送 `deleteImages`、`exportImages`、`importImages`"
+  ]) {
+    requireIncludes(accessProtocol, snippet, `external Zotero access protocol drift: missing ${snippet}`);
   }
   for (const snippet of [
     "shared DB locator must use frozen library.json path",
@@ -230,6 +247,19 @@ function validateZoteroImageSaver() {
     "msoPicture"
   ]) {
     requireIncludes(local.zoteroResolver + local.zoteroService + local.zoteroBridge + local.architecture, snippet, `local PPT Zotero contract missing ${snippet}`);
+  }
+  for (const snippet of [
+    "RefreshLibraryResult",
+    'SendActionResult("refreshLibrary"',
+    "OpenPaperImageLibrary",
+    "openPaperImageLibrary",
+    "paper-image-library-view",
+    "paper-image-library.html"
+  ]) {
+    requireIncludes(local.zoteroBridge + local.controller + local.ribbon, snippet, `local PPT complete-library reuse missing ${snippet}`);
+  }
+  for (const forbidden of ['SendActionResult("deleteImages"', 'SendActionResult("exportImages"', 'SendActionResult("importImages"']) {
+    if (local.zoteroBridge.includes(forbidden)) violations.push(`local PPT bridge must not send ${forbidden}`);
   }
 }
 
