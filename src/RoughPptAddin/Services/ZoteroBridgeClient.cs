@@ -95,7 +95,10 @@ namespace RoughPptAddin.Services
     			result.StatusCode = (int)response.StatusCode;
     			result.ResponseText = text ?? string.Empty;
     			ApplyResponseText(result, text);
-    			result.Success = response.StatusCode == HttpStatusCode.OK && !result.BridgeUnavailable && (string.IsNullOrWhiteSpace(text) || text.IndexOf("\"ok\":false", StringComparison.OrdinalIgnoreCase) < 0);
+			result.Success = response.StatusCode == HttpStatusCode.OK
+				&& !result.BridgeUnavailable
+				&& HasJsonKey(text, "ok")
+				&& ExtractJsonBool(text, "ok");
     			return result;
     		}
     		catch (WebException ex)
@@ -178,40 +181,8 @@ namespace RoughPptAddin.Services
     		{
     			return true;
     		}
-    		if (string.IsNullOrWhiteSpace(status))
-    		{
-    			return false;
-    		}
-    		if (status.IndexOf("\"registered\":false", StringComparison.OrdinalIgnoreCase) >= 0)
-    		{
-    			return true;
-    		}
-    		if (status.IndexOf("\"registered\": false", StringComparison.OrdinalIgnoreCase) >= 0)
-    		{
-    			return true;
-    		}
-    		if (status.IndexOf("disabled", StringComparison.OrdinalIgnoreCase) >= 0)
-    		{
-    			return true;
-    		}
-    		if (status.IndexOf("shutdown", StringComparison.OrdinalIgnoreCase) >= 0)
-    		{
-    			return true;
-    		}
-    		if (status.IndexOf("stopped", StringComparison.OrdinalIgnoreCase) >= 0)
-    		{
-    			return true;
-    		}
-    		if (status.IndexOf("unregistered", StringComparison.OrdinalIgnoreCase) >= 0)
-    		{
-    			return true;
-    		}
-    		if (status.IndexOf("invalid-shared-db-path", StringComparison.OrdinalIgnoreCase) >= 0)
-    		{
-    			return true;
-    		}
-    		return false;
-    	}
+		return !string.Equals(status?.Trim(), "ready", StringComparison.OrdinalIgnoreCase);
+	}
     
 	private static string ResolveBridgeEndpoint(string endpoint)
 	{

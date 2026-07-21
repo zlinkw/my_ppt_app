@@ -73,6 +73,9 @@ for (const snippet of [
   "RefreshLibraryResult",
   'SendActionResult("refreshLibrary"',
   'IsAllowedBridgeEndpoint(endpoint)',
+  'string.Equals(status?.Trim(), "ready", StringComparison.OrdinalIgnoreCase)',
+  'HasJsonKey(text, "ok")',
+  'ExtractJsonBool(text, "ok")',
   'X-Rough-Ppt-Token'
 ]) {
   requireIncludes(bridge, snippet, `ZoteroBridgeClient missing complete-library bridge contract: ${snippet}`);

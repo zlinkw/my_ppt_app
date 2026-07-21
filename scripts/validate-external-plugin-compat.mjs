@@ -251,6 +251,9 @@ function validateZoteroImageSaver() {
     "bridge_state",
     "ReadBridgeState(\"status\")",
     "IsBridgeDisabledState(token, status)",
+    'string.Equals(status?.Trim(), "ready", StringComparison.OrdinalIgnoreCase)',
+    'HasJsonKey(text, "ok")',
+    'ExtractJsonBool(text, "ok")',
     "Requested Zotero URI invalid",
     "image_palette_swatches",
     "PPT_ZOTERO_PREVIEW_DUPLICATE_KEY",
@@ -260,7 +263,7 @@ function validateZoteroImageSaver() {
   ]) {
     requireIncludes(local.zoteroResolver + local.zoteroService + local.zoteroBridge + local.architecture, snippet, `local PPT Zotero contract missing ${snippet}`);
   }
-  requirePattern(local.zoteroBridge, /["']registered["']\s*:\s*false|IndexOf\("\\"registered\\":false"/, "local PPT Zotero contract missing registered:false handling");
+  requirePattern(local.zoteroBridge, /HasRegisteredField\s*=\s*HasJsonKey\(text,\s*"registered"\)[\s\S]*?Registered\s*=\s*ExtractJsonBool\(text,\s*"registered"\)[\s\S]*?HasRegisteredField\s*&&\s*!result\.Registered/, "local PPT Zotero contract missing registered:false handling");
   requireIncludes(local.zoteroBridge + local.zoteroService, 'ExtractJsonString(text, "preview_duplicate_key")', "local PPT Zotero contract missing preview_duplicate_key response parsing");
   for (const snippet of [
     "RefreshLibraryResult",
