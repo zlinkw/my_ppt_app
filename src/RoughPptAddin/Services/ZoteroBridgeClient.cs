@@ -214,10 +214,8 @@ namespace RoughPptAddin.Services
     	}
     
 	private static string ResolveBridgeEndpoint(string endpoint)
-    	{
-    		if (string.Equals((endpoint ?? string.Empty).Trim(), "/pdf-image-saver/bridge", StringComparison.Ordinal))
-    		{
-    			return "http://127.0.0.1:23119/pdf-image-saver/bridge";
+	{
+		return DefaultEndpoint;
 	}
 
 	private static bool IsAllowedBridgeEndpoint(string endpoint)
@@ -226,9 +224,6 @@ namespace RoughPptAddin.Services
 		return string.Equals(normalized, "/pdf-image-saver/bridge", StringComparison.Ordinal)
 			|| string.Equals(normalized, DefaultEndpoint, StringComparison.OrdinalIgnoreCase);
 	}
-    		string.Equals((endpoint ?? string.Empty).Trim(), "http://127.0.0.1:23119/pdf-image-saver/bridge", StringComparison.OrdinalIgnoreCase);
-    		return "http://127.0.0.1:23119/pdf-image-saver/bridge";
-    	}
     
     	private static string ExtractJsonString(string text, string key)
     	{

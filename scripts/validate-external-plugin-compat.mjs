@@ -68,6 +68,10 @@ function validateZlkClusterOrchestrator() {
     notes.push("zlk external repo skipped");
     return;
   }
+  if (!fs.existsSync(path.join(zlkRoot, ".git"))) {
+    notes.push("zlk external repo has no auditable Git baseline");
+    return;
+  }
   if (!fs.existsSync(path.join(zlkRoot, "src/PptPlotBridge.ts"))) {
     notes.push("zlk external repo unavailable");
     return;

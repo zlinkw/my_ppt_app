@@ -823,9 +823,9 @@ public sealed class ZoteroImageLibraryService
 		{
 			return null;
 		}
-		if (ReadImageBlobStoredBytes(connection, table, imageId) > 52428800)
+		if (ReadImageBlobStoredBytes(connection, table, imageId) > MaxImageBlobBytes)
 		{
-			throw new InvalidOperationException("论文图像数据过大，已超过 " + FormatBytes(26214400L) + " 安全读取上限。请在 Zotero 中保存较小参考图或降低原图质量后再插入。");
+			throw new InvalidOperationException("论文图像数据过大，已超过 " + FormatBytes(MaxImageBlobBytes) + " 安全读取上限。请在 Zotero 中保存较小参考图或降低原图质量后再插入。");
 		}
 		using SQLiteCommand command = new SQLiteCommand("SELECT " + QuoteIdentifier(table.Mapping.ImageBlob) + " FROM " + QuoteIdentifier(table.Name) + " WHERE (" + identityPredicate + ")" + ActiveRowsAnd(table.Mapping) + " LIMIT 1", connection);
 		command.Parameters.AddWithValue("@imageId", imageId ?? string.Empty);
