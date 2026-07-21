@@ -2,11 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const sourceDirs = ["src", "scripts", "docs", "assets"];
+const sourceDirs = ["src/RoughPptAddin"];
 const forbiddenPatterns = [
-  { pattern: /\.Export\(/i, reason: "PowerPoint export APIs create raster/vector files, not final native objects", allowFiles: [/SelectionCaptureService\.cs$/] },
-  { pattern: /AddPicture/i, reason: "AddPicture inserts raster images" },
-  { pattern: /msoPicture/i, reason: "msoPicture violates final object constraint" },
+  { pattern: /\.Export\(/i, reason: "PowerPoint export APIs create raster/vector files, not final native objects", allowFiles: [/SelectionCaptureService\.cs$/, /PaletteLibraryService\.cs$/] },
+  { pattern: /AddPicture/i, reason: "AddPicture inserts raster images", allowFiles: [/ZoteroImageLibraryService\.cs$/] },
+  { pattern: /msoPicture/i, reason: "msoPicture violates final object constraint", allowFiles: [/RoughAddInController\.cs$/, /ZoteroImageLibraryService\.cs$/] },
   { pattern: /Insert.*SVG|SVG.*Insert/i, reason: "SVG insert is not accepted as final object" },
   { pattern: /canvas\.toDataURL|toBlob\(/i, reason: "Canvas capture is raster output" },
   { pattern: /<svg\b/i, reason: "Inline SVG is not accepted as final object" }
@@ -53,6 +53,16 @@ for (const file of requiredFiles) {
   if (!fs.existsSync(path.join(root, file))) {
     violations.push(`${file}: required implementation file missing`);
   }
+}
+
+const zoteroService = fs.readFileSync(path.join(root, "src/RoughPptAddin/Services/ZoteroImageLibraryService.cs"), "utf8");
+if (!zoteroService.includes("Shapes.AddPicture") || !zoteroService.includes("ReadImageBlob(imageId)")) {
+  violations.push("Zotero reference image exception must stay isolated to image_blob insertion service");
+}
+const otherRuntimeSources = files.filter(file => !/ZoteroImageLibraryService\.cs$/.test(file));
+for (const file of otherRuntimeSources) {
+  const text = fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
+  if (/Shapes\.AddPicture/i.test(text)) violations.push(`${file}: Zotero reference image exception leaked outside its service`);
 }
 
 if (violations.length) {

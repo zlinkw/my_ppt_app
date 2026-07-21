@@ -18,6 +18,9 @@ const violations = [];
 const requireIncludes = (text, snippet, message) => {
   if (!text.includes(snippet)) violations.push(message);
 };
+const requirePattern = (text, pattern, message) => {
+  if (!pattern.test(text)) violations.push(message);
+};
 const rejectIncludes = (text, snippet, message) => {
   if (text.includes(snippet)) violations.push(message);
 };
@@ -59,8 +62,6 @@ for (const snippet of [
   "PlotZlkClusterAsync",
   "InsertZlkChart",
   "MaxZlkSourceFiles = 64",
-  "MaxZlkSourceFileBytes = 2L * 1024L * 1024L",
-  "MaxZlkTotalSourceBytes = 12L * 1024L * 1024L",
   "Directory.EnumerateFiles",
   "ZLK 绘图源文件过多",
   "ZLK 绘图源文件过大",
@@ -69,29 +70,31 @@ for (const snippet of [
   "createIfMissing",
   "Environment.ExpandEnvironmentVariables(target.PresentationPath",
   "string.IsNullOrWhiteSpace(presentationPath)",
-  "application.Presentations.Add(Office.MsoTriState.msoTrue)",
   "Path.GetFullPath(presentationPath)",
   "PresentationPath(candidate)",
   "File.Exists(presentationPath)",
   "application.Presentations.Open(",
   "target.CreateIfMissing",
-  "created.SaveAs(presentationPath)",
   "目标 PPT 不存在，且 createIfMissing 未开启"
 ]) {
   requireIncludes(controller, snippet, `RoughAddInController.cs missing ${snippet}`);
 }
+requirePattern(controller, /MaxZlkSourceFileBytes\s*=\s*(?:2L\s*\*\s*1024L\s*\*\s*1024L|2097152L)/, "RoughAddInController.cs missing 2 MiB source limit");
+requirePattern(controller, /MaxZlkTotalSourceBytes\s*=\s*(?:12L\s*\*\s*1024L\s*\*\s*1024L|12582912L)/, "RoughAddInController.cs missing 12 MiB total source limit");
+requirePattern(controller, /application\.Presentations\.Add\(\s*(?:Office\.MsoTriState\.msoTrue\s*)?\)/, "RoughAddInController.cs missing visible presentation creation");
+requirePattern(controller, /\b\w+\.SaveAs\(presentationPath\)/, "RoughAddInController.cs missing new target SaveAs");
 rejectIncludes(controller, "application.Quit()", "controller must not quit PowerPoint");
 rejectIncludes(controller, "Presentations.Open(presentationPath, Office.MsoTriState.msoFalse, Office.MsoTriState.msoFalse, Office.MsoTriState.msoFalse)", "target PPT must open visibly for append workflow");
 
 for (const snippet of [
   "[\"type\"] = \"normalizeZlkChartFile\"",
-  "type == \"insertZlkChart\"",
   "NormalizeAndInsertZlkChartAsync",
   "ReadMessageValue<ChartDataset>",
   "zlkAutomationStatus"
 ]) {
   requireIncludes(taskPane, snippet, `RoughTaskPaneControl.cs missing ${snippet}`);
 }
+requirePattern(taskPane, /(?:type\s*==|case)\s*\"insertZlkChart\"/, "RoughTaskPaneControl.cs missing insertZlkChart dispatch");
 
 for (const snippet of [
   "buildChartRecommendations",
@@ -168,9 +171,9 @@ if (!researchChartTypes.length) violations.push("app.mjs must expose research ch
 for (const chartType of new Set(researchChartTypes)) {
   requireIncludes(normalizeChartTypeBlock, `case "${chartType}":`, `${chartType} UI preset must survive C# chart type normalization`);
   requireIncludes(renderChartTypeBlock, `case "${chartType}":`, `${chartType} UI preset must reach a native C# renderer branch`);
-  requireIncludes(chartTypeLabelBlock, `case "${chartType}":`, `${chartType} must expose a C# chart title`);
+  requirePattern(chartTypeLabelBlock, new RegExp(`(?:case\\s+)?"${chartType}"\\s*(?::|=>)`), `${chartType} must expose a C# chart title`);
 }
-requireIncludes(chartTypeLabelBlock, 'case "scatterPlot": return "散点对比图";', "scatterPlot must expose a Chinese chart title");
+requirePattern(chartTypeLabelBlock, /(?:case\s+)?"scatterPlot"\s*(?::\s*return|=>)\s*"散点对比图"/, "scatterPlot must expose a Chinese chart title");
 requireIncludes(lineChartBlock, "NumericXOf", "sensitivity curves must position numeric X values instead of using row order only");
 requireIncludes(scatterChartBlock, "NumericXOf", "scatter plots must use the imported continuous X field");
 rejectIncludes(scatterChartBlock, "var xValue = i;", "scatter plots must not discard the imported continuous X field");

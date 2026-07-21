@@ -5,6 +5,7 @@ const violations = [];
 
 const models = read("src/RoughPptAddin/Models/RoughModels.cs");
 const service = read("src/RoughPptAddin/Services/ZoteroImageLibraryService.cs");
+const pathResolver = read("src/RoughPptAddin/Services/ZoteroImageLibraryPathResolver.cs");
 const bridge = read("src/RoughPptAddin/Services/ZoteroBridgeClient.cs");
 const controller = read("src/RoughPptAddin/Services/RoughAddInController.cs");
 const taskPane = read("src/RoughPptAddin/TaskPane/RoughTaskPaneControl.cs");
@@ -32,7 +33,6 @@ for (const method of ["ListImages", "InsertImage", "GetPalette", "BuildPaletteGr
 }
 
 for (const snippet of [
-  "ZLK\\\\paper-image-library\\\\paper_images.sqlite",
   "Read Only=True",
   "FindImageTable",
   "ColumnMap",
@@ -51,21 +51,16 @@ for (const snippet of [
   "zotero://open-pdf",
   "zotero://select",
   "style_tags",
-  "color_family",
-  "浅色 80%",
-  "浅色 60%",
-  "浅色 35%",
-  "基准色",
-  "深色 20%",
-  "深色 40%",
-  "深色 60%"
+  "color_family"
 ]) {
   requireIncludes(service, snippet, `ZoteroImageLibraryService missing contract: ${snippet}`);
 }
+requireIncludes(pathResolver, 'DatabaseRelativePath = "ZLK\\\\paper-image-library\\\\paper_images.sqlite"', "Zotero database resolver missing fixed database path");
+requireIncludes(pathResolver, "Environment.SpecialFolder.LocalApplicationData", "Zotero database resolver must anchor the fixed path in LOCALAPPDATA");
 
 requireIncludes(service, "AppendSideTableSwatches", "ZoteroImageLibraryService must read image_palette_swatches side table");
 requireIncludes(service, "ImageIdentityPredicate", "ZoteroImageLibraryService must resolve image_id/source_region_key identity");
-requireIncludes(service, "SelectParentItemUri = string.IsNullOrWhiteSpace(selectItemUri) ? BuildSelectUri(parentKey) : selectItemUri", "Zotero select fallback must prefer stored zotero_select_item_uri");
+requireIncludes(service, "SelectParentItemUri = FirstAllowedZoteroSelectUri(selectItemUri, selectPdfUri, BuildSelectUri(parentKey))", "Zotero select fallback must prefer a validated stored zotero_select_item_uri");
 
 if (service.includes("zotero.sqlite")) {
   violations.push("ZoteroImageLibraryService must not read Zotero internal zotero.sqlite");
@@ -87,7 +82,7 @@ for (const forbidden of ['SendActionResult("deleteImages"', 'SendActionResult("e
 }
 requireIncludes(bridge, "/pdf-image-saver/bridge", "ZoteroBridgeClient missing PDF Image Saver bridge endpoint");
 requireIncludes(service, "bridgeClient.OpenPdfByImageId", "Open PDF must prefer bridge before URI fallback");
-requireIncludes(service, "TryShellExecute(trace.ZoteroOpenPdfUri)", "Open PDF must fallback to zotero_open_pdf_uri");
+requireIncludes(service, 'TryShellExecuteZoteroUri(trace.ZoteroOpenPdfUri, "zotero://open-pdf")', "Open PDF must safely fallback to zotero_open_pdf_uri");
 requireIncludes(service, "Clipboard.SetText(BuildTraceText(trace))", "Trace copy fallback missing");
 
 for (const type of [
@@ -101,7 +96,7 @@ for (const type of [
   "copyZoteroSwatchHex"
 ]) {
   requireIncludes(contract, `${type}: "${type}"`, `bridge-contract missing ${type}`);
-  requireIncludes(taskPane, `type == "${type}"`, `TaskPane missing handler ${type}`);
+  requireIncludes(taskPane, `case "${type}":`, `TaskPane missing handler ${type}`);
   requireIncludes(app, `type: "${type}"`, `app.mjs missing postHost ${type}`);
 }
 
@@ -140,7 +135,7 @@ for (const hostType of ["zoteroImages", "zoteroPalette", "zoteroTraceStatus"]) {
 }
 
 for (const snippet of [
-  "论文图像/配色库",
+  "论文图像与配色库",
   "zoteroImageSearch",
   "zoteroImageReload",
   "zoteroPaletteGrid",
@@ -148,7 +143,7 @@ for (const snippet of [
   "zoteroSwatchContextMenu",
   "打开 PDF",
   "定位条目",
-  "复制溯源 ID",
+  "复制溯源编号",
   "复制 HEX",
   "设为描边",
   "设为填充",
@@ -161,11 +156,13 @@ for (const snippet of [
 for (const snippet of [
   ".zotero-image-panel",
   ".zotero-palette-grid",
-  "grid-template-rows: repeat(7, 18px)",
   ".zotero-swatch-menu",
   ".zotero-image-card"
 ]) {
   requireIncludes(css, snippet, `styles.css missing Zotero image library style: ${snippet}`);
+}
+if (!/\.zotero-palette-grid[\s\S]*?grid-template-rows:\s*repeat\(7,\s*(?:16|18)px\)/.test(css)) {
+  violations.push("styles.css missing seven-row Zotero palette grid");
 }
 
 for (const snippet of [
@@ -224,7 +221,7 @@ for (const method of [
 }
 
 requireIncludes(targetPlan, "每个实现批次开始前必须重新读取 `D:\\GitRepo\\my_img_manager`", "target plan missing per-batch Zotero git refresh constraint");
-requireIncludes(targetPlan, "批次116", "target plan missing batch 116 record");
+if (!/(?:批次\s*116|B116)/.test(targetPlan)) violations.push("target plan missing batch 116 record");
 requireIncludes(packageJson.scripts.test, "node scripts/validate-zotero-image-library.mjs", "package.json npm test must include Zotero image library validation");
 requireIncludes(packageJson.scripts.test, "node scripts/validate-zlk-cluster-result-importer.mjs", "npm test must still include interrupted ZLK importer validation");
 

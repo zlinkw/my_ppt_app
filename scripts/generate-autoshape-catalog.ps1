@@ -339,6 +339,18 @@ $manualItems = @(
     New-CatalogItem "msoShapeCurvedConnector" "CurvedConnector" "lines" "roughPathRecipe" "exact" 160 80
     New-CatalogItem "msoShapeDashedRectangle" "DashedRectangle" "rectangles" "roughPathRecipe" "exact" 140 90
     New-CatalogItem "msoShapeDoubleOval" "DoubleOval" "basic" "roughPathRecipe" "exact" 120 90
+    New-CatalogItem "rough3dCubeRough" "ThreeDCubeRough" "three-d-rough" "roughPathRecipe" "exact" 130 100
+    New-CatalogItem "rough3dCubePlain" "ThreeDCubePlain" "three-d-plain" "native3dRecipe" "exact" 130 100
+    New-CatalogItem "rough3dCylinderRough" "ThreeDCylinderRough" "three-d-rough" "roughPathRecipe" "exact" 130 100
+    New-CatalogItem "rough3dCylinderPlain" "ThreeDCylinderPlain" "three-d-plain" "native3dRecipe" "exact" 130 100
+    New-CatalogItem "rough3dConeRough" "ThreeDConeRough" "three-d-rough" "roughPathRecipe" "exact" 130 100
+    New-CatalogItem "rough3dConePlain" "ThreeDConePlain" "three-d-plain" "native3dRecipe" "exact" 130 100
+    New-CatalogItem "rough3dSphereRough" "ThreeDSphereRough" "three-d-rough" "roughPathRecipe" "exact" 120 120
+    New-CatalogItem "rough3dSpherePlain" "ThreeDSpherePlain" "three-d-plain" "native3dRecipe" "exact" 120 120
+    New-CatalogItem "rough3dPyramidRough" "ThreeDPyramidRough" "three-d-rough" "roughPathRecipe" "exact" 130 110
+    New-CatalogItem "rough3dPyramidPlain" "ThreeDPyramidPlain" "three-d-plain" "native3dRecipe" "exact" 130 110
+    New-CatalogItem "rough3dStackRough" "ThreeDStackRough" "three-d-rough" "roughPathRecipe" "exact" 150 120
+    New-CatalogItem "rough3dStackPlain" "ThreeDStackPlain" "three-d-plain" "native3dRecipe" "exact" 150 120
 )
 
 $enumItems = [Enum]::GetNames([Microsoft.Office.Core.MsoAutoShapeType]) |
@@ -360,7 +372,7 @@ $items = @($manualItems) + @($enumItems)
 
 $catalog = [ordered]@{
     version = "0.1.0"
-    source = "Microsoft.Office.Core.MsoAutoShapeType plus native line primitives"
+    source = "Microsoft.Office.Core.MsoAutoShapeType plus native line primitives and editable 3D objects"
     count = @($items).Count
     items = @($items)
 }

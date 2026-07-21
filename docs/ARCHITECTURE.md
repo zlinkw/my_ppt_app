@@ -45,3 +45,9 @@ ZLK 结果区前端可缓存 trace view model 的统计摘要以降低重复渲�
 ## User Assets
 
 Saved user assets are stored as native `.pptx` templates plus metadata JSON. Optional PNG thumbnails are generated only for the task pane library preview; thumbnails are never inserted into slides as final content.
+
+## Zotero 论文图像与配色
+
+Zotero 论文图像是显式参考图像例外，允许以 `msoPicture` 插入；该例外仅限 `ZoteroImageLibraryService`，不得扩展到 Rough 图形或 ZLK 图表。PPT 只读 `%LOCALAPPDATA%\ZLK\paper-image-library\paper_images.sqlite`，插图读取 `image_blob`，不读取 Zotero 内部 `zotero.sqlite` 及其旁车文件。Zotero 关闭时仍可预览、搜索、取色和插入已保存图像。
+
+完整图库界面唯一归 Zotero 所有。PPT 的“打开论文图片库”只复用 `%TEMP%\pdf-image-saver\paper-image-library-view\paper-image-library.html`。bridge 只用于打开来源 PDF 或定位条目，以及在完整图库入口发送受 token 保护的 `refreshLibrary`；PPT 不发送删除、分享或导入命令，也不复制或重实现完整图库界面。

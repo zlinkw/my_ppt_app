@@ -29,8 +29,12 @@ requireIncludes(server, "Authorization", "bearer token compatibility");
 requireIncludes(controller, "StartAutomationServer()", "controller startup");
 requireIncludes(controller, "PlotZlkClusterAsync", "controller plot handler");
 requireIncludes(controller, "MaxZlkSourceFiles = 64", "controller source file count guard");
-requireIncludes(controller, "MaxZlkSourceFileBytes = 2L * 1024L * 1024L", "controller single source size guard");
-requireIncludes(controller, "MaxZlkTotalSourceBytes = 12L * 1024L * 1024L", "controller total source size guard");
+if (!/MaxZlkSourceFileBytes\s*=\s*(?:2L\s*\*\s*1024L\s*\*\s*1024L|2097152L)/.test(controller)) {
+  throw new Error("controller single source size guard: missing 2 MiB limit");
+}
+if (!/MaxZlkTotalSourceBytes\s*=\s*(?:12L\s*\*\s*1024L\s*\*\s*1024L|12582912L)/.test(controller)) {
+  throw new Error("controller total source size guard: missing 12 MiB limit");
+}
 requireIncludes(controller, "Directory.EnumerateFiles", "controller lazy ZLK file enumeration");
 requireIncludes(controller, "ZLK 绘图源文件过多", "controller Chinese source count error");
 requireIncludes(taskPane, "normalizeZlkChartFile", "taskpane normalize message");

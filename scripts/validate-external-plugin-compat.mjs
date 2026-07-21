@@ -30,8 +30,6 @@ console.log(`external plugin compatibility ok${notes.length ? ` (${notes.join(";
 function validateLocalResourceGuards() {
   for (const snippet of [
     "MaxZlkSourceFiles = 64",
-    "MaxZlkSourceFileBytes = 2L * 1024L * 1024L",
-    "MaxZlkTotalSourceBytes = 12L * 1024L * 1024L",
     "Directory.EnumerateFiles",
     "ZLK 绘图源文件过多",
     "ZLK 绘图源文件过大",
@@ -42,26 +40,36 @@ function validateLocalResourceGuards() {
   ]) {
     requireIncludes(local.controller, snippet, `RoughAddInController.cs missing ZLK resource guard: ${snippet}`);
   }
+  if (!/MaxZlkSourceFileBytes\s*=\s*(?:2L\s*\*\s*1024L\s*\*\s*1024L|2097152L)/.test(local.controller)) {
+    violations.push("RoughAddInController.cs missing 2 MiB ZLK source guard");
+  }
+  if (!/MaxZlkTotalSourceBytes\s*=\s*(?:12L\s*\*\s*1024L\s*\*\s*1024L|12582912L)/.test(local.controller)) {
+    violations.push("RoughAddInController.cs missing 12 MiB ZLK total source guard");
+  }
   if (local.controller.includes("Directory.GetFiles(workDirs") || local.controller.includes("Directory.GetFiles(wildcardRoot")) {
     violations.push("RoughAddInController.cs must not eagerly enumerate large ZLK work_dirs/wildcard trees");
   }
   requireIncludes(local.packageJson, "node scripts/validate-external-plugin-compat.mjs", "package.json npm test missing external compatibility validation");
   for (const snippet of [
-    "MaxThumbnailBytes = 512 * 1024",
-    "MaxImageBlobBytes = 25 * 1024 * 1024",
-    "ReadImageRows(connection, table, BlobReadMode.None, MetadataReadLimit)",
     "AppendThumbnails(connection, table, filtered)",
     "ReadImageBlobStoredBytes",
     "论文图像过大，已超过"
   ]) {
     requireIncludes(local.zoteroService, snippet, `ZoteroImageLibraryService.cs missing Zotero image resource guard: ${snippet}`);
   }
+  requirePattern(local.zoteroService, /MaxThumbnailBytes\s*=\s*(?:512\s*\*\s*1024|524288)/, "ZoteroImageLibraryService.cs missing 512 KiB thumbnail guard");
+  requirePattern(local.zoteroService, /MaxImageBlobBytes\s*=\s*(?:25\s*\*\s*1024\s*\*\s*1024|26214400)/, "ZoteroImageLibraryService.cs missing 25 MiB image guard");
+  requirePattern(local.zoteroService, /ReadImageRows\(connection,\s*table,\s*BlobReadMode\.None,\s*(?:MetadataReadLimit|400)\)/, "ZoteroImageLibraryService.cs missing bounded metadata read");
 }
 
 function validateZlkClusterOrchestrator() {
   const zlkRoot = process.env.ZLK_CLUSTER_ORCHESTRATOR_ROOT || "D:\\GitRepo\\MCP\\zlk-cluster-orchestrator";
   if (!fs.existsSync(zlkRoot)) {
     notes.push("zlk external repo skipped");
+    return;
+  }
+  if (!fs.existsSync(path.join(zlkRoot, "src/PptPlotBridge.ts"))) {
+    notes.push("zlk external repo unavailable");
     return;
   }
   const bridge = readExternal(zlkRoot, "src/PptPlotBridge.ts");
@@ -146,7 +154,6 @@ function validateZlkClusterOrchestrator() {
     "Bearer ",
     "X-RoughPpt-Automation-Token",
     "X-Rough-Ppt-Token",
-    "ReadBodyAsync(context.Request, 1024 * 1024",
     "MaxZlkSourceFiles",
     "MaxZlkSourceFileBytes",
     "MaxZlkTotalSourceBytes",
@@ -159,6 +166,7 @@ function validateZlkClusterOrchestrator() {
   ]) {
     requireIncludes(local.automation + local.controller + local.architecture + local.validation, snippet, `local PPT ZLK contract missing ${snippet}`);
   }
+  requirePattern(local.automation, /ReadBodyAsync\(context\.Request,\s*(?:1024\s*\*\s*1024|1048576)/, "local PPT ZLK contract missing 1 MiB request body guard");
 }
 
 function validateZoteroImageSaver() {
@@ -208,21 +216,23 @@ function validateZoteroImageSaver() {
   }
   for (const snippet of [
     "PPT 插件必须复用 Zotero 生成的完整图库界面",
-    "%TEMP%\\pdf-image-saver\\paper-image-library-view\\paper-image-library.html",
-    "PPT 不得发送 `deleteImages`、`exportImages`、`importImages`"
+    "%TEMP%\\pdf-image-saver\\paper-image-library-view\\paper-image-library.html"
   ]) {
     requireIncludes(accessProtocol, snippet, `external Zotero access protocol drift: missing ${snippet}`);
   }
+  for (const command of ["deleteImages", "exportImages", "importImages"]) {
+    requirePattern(accessProtocol, new RegExp(`(?:禁止 PPT 发送|PPT 不得(?:直接)?发送)[^\\n]*${command}`), `external Zotero access protocol drift: PPT boundary missing ${command}`);
+  }
   for (const snippet of [
-    "shared DB locator must use frozen library.json path",
-    "locator schema version must be frozen at 1",
-    "locator must advertise SQLite schema version 2",
-    "locator must identify Zotero producer",
-    "locator must reject relative DB paths",
-    "locator must reject Zotero internal DB paths",
-    "bridge invalid URI error text must stay stable for PPT classification"
+    "SHARED_LIBRARY_LOCATOR_FILE_NAME = \"library.json\"",
+    "SHARED_LIBRARY_LOCATOR_SCHEMA_VERSION = 1",
+    "SHARED_DB_SCHEMA_VERSION = 2",
+    "SHARED_LIBRARY_LOCATOR_PRODUCER = \"zotero-pdf-image-saver\"",
+    "isSafeAbsoluteSharedDatabasePath",
+    "isZoteroInternalDatabasePath",
+    'error: "Requested Zotero URI invalid"'
   ]) {
-    requireIncludes(tests, snippet, `external Zotero open-pdf-uri.test.js drift: missing ${snippet}`);
+    requireIncludes(saver, snippet, `external Zotero locator/bridge contract drift: missing ${snippet}`);
   }
 
   for (const snippet of [
@@ -237,17 +247,17 @@ function validateZoteroImageSaver() {
     "bridge_state",
     "ReadBridgeState(\"status\")",
     "IsBridgeDisabledState(token, status)",
-    "\"registered\":false",
     "Requested Zotero URI invalid",
     "image_palette_swatches",
     "PPT_ZOTERO_PREVIEW_DUPLICATE_KEY",
     "PreviewDuplicateKey = Pick(\"preview_duplicate_key\", \"previewDuplicateKey\")",
-    "preview_duplicate_key=",
     "Shapes.AddPicture",
     "msoPicture"
   ]) {
     requireIncludes(local.zoteroResolver + local.zoteroService + local.zoteroBridge + local.architecture, snippet, `local PPT Zotero contract missing ${snippet}`);
   }
+  requirePattern(local.zoteroBridge, /["']registered["']\s*:\s*false|IndexOf\("\\"registered\\":false"/, "local PPT Zotero contract missing registered:false handling");
+  requireIncludes(local.zoteroBridge + local.zoteroService, 'ExtractJsonString(text, "preview_duplicate_key")', "local PPT Zotero contract missing preview_duplicate_key response parsing");
   for (const snippet of [
     "RefreshLibraryResult",
     'SendActionResult("refreshLibrary"',
@@ -283,4 +293,8 @@ function optionalReadExternal(base, relative) {
 
 function requireIncludes(text, snippet, label) {
   if (!String(text || "").includes(snippet)) violations.push(label);
+}
+
+function requirePattern(text, pattern, label) {
+  if (!pattern.test(String(text || ""))) violations.push(label);
 }
