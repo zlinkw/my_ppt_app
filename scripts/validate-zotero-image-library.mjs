@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 
 const read = file => fs.readFileSync(file, "utf8");
 const violations = [];
@@ -22,6 +23,10 @@ const ribbon = read("src/RoughPptAddin/Ribbon/RoughRibbon.cs");
 
 function requireIncludes(text, snippet, label) {
   if (!text.includes(snippet)) violations.push(label);
+}
+
+function requirePattern(text, pattern, label) {
+  if (!pattern.test(text)) violations.push(label);
 }
 
 for (const model of ["ZoteroImageInfo", "ZoteroPaletteInfo", "ZoteroSwatchInfo", "ZoteroTraceInfo"]) {
@@ -64,6 +69,11 @@ requireIncludes(service, "SelectParentItemUri = FirstAllowedZoteroSelectUri(sele
 
 if (service.includes("zotero.sqlite")) {
   violations.push("ZoteroImageLibraryService must not read Zotero internal zotero.sqlite");
+}
+for (const forbiddenSql of ["INSERT", "UPDATE", "DELETE", "CREATE TABLE", "DROP TABLE", "ALTER TABLE", "VACUUM", "ATTACH", "DETACH"]) {
+  if (new RegExp(`new SQLiteCommand\\(\\s*"[^"\\r\\n]*\\b${forbiddenSql}\\b`, "i").test(service + bridge)) {
+    violations.push(`PPT Zotero data plane must remain read-only: ${forbiddenSql}`);
+  }
 }
 
 for (const method of ["GetStatus", "OpenPdfByImageId", "SelectParentItemByImageId"]) {
@@ -130,6 +140,38 @@ for (const snippet of [
   "打开论文图片库"
 ]) {
   requireIncludes(controller + ribbon, snippet, `PPT complete-library reuse contract missing: ${snippet}`);
+}
+const openLibraryBlock = controller.slice(
+  controller.indexOf("public void OpenPaperImageLibrary()"),
+  controller.indexOf("public string SelectZoteroImageItem", controller.indexOf("public void OpenPaperImageLibrary()"))
+);
+const refreshIndex = openLibraryBlock.indexOf("zoteroImages.RefreshFullLibrary()");
+const successOpenIndex = openLibraryBlock.indexOf("Process.Start", refreshIndex);
+if (refreshIndex < 0 || successOpenIndex <= refreshIndex) {
+  violations.push("PPT complete-library flow must refresh before opening the generated page");
+}
+requirePattern(openLibraryBlock, /if \(refresh\.Success\)[\s\S]*?File\.Exists\(libraryPath\)[\s\S]*?Process\.Start/, "PPT complete-library flow must open only an existing generated page after refresh success");
+requirePattern(openLibraryBlock, /if \(File\.Exists\(libraryPath\)\)[\s\S]*?Process\.Start[\s\S]*?已只读打开上次生成的论文图片库；内容无法刷新/, "PPT offline complete-library flow must open the existing page with a read-only warning");
+requirePattern(openLibraryBlock, /尚未生成论文图片库。请启动 Zotero[\s\S]*?return|尚未生成论文图片库。请启动 Zotero/, "PPT missing-page flow must instruct the user to start Zotero");
+
+const sourceRoot = path.resolve("src/RoughPptAddin");
+const copiedLibraryFiles = [];
+const scanFiles = directory => {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) scanFiles(fullPath);
+    else copiedLibraryFiles.push(fullPath);
+  }
+};
+scanFiles(sourceRoot);
+for (const file of copiedLibraryFiles) {
+  const relative = path.relative(sourceRoot, file).replaceAll("\\", "/");
+  if (/paper-image-library\.html$/i.test(relative) || /global-library/i.test(relative)) {
+    violations.push(`PPT source must not contain a copied complete-library page: ${relative}`);
+  }
+}
+for (const forbiddenUiHook of ["openGlobalImageLibrary", "GLOBAL_LIBRARY_VIEW_VERSION", 'command === "deleteImages"', 'command === "exportImages"', 'command === "importImages"']) {
+  if ((index + app).includes(forbiddenUiHook)) violations.push(`PPT task pane must not reimplement Zotero complete-library UI: ${forbiddenUiHook}`);
 }
 
 for (const hostType of ["zoteroImages", "zoteroPalette", "zoteroTraceStatus"]) {
