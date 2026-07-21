@@ -484,6 +484,22 @@ public sealed class RoughTaskPaneControl : UserControl
 		case "listZoteroImages":
 			SendZoteroImages(ReadString(message, "query", string.Empty));
 			break;
+		case "getZoteroPalette":
+			try
+			{
+				SendZoteroPalette(ReadString(message, "imageId", string.Empty));
+				break;
+			}
+			catch (Exception ex16)
+			{
+				PostCommandFailure("读取当前参考图配色", ex16);
+				PostToWeb(new Dictionary<string, object>
+				{
+					["type"] = "zoteroPaletteLoadFailed",
+					["imageId"] = ReadString(message, "imageId", string.Empty)
+				});
+				break;
+			}
 		case "insertZoteroImage":
 			try
 			{
@@ -536,9 +552,16 @@ public sealed class RoughTaskPaneControl : UserControl
 		case "saveZoteroPalette":
 			try
 			{
-				PaletteSchemeInfo palette4 = controller.SaveCurrentZoteroPalette(ReadString(message, "query", string.Empty));
+				string imageId = ReadString(message, "imageId", string.Empty);
+				PaletteSchemeInfo palette4 = controller.SaveCurrentZoteroPalette(imageId, ReadString(message, "sourceTitle", string.Empty));
 				SendPalettes();
 				PostStatus("已保存配色方案：" + palette4.DisplayName, isError: false);
+				PostToWeb(new Dictionary<string, object>
+				{
+					["type"] = "zoteroPaletteSaved",
+					["imageId"] = imageId,
+					["paletteId"] = palette4.Id
+				});
 				break;
 			}
 			catch (Exception ex11)
@@ -817,22 +840,16 @@ public sealed class RoughTaskPaneControl : UserControl
 			string status;
 			bool databaseFound;
 			IList<ZoteroImageInfo> images = controller.ListZoteroImages(query, out status, out databaseFound);
-			ZoteroPaletteInfo palette = controller.BuildZoteroPaletteGrid(images, status, databaseFound);
+			ZoteroImageLibraryPathInfo pathInfo = ZoteroImageLibraryPathResolver.ResolveDatabasePathInfo();
 			PostToWeb(new Dictionary<string, object>
 			{
 				["type"] = "zoteroImages",
 				["query"] = query ?? string.Empty,
 				["images"] = images,
 				["status"] = status,
-				["databasePath"] = palette.DatabasePath,
-				["databaseSource"] = palette.DatabaseSource,
+				["databasePath"] = pathInfo.DatabasePath,
+				["databaseSource"] = pathInfo.SourceDescription,
 				["databaseFound"] = databaseFound
-			});
-			PostToWeb(new Dictionary<string, object>
-			{
-				["type"] = "zoteroPalette",
-				["query"] = query ?? string.Empty,
-				["palette"] = palette
 			});
 		}
 		catch (Exception exception)
@@ -850,6 +867,16 @@ public sealed class RoughTaskPaneControl : UserControl
 			});
 			PostStatus("读取 Zotero 论文图像库失败，已显示空状态。", isError: true);
 		}
+	}
+
+	private void SendZoteroPalette(string imageId)
+	{
+		PostToWeb(new Dictionary<string, object>
+		{
+			["type"] = "zoteroPalette",
+			["imageId"] = imageId ?? string.Empty,
+			["palette"] = controller.GetZoteroPaletteByImageId(imageId)
+		});
 	}
 
 	private IList<Dictionary<string, object>> BuildShapeIconPayload()

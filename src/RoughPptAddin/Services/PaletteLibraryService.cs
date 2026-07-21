@@ -79,17 +79,18 @@ public sealed class PaletteLibraryService
 		return palette;
 	}
 
-	public PaletteSchemeInfo SaveZoteroPalette(ZoteroPaletteInfo palette, string query)
+	public PaletteSchemeInfo SaveZoteroPalette(ZoteroPaletteInfo palette, string imageId, string sourceTitle)
 	{
 		List<ZoteroSwatchInfo> swatches = (from @group in (palette?.Swatches ?? new List<ZoteroSwatchInfo>()).Where((ZoteroSwatchInfo item) => IsHex(item?.Hex)).GroupBy((ZoteroSwatchInfo item) => NormalizeHex(item.Hex), StringComparer.OrdinalIgnoreCase)
-			select @group.First()).Take(10).ToList();
+			select @group.First()).ToList();
 		if (swatches.Count == 0)
 		{
-			throw new InvalidOperationException("当前 Zotero 图像结果没有可保存的配色。");
+			throw new InvalidOperationException("当前参考图没有可保存的配色。");
 		}
+		string displayTitle = string.IsNullOrWhiteSpace(sourceTitle) ? "未命名论文图像" : sourceTitle.Trim();
 		return SavePalette(new PaletteSchemeInfo
 		{
-			DisplayName = (string.IsNullOrWhiteSpace(query) ? "Zotero 论文配色" : ("Zotero 论文配色：" + query)),
+			DisplayName = "Zotero 论文配色：" + displayTitle,
 			Kind = "zotero-palette",
 			Source = "Zotero PDF 图片保存插件",
 			Keywords = new List<string>
@@ -98,7 +99,8 @@ public sealed class PaletteLibraryService
 				"论文图像",
 				"配色",
 				"共享库",
-				query ?? string.Empty
+				displayTitle,
+				imageId ?? string.Empty
 			},
 			Swatches = swatches
 		});

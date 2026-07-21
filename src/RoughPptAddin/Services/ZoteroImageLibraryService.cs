@@ -322,6 +322,26 @@ public sealed class ZoteroImageLibraryService
 		return BuildPaletteGrid(images, status, databaseFound);
 	}
 
+	public ZoteroPaletteInfo GetPaletteByImageId(string imageId)
+	{
+		string normalizedImageId = (imageId ?? string.Empty).Trim();
+		if (string.IsNullOrWhiteSpace(normalizedImageId))
+		{
+			throw new InvalidOperationException("请先选择一张论文图像作为配色参考。");
+		}
+		ZoteroImageLibraryPathInfo pathInfo = ZoteroImageLibraryPathResolver.ResolveDatabasePathInfo();
+		if (!File.Exists(pathInfo.DatabasePath))
+		{
+			throw new InvalidOperationException("未找到 Zotero 论文图像库。请先在 Zotero 中保存论文图像。");
+		}
+		ZoteroImageInfo image = ReadImageForInsert(normalizedImageId);
+		if (image == null)
+		{
+			throw new InvalidOperationException("未找到所选论文图像。请重新读取图库后再试。");
+		}
+		return BuildPaletteGrid(new[] { image }, "已读取当前参考图的配色。", databaseFound: true);
+	}
+
 	public ZoteroPaletteInfo BuildPaletteGrid(IEnumerable<ZoteroImageInfo> images, string status, bool databaseFound)
 	{
 		ZoteroPaletteInfo palette = new ZoteroPaletteInfo
@@ -348,23 +368,9 @@ public sealed class ZoteroImageLibraryService
 						ImageId = (swatch.ImageId ?? image.ImageId)
 					});
 				}
-				if (bases.Count >= 12)
-				{
-					break;
-				}
-			}
-			if (bases.Count >= 12)
-			{
-				break;
 			}
 		}
-		foreach (ZoteroSwatchInfo item in bases)
-		{
-			foreach (ZoteroSwatchInfo variant in PaletteVariants(item))
-			{
-				palette.Swatches.Add(variant);
-			}
-		}
+		palette.Swatches.AddRange(bases);
 		return palette;
 	}
 

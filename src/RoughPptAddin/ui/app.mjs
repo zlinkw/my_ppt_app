@@ -304,6 +304,10 @@ const state = {
   userAssets: [],
   zoteroImages: [],
   zoteroPalette: { swatches: [] },
+  activeZoteroReferenceImageId: "",
+  activeZoteroReferenceTitle: "",
+  activeZoteroPaletteSaved: true,
+  skipReferenceChangePromptForSession: false,
   zoteroImageStatus: "",
   zoteroDatabasePath: "",
   zoteroDatabaseSource: "",
@@ -420,6 +424,7 @@ const els = {
   paletteSchemeGrid: document.querySelector("#paletteSchemeGrid"),
   paletteLibrarySummary: document.querySelector("#paletteLibrarySummary"),
   saveZoteroPalette: document.querySelector("#saveZoteroPalette"),
+  zoteroPaletteSummary: document.querySelector("#zoteroPaletteSummary"),
   extractClipboardPalette: document.querySelector("#extractClipboardPalette"),
   extractSlidePalette: document.querySelector("#extractSlidePalette",
     ".paper-preset-card button, .paper-preset-grid button, #paperPresetGrid button"),
@@ -4563,6 +4568,7 @@ function renderZoteroImageCard(image) {
   actions.className = "zotero-image-actions";
   actions.title = "论文图像操作，均只针对当前图像记录";
   for (const action of [
+    ["setZoteroPaletteReference", imageId === state.activeZoteroReferenceImageId ? "当前配色参考" : "设为配色参考", "", "只读取当前这一张论文图像的全部实际配色；不会跨图累积"],
     ["insertZoteroImage", "插入", "image", "把共享数据库中的原始图像写入临时文件，并用 PowerPoint 图片接口插入为参考图像"],
     ["openZoteroImagePdf", "打开 PDF", "library", "优先通过 Zotero 本地连接打开来源 PDF；失败后改用 Zotero PDF 链接"],
     ["selectZoteroImageItem", "定位条目", "carrier", "优先通过 Zotero 本地连接定位父条目；失败后改用 Zotero 条目链接"],
@@ -4570,10 +4576,12 @@ function renderZoteroImageCard(image) {
   ]) {
     const button = document.createElement("button");
     button.type = "button";
-    button.append(createFunctionIcon(action[2], action[0]), document.createTextNode(action[1]));
+    if (action[2]) button.append(createFunctionIcon(action[2], action[0]));
+    button.append(document.createTextNode(action[1]));
     button.title = action[3];
     button.addEventListener("click", () => {
       setStatus(`正在${action[1]}：${titleText}`);
+      if (action[0] === "setZoteroPaletteReference") selectZoteroPaletteReference(image);
       if (action[0] === "insertZoteroImage") postHost({ type: "insertZoteroImage", imageId });
       if (action[0] === "openZoteroImagePdf") postHost({ type: "openZoteroImagePdf", imageId });
       if (action[0] === "selectZoteroImageItem") postHost({ type: "selectZoteroImageItem", imageId });
@@ -4588,11 +4596,19 @@ function renderZoteroImageCard(image) {
 
 function renderZoteroPaletteGrid() {
   const swatches = zoteroSwatchesFromPalette();
+  if (els.zoteroPaletteSummary) {
+    els.zoteroPaletteSummary.textContent = state.activeZoteroReferenceImageId
+      ? `${state.activeZoteroReferenceTitle || "当前参考图"} · ${swatches.length} 色${state.activeZoteroPaletteSaved ? " · 已保存" : " · 未保存"}`
+      : "未选择参考图";
+    els.zoteroPaletteSummary.title = state.activeZoteroReferenceImageId
+      ? `当前配色只来自：${state.activeZoteroReferenceTitle || state.activeZoteroReferenceImageId}；共 ${swatches.length} 个实际提取色`
+      : "请在下方论文图像中点击“设为配色参考”";
+  }
   if (els.saveZoteroPalette) {
     els.saveZoteroPalette.disabled = swatches.length === 0;
     els.saveZoteroPalette.title = swatches.length
-      ? "把当前 Zotero 搜索结果中的论文图像配色保存到跨文件配色库"
-      : "当前没有可保存的论文配色；请先读取论文图像库";
+      ? "把当前单张参考图的全部实际配色保存到跨文件配色库"
+      : "当前没有可保存的论文配色；请先选择一张配色参考图";
     els.saveZoteroPalette.setAttribute("aria-label", els.saveZoteroPalette.title);
   }
   els.zoteroPaletteGrid.classList.toggle("is-empty", swatches.length === 0);
@@ -4600,8 +4616,8 @@ function renderZoteroPaletteGrid() {
   if (!swatches.length) {
     const empty = document.createElement("div");
     empty.className = "zotero-palette-empty";
-    empty.textContent = "暂无配色。读取论文图像库后会显示主题色网格。";
-    empty.title = "配色来自共享数据库中的调色板、主色和色系信息";
+    empty.textContent = "暂无配色。请在下方选择一张论文图像作为配色参考。";
+    empty.title = "配色严格来自当前单张参考图，不会跨图累积";
     els.zoteroPaletteGrid.append(empty);
     return;
   }
@@ -6027,6 +6043,38 @@ function syncFeatureBlockControls(key, value, source = null) {
   }
 }
 
+function activateZoteroPaletteReference(image) {
+  const imageId = zoteroImageId(image);
+  state.activeZoteroReferenceImageId = imageId;
+  state.activeZoteroReferenceTitle = zoteroImageTitle(image);
+  state.activeZoteroPaletteSaved = false;
+  state.zoteroPalette = { imageId, sourceTitle: state.activeZoteroReferenceTitle, swatches: [] };
+  renderZoteroImagePanel();
+  setStatus(`正在读取当前参考图配色：${state.activeZoteroReferenceTitle}`);
+  postHost({ type: "getZoteroPalette", imageId });
+}
+
+function selectZoteroPaletteReference(image) {
+  const imageId = zoteroImageId(image);
+  if (!imageId || imageId === state.activeZoteroReferenceImageId) return;
+  if (!state.activeZoteroReferenceImageId || state.activeZoteroPaletteSaved || state.skipReferenceChangePromptForSession) {
+    activateZoteroPaletteReference(image);
+    return;
+  }
+  showInlinePrompt({
+    title: "覆盖未保存的参考图配色？",
+    message: `“${state.activeZoteroReferenceTitle || "当前参考图"}”的配色尚未保存。切换到“${zoteroImageTitle(image)}”后，当前配色会被覆盖。`,
+    confirmLabel: "覆盖并切换",
+    cancelLabel: "继续使用当前图",
+    cancelStatus: "未切换参考图，当前配色保持不变。",
+    checkboxLabel: "本次 PowerPoint 会话不再询问",
+    onConfirm: (_value, promptState) => {
+      state.skipReferenceChangePromptForSession = Boolean(promptState?.checked);
+      activateZoteroPaletteReference(image);
+    }
+  });
+}
+
 function syncFeatureBlockModeAvailability() {
   if (!els.featurePanel) return;
   const mode = els.featurePanel.querySelector('[data-feature-param="mode"]')?.value ?? state.featureBlock.mode;
@@ -6552,6 +6600,19 @@ function showInlinePrompt(options) {
     input.setAttribute("aria-label", input.placeholder);
   }
 
+  let checkbox = null;
+  if (options.checkboxLabel) {
+    const label = document.createElement("label");
+    label.className = "inline-prompt-checkbox";
+    checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = Boolean(options.checkboxChecked);
+    const checkboxText = document.createElement("span");
+    checkboxText.textContent = options.checkboxLabel;
+    label.append(checkbox, checkboxText);
+    copy.append(label);
+  }
+
   const actions = document.createElement("div");
   actions.className = "inline-prompt-actions";
   const cancel = document.createElement("button");
@@ -6583,7 +6644,7 @@ function showInlinePrompt(options) {
     confirm.disabled = true;
     cancel.disabled = true;
     closeInlinePrompt();
-    options.onConfirm?.(value);
+    options.onConfirm?.(value, { checked: Boolean(checkbox?.checked) });
   });
   actions.append(cancel, confirm);
   root.append(copy);
@@ -6677,9 +6738,24 @@ function handleHostMessage(message) {
   }
 
   if (message.type === "zoteroPalette") {
-    if (isStaleZoteroLibraryResponse(message)) return;
+    if (String(message.imageId ?? "") !== state.activeZoteroReferenceImageId) return;
     state.zoteroPalette = message.palette ?? { swatches: [] };
     renderZoteroPaletteGrid();
+  }
+
+  if (message.type === "zoteroPaletteSaved") {
+    if (String(message.imageId ?? "") !== state.activeZoteroReferenceImageId) return;
+    state.activeZoteroPaletteSaved = true;
+    renderZoteroPaletteGrid();
+  }
+
+  if (message.type === "zoteroPaletteLoadFailed") {
+    if (String(message.imageId ?? "") !== state.activeZoteroReferenceImageId) return;
+    state.activeZoteroReferenceImageId = "";
+    state.activeZoteroReferenceTitle = "";
+    state.activeZoteroPaletteSaved = true;
+    state.zoteroPalette = { swatches: [] };
+    renderZoteroImagePanel();
   }
 
   if (message.type === "paletteSchemes") {
@@ -8289,8 +8365,12 @@ els.zoteroImageReload?.addEventListener("click", () => {
   requestZoteroImages(true);
 });
 els.saveZoteroPalette?.addEventListener("click", () => {
+	if (!state.activeZoteroReferenceImageId) {
+		setStatus("请先选择一张论文图像作为配色参考。", true);
+		return;
+	}
   setStatus("正在保存当前 Zotero 论文图像配色...");
-  postHost({ type: "saveZoteroPalette", query: state.zoteroQuery });
+  postHost({ type: "saveZoteroPalette", imageId: state.activeZoteroReferenceImageId, sourceTitle: state.activeZoteroReferenceTitle });
 });
 els.extractClipboardPalette?.addEventListener("click", () => {
   setStatus("正在从剪贴板图片提取配色...");

@@ -25,6 +25,7 @@ export const HOST_MESSAGE_TYPES = {
   pinQuickShape: "pinQuickShape",
   unpinQuickShape: "unpinQuickShape",
   listZoteroImages: "listZoteroImages",
+  getZoteroPalette: "getZoteroPalette",
   insertZoteroImage: "insertZoteroImage",
   openZoteroImagePdf: "openZoteroImagePdf",
   selectZoteroImageItem: "selectZoteroImageItem",

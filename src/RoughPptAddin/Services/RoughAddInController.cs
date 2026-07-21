@@ -831,10 +831,15 @@ namespace RoughPptAddin.Services
     		return zoteroImages.ListImages(query, out status, out databaseFound);
     	}
     
-    	public ZoteroPaletteInfo GetZoteroPalette(string query)
-    	{
-    		return zoteroImages.GetPalette(query);
-    	}
+		public ZoteroPaletteInfo GetZoteroPalette(string query)
+		{
+			return zoteroImages.GetPalette(query);
+		}
+
+		public ZoteroPaletteInfo GetZoteroPaletteByImageId(string imageId)
+		{
+			return zoteroImages.GetPaletteByImageId(imageId);
+		}
     
     	public ZoteroPaletteInfo BuildZoteroPaletteGrid(IEnumerable<ZoteroImageInfo> images, string status, bool databaseFound)
     	{
@@ -920,10 +925,10 @@ namespace RoughPptAddin.Services
     		return palettes.ListPalettes(application);
     	}
     
-    	public PaletteSchemeInfo SaveCurrentZoteroPalette(string query)
-    	{
-    		return palettes.SaveZoteroPalette(zoteroImages.GetPalette(query), query);
-    	}
+		public PaletteSchemeInfo SaveCurrentZoteroPalette(string imageId, string sourceTitle)
+		{
+			return palettes.SaveZoteroPalette(zoteroImages.GetPaletteByImageId(imageId), imageId, sourceTitle);
+		}
     
     	public PaletteSchemeInfo ExtractPaletteFromClipboardImage()
     	{
