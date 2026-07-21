@@ -173,6 +173,6 @@ try {
     Write-Host "installer payload transaction ok"
 } finally {
     if (Test-Path -LiteralPath $resolvedTestRoot) {
-        Remove-Item -LiteralPath $resolvedTestRoot -Recurse -Force
+        Write-Warning "测试目录已保留，避免永久删除：$resolvedTestRoot"
     }
 }
