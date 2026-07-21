@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>形状图库</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./ribbon-shape-gallery.css">
+</head>
+<body class="ribbon-gallery-body">
+  <main class="ribbon-gallery-window" title="形状图库">
+    <label class="ribbon-gallery-search" title="搜索 PowerPoint 原生形状手绘版">
+      <span aria-hidden="true">&#8981;</span>
+      <input id="gallerySearch" type="search" placeholder="搜索形状" title="输入中文、英文或 PowerPoint 枚举名筛选形状图库">
+    </label>
+    <div id="shapeDropdown" class="shape-dropdown ribbon-shape-dropdown" title="形状图库"></div>
+    <div id="shapeContextMenu" class="shape-context-menu" role="menu" hidden></div>
+    <div id="galleryStatus" class="ribbon-gallery-status" role="status" aria-live="polite"></div>
+  </main>
+  <script type="module" src="./ribbon-shape-gallery.mjs"></script>
+</body>
+</html>

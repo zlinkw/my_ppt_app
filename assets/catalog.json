@@ -1,0 +1,14 @@
+{
+  "version": "0.1.0",
+  "catalogs": [
+    "autoshapes/mso-autoshape-catalog.json"
+  ],
+  "defaultParams": {
+    "stroke": "#111111",
+    "strokeWidthPt": 2,
+    "roughness": 1.2,
+    "bowing": 1.0,
+    "seed": 12345,
+    "fillStyle": "none"
+  }
+}

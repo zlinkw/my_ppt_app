@@ -1,0 +1,39 @@
+# Local GPT workspace data
+.local-gpt/
+.runtime/
+.vscode/
+.tools/
+
+# Build outputs
+bin/
+obj/
+dist/
+publish/
+packages/
+node_modules/
+
+# Logs and local diagnostics
+*.log
+*.tmp
+diagnostics/
+*.user
+*.suo
+.vs/
+
+# Installer outputs
+*.msi
+*.wixpdb
+*.cab
+RoughPptAddin-Windows11.zip
+RoughPptAddin-Windows11.msi
+RoughPptAddin-Windows11-Setup.exe
+
+# Recovery and interrupted-command artifacts
+.tmp-*
+tmp_*.txt
+package-run.pid
+package.json)
+scripts/*),
+src/**/*.Count
+src/**/*.bak[0-9]*
+

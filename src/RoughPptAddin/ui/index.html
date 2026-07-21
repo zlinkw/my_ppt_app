@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>手绘图形 Rough</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="ux-simple" data-selection-kind="none">
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand" title="插入具有 Rough.js 视觉的 PowerPoint 原生可编辑图形">
+        <span class="brand-mark">R</span>
+        <span class="brand-copy">
+          <strong>手绘图形 Rough</strong>
+          <small>原生 PPT 可编辑</small>
+        </span>
+      </div>
+      <div class="topbar-actions">
+        <div class="ux-mode-switch" role="group" aria-label="界面模式" title="简洁模式只显示当前右侧工作区；完整模式显示全部专业面板">
+          <button id="uiModeSimple" type="button" data-ui-mode="simple" title="简洁模式：显示当前选区状态或正在使用的单个工作区，其他功能可从顶部入口和搜索定位">简洁</button>
+          <button id="uiModeFull" type="button" data-ui-mode="full" title="完整模式：显示全部参数、素材、配色、特征块和论文库">完整</button>
+        </div>
+        <a id="usageGuide" class="usage-guide-button" href="./help.html" title="在独立非模态窗口中打开完整图文说明，可边看边操作 PowerPoint">使用说明</a>
+      </div>
+      <button id="buildInfo" class="build-info" type="button" title="显示当前插件安装版本、构建提交和构建时间，便于确认是否已安装最新版">版本检测</button>
+      <div id="status" class="status" role="status" tabindex="0" aria-expanded="false" data-status-toggle title="显示插件当前操作状态；点击可展开长文本" aria-live="polite" aria-atomic="true">准备就绪</div>
+    </header>
+    <section id="inlinePrompt" class="inline-prompt" hidden aria-live="polite" title="页面内轻量确认与输入，不使用系统弹窗，避免阻塞 PowerPoint"></section>
+
+    <div class="app-layout">
+      <div class="app-content">
+    <section class="starter-panel workflow-panel panel" title="右侧工作区只保留需要参数、预览或较大操作空间的功能入口">
+      <header class="panel-head">
+        <strong title="右侧用于风格参数和科研绘图；插入、转换、重绘等高频命令位于 PowerPoint Ribbon">右侧工作区</strong>
+        <span class="badge" title="右侧保留配置、预览、资源管理和大空间工作流">参数与数据</span>
+      </header>
+      <div class="workflow-actions" title="右侧工作区入口：风格参数和科研绘图">
+        <button id="jumpToShapes" class="primary-action" data-command-owner="ribbon" type="button" data-starter-action="catalog" title="直接展开 PPT 原生形状手绘版图库，可搜索或点击插入形状" aria-label="插入形状：展开形状图库"><span aria-hidden="true">&#9638;</span><span>插入形状</span></button>
+        <button id="jumpToRedraw" data-command-owner="ribbon" type="button" data-starter-action="redraw" title="独立重绘入口：选中手绘对象后按当前风格参数立即重绘；无可重绘选区时只定位到当前选区区" aria-label="重绘选区：按当前参数重新生成手绘对象"><span aria-hidden="true">&#8635;</span><span>重绘选区</span></button>
+        <button id="jumpToStyle" type="button" data-starter-action="style" title="定位风格模板和线条、填充、Rough.js 参数"><span aria-hidden="true">&#9881;</span><span>风格参数</span></button>
+        <button id="jumpToCharts" type="button" data-starter-action="charts" title="定位科研绘图导入，可识别 ZLK 集群实验结果并推荐排行榜、误差棒、敏感性曲线等图表"><span aria-hidden="true">&#9637;</span><span>科研绘图</span></button>
+      </div>
+      <div id="noviceGuideStrip" class="novice-guide-strip" data-command-owner="ribbon" title="高频插入和重绘操作已移至 PowerPoint Ribbon">
+        <button type="button" data-starter-action="catalog" title="第一步：插入 PPT 原生手绘形状"><span class="novice-step">1</span><span>插入形状</span></button>
+        <button type="button" data-starter-action="style" title="第二步：选择风格模板或调整线宽、粗糙度、填充"><span class="novice-step">2</span><span>调风格</span></button>
+        <button type="button" data-starter-action="redraw" title="第三步：选中对象后按当前参数重绘"><span class="novice-step">3</span><span>重绘选区</span></button>
+        <button type="button" data-starter-action="charts" title="可选：导入实验结果并预览科研图"><span class="novice-step">研</span><span>科研图</span></button>
+      </div>
+      <div id="simpleConnectionNote" class="simple-connection-note" title="简洁模式下的外部连接摘要；点状态片可跳转，完整模式可查看更多详情">
+        <button id="simpleConnectionZlk" type="button" class="simple-connection-chip idle" data-section-nav="charts" data-domain="zlk" title="定位科研绘图与 ZLK 自动绘图状态">
+          <span class="connection-dot" aria-hidden="true"></span>
+          <span class="simple-connection-copy"><strong>科研绘图</strong><small data-simple-connection-zlk>等待外部连接</small></span>
+        </button>
+        <button id="simpleConnectionZotero" type="button" class="simple-connection-chip idle" data-section-nav="zoteroImages" data-domain="zotero" title="定位 Zotero 论文图像与配色库">
+          <span class="connection-dot" aria-hidden="true"></span>
+          <span class="simple-connection-copy"><strong>论文图像</strong><small data-simple-connection-zotero>等待读取</small></span>
+        </button>
+        <button type="button" id="simpleModeFullSwitch" title="切换到完整模式以显示全部专业面板">完整模式</button>
+      </div>
+      <div id="connectionHealthStrip" class="connection-health-strip" role="group" aria-label="外部连接状态" title="显示本机外部连接概况；点击可定位到对应功能区，不会执行危险操作">
+        <button id="connectionZlk" class="connection-chip idle" type="button" data-section-nav="charts" title="定位 ZLK 自动绘图和科研绘图导入状态">
+          <span class="connection-dot" aria-hidden="true"></span>
+          <span class="connection-copy"><strong>集群绘图 ZLK</strong><small data-connection-zlk>等待外部请求</small></span>
+        </button>
+        <button id="connectionZotero" class="connection-chip idle" type="button" data-section-nav="zoteroImages" title="定位 Zotero 论文图像与配色库读取状态">
+          <span class="connection-dot" aria-hidden="true"></span>
+          <span class="connection-copy"><strong>论文图像 Zotero</strong><small data-connection-zotero>等待读取共享数据库</small></span>
+        </button>
+      </div>
+      <details class="workflow-more workflow-quickfind" data-workflow-more data-quickfind title="展开更多操作和功能速查；默认收起以降低首屏占位">
+        <summary title="展开或收起更多操作与功能速查">
+          <span class="quickfind-label" title="不常用但仍可快速访问的操作和路径提示">更多与速查</span>
+          <span class="quickfind-hint" title="添加常用、转换、重绘、模板、填充、素材等路径提示">添加常用 / 转换 / 重绘 / 路径</span>
+        </summary>
+        <div class="workflow-more-actions" role="group" aria-label="更多开始操作" title="这里的操作与原开始入口一致，默认收起以降低首屏拥挤">
+          <button id="jumpToNext" data-command-owner="ribbon" type="button" data-starter-action="next" title="根据 PowerPoint 当前选区自动选择下一步：无选区打开形状图库，普通形状转换，手绘对象重绘" aria-label="下一步：根据当前选区自动执行或定位"><span aria-hidden="true">&#8250;</span><span>下一步</span></button>
+          <button id="jumpToPaperPresets" type="button" data-starter-action="paperPresets" title="定位智能模型、多模态、医学图像报告和诊断论文图预设"><span aria-hidden="true">&#9635;</span><span>论文预设</span></button>
+          <button id="jumpToAssets" type="button" data-starter-action="library" title="定位我的素材库，可插入、删除、导入和分享素材"><span aria-hidden="true">&#9636;</span><span>素材库</span></button>
+          <button id="jumpToFeature" type="button" data-starter-action="featureBlock" title="定位 2D/3D 特征块工具"><span aria-hidden="true">&#9635;</span><span>特征块</span></button>
+          <button id="jumpToQuickInsert" type="button" data-starter-action="quickInsert" title="直接展开快速插入的添加图库，把常用形状固定到快速插入栏和顶部 Ribbon" aria-label="添加常用形状：打开快速插入添加图库"><span aria-hidden="true">＋</span><span>添加常用</span></button>
+          <button id="jumpToSearch" type="button" data-starter-action="search" title="聚焦功能搜索，可输入重绘、填充、模板、素材等关键词" aria-label="功能搜索：定位搜索框"><span aria-hidden="true">&#8981;</span><span>功能搜索</span></button>
+          <button id="jumpToConvert" data-command-owner="ribbon" type="button" data-starter-action="convert" title="选区可转换时一键执行转换；无可用选区时定位到当前选区区" aria-label="转换选区：把普通 PPT 形状转为手绘风格"><span aria-hidden="true">&#9998;</span><span>转换选区</span></button>
+          <button id="jumpToPaperTemplate" data-command-owner="ribbon" type="button" data-starter-action="paperTemplate" title="一键应用论文框图风格模板，并同步后续插入和重绘参数" aria-label="论文模板：应用论文框图手绘风格"><span aria-hidden="true">&#9733;</span><span>论文模板</span></button>
+        </div>
+        <div class="workflow-quickfind-divider" title="下面是只定位不执行的功能路径提示">功能路径</div>
+        <div id="pathHints" class="workflow-quickfind-actions" role="group" aria-label="功能路径提示" title="功能速查内的路径提示，一键定位到常用具体功能，不会直接执行危险操作">
+          <button type="button" data-command-shortcut="cmd-redraw" data-path-shortcut="cmd-redraw" data-path-label="当前选区到重绘选区" title="路径提示：定位到重绘选区按钮，不会立即重绘"><span class="button-icon" aria-hidden="true">&#8635;</span><span>重绘</span></button>
+          <button type="button" data-command-shortcut="cmd-convert" data-path-shortcut="cmd-convert" data-path-label="当前选区到转换" title="路径提示：定位到转换选区按钮，不会立即转换"><span class="button-icon" aria-hidden="true">&#9998;</span><span>转换</span></button>
+          <button type="button" data-command-shortcut="cmd-fill" data-path-shortcut="cmd-fill" data-path-label="风格到填充纹理" title="路径提示：定位到填充与涂刷参数"><span class="button-icon" aria-hidden="true">&#9682;</span><span>填充</span></button>
+          <button type="button" data-command-shortcut="cmd-template" data-path-shortcut="cmd-template" data-path-label="风格到风格模板" title="路径提示：定位到风格模板选择"><span class="button-icon" aria-hidden="true">&#9733;</span><span>模板</span></button>
+          <button type="button" data-command-shortcut="cmd-paper-suite" data-path-shortcut="cmd-paper-suite" data-path-label="论文框图到论文套件" title="路径提示：定位到论文套件相关入口，不会立即插入"><span class="button-icon" aria-hidden="true">&#9638;</span><span>论文套件</span></button>
+          <button type="button" data-command-shortcut="cmd-paper-presets" data-path-shortcut="cmd-paper-presets" data-path-label="论文图预设到智能模型和医学结构" title="路径提示：定位到智能模型、多模态和医学论文图预设，可从预设卡片插入"><span class="button-icon" aria-hidden="true">&#9635;</span><span>智能预设</span></button>
+          <button type="button" data-command-shortcut="cmd-feature" data-path-shortcut="cmd-feature" data-path-label="特征块工具" title="路径提示：定位到特征块工具，不会立即插入"><span class="button-icon" aria-hidden="true">&#9635;</span><span>特征块</span></button>
+          <button type="button" data-command-shortcut="cmd-assets" data-path-shortcut="cmd-assets" data-path-label="我的素材到素材管理" title="路径提示：定位到我的素材管理"><span class="button-icon" aria-hidden="true">&#9636;</span><span>素材</span></button>
+          <button type="button" data-command-shortcut="cmd-palette-library" data-path-shortcut="cmd-palette-library" data-path-label="论文图像到配色库" title="路径提示：定位到跨文件配色库和整体替换布局预览，不会立即改色"><span class="button-icon" aria-hidden="true">&#9632;</span><span>配色</span></button>
+        </div>
+      </details>
+    </section>
+
+    <section class="command-bar">
+      <label class="search-box" title="按形状名、关键词、素材或插件功能搜索">
+        <span aria-hidden="true">&#8981;</span>
+        <input id="search" type="search" placeholder="搜索形状、预设、素材、命令" title="输入中文、英文、PowerPoint 枚举名、论文图预设或功能关键词，例如重绘、填充、模板、素材">
+      </label>
+      <div id="searchScope" class="search-scope" role="group" aria-label="搜索范围" title="切换搜索范围，避免功能命令、形状和素材混在一起">
+        <button id="searchScopeAll" type="button" data-search-scope="all" aria-pressed="true" title="在功能、形状、预设和素材中同时搜索">全部</button>
+        <button id="searchScopeShapes" type="button" data-search-scope="shape" aria-pressed="false" title="只搜索 PPT 原生形状手绘版">形状</button>
+        <button id="searchScopeCommands" type="button" data-search-scope="command" aria-pressed="false" title="只搜索插件功能命令，例如重绘、转换、模板、素材">功能</button>
+        <button id="searchScopePresets" type="button" data-search-scope="preset" aria-pressed="false" title="只搜索论文图结构预设卡片">预设</button>
+        <button id="searchScopeCharts" type="button" data-search-scope="chart" aria-pressed="false" title="只搜索已导入的科研绘图数据和 ZLK 实验结果">数据</button>
+        <button id="searchScopeAssets" type="button" data-search-scope="asset" aria-pressed="false" title="只搜索我的素材库">素材</button>
+      </div>
+      <select id="sortMode" aria-label="形状排序" title="选择形状结果的排序方式；功能和素材搜索不使用此排序">
+        <option value="smart">常用优先</option>
+        <option value="favorites">收藏优先</option>
+        <option value="recent">最近优先</option>
+        <option value="az">字母顺序</option>
+      </select>
+    </section>
+
+
+
+    <section id="searchSuggestions" class="search-suggestions panel" data-search-suggestions hidden aria-label="搜索提示" title="常用搜索关键词提示"></section>
+
+    <section id="commandResults" class="command-results panel" hidden title="显示匹配当前搜索词的插件功能命令，点击后定位到对应功能区"></section>
+    <section id="searchEmptyState" class="search-empty panel" data-search-empty hidden title="搜索没有结果时显示当前范围和可尝试的关键词"></section>
+
+    <section class="selection-panel panel" data-collapsible="true" data-collapse-key="selection" data-panel-order="1" data-collapse-title="当前选区">
+      <header class="panel-head">
+        <strong title="显示当前 PowerPoint 选区是否为手绘原生组">当前选区</strong>
+        <span class="panel-head-actions">
+          <span id="selectionBadge" class="badge" title="当前选区检测结果">未检测</span>
+          <button class="collapse-toggle" type="button" title="收起或展开当前选区功能区" aria-expanded="true">收起</button>
+        </span>
+      </header>
+      <div id="selectionState" class="selection-state" tabindex="0" title="选中手绘原生组后会显示尺寸、元数据和可重绘状态；高频选区命令位于 PowerPoint Ribbon">选中手绘对象后可回填参数并实时重绘。</div>
+      <div id="selectionNextStep" class="selection-next-step" data-command-owner="ribbon" title="根据当前 PowerPoint 选区推荐下一步主操作">
+        <span class="selection-next-icon" aria-hidden="true">&#8250;</span>
+        <span class="selection-next-copy">
+          <strong data-selection-next-title>下一步</strong>
+          <small data-selection-next-detail>根据当前选区显示推荐操作</small>
+        </span>
+        <button id="selectionNextAction" type="button" title="执行或定位当前推荐的下一步操作">执行</button>
+      </div>
+      <div id="selectionEmptyActions" class="selection-empty-actions" data-command-owner="ribbon" title="无选区时的安全下一步入口">
+        <button id="emptyInsertShape" class="primary-action" type="button" data-starter-action="catalog" title="打开形状图库，先插入一个 PPT 原生手绘形状"><span aria-hidden="true">&#9638;</span>插入形状</button>
+        <button id="emptyStyleHelp" type="button" data-starter-action="style" title="先定位风格参数，设置线宽、粗糙度和填充"><span aria-hidden="true">&#9881;</span>调风格</button>
+        <button id="emptySearchHelp" type="button" data-starter-action="search" title="聚焦功能搜索，查找转换、填充、模板或素材等功能"><span aria-hidden="true">&#8981;</span>搜索功能</button>
+      </div>
+      <div class="quick-actions" data-command-owner="ribbon">
+        <button id="convertSelection" class="primary-action" type="button" title="把当前选中的一个或多个 PowerPoint 原生形状替换为 Rough.js 手绘视觉的 PPT 原生可编辑对象；已生成的手绘组会自动跳过"><span aria-hidden="true">&#9998;</span>转换</button>
+        <button id="refreshSelection" class="primary-action" type="button" title="按当前 PPT 尺寸、调整点和风格重新生成手绘边界"><span aria-hidden="true">&#8635;</span>重绘选区</button>
+        <button id="inspectSelection" type="button" title="查看当前选区的手绘元数据、图层角色和原生对象状态"><span aria-hidden="true">&#9432;</span>检查</button>
+        <button id="saveSelection" type="button" title="把当前选中的 PPT 原生对象保存到我的素材库"><span aria-hidden="true">&#9636;</span>保存</button>
+        <button id="selectCarrier" type="button" title="选中组内隐藏的 PPT 原生载体，调整圆角、箭头等 PowerPoint 原生调整点后点击“重绘选区”"><span aria-hidden="true">&#9673;</span>载体</button>
+      </div>
+    </section>
+
+    <section id="params" class="params panel" data-collapsible="true" data-collapse-key="style" data-panel-order="2" data-collapse-title="风格">
+      <header class="panel-head">
+        <strong title="控制手绘视觉参数，参数会实时应用到选中的手绘原生组">风格</strong>
+        <span class="panel-head-actions">
+          <span class="badge" title="当前算法为 Rough.js，最终对象仍是 PPT 原生可编辑对象">手绘风格</span>
+          <button class="collapse-toggle" type="button" title="收起或展开风格参数功能区" aria-expanded="true">收起</button>
+        </span>
+      </header>
+      <div class="style-template-bar" title="选择、保存或重命名手绘风格参数模板">
+        <label title="选择预置或自定义风格模板">风格模板
+          <select id="styleTemplateSelect" title="选择后可应用到当前风格参数，预置模板不会被覆盖"></select>
+        </label>
+        <button id="applyStyleTemplate" type="button" title="把当前选中的风格模板应用到面板参数和选中对象"><span aria-hidden="true">&#10003;</span>应用</button>
+        <button id="redrawFromStyle" class="primary-action style-redraw-cta" data-command-owner="ribbon" type="button" title="按当前风格面板参数立即重绘当前选中的手绘原生组；不会插入新对象"><span aria-hidden="true">&#8635;</span>重绘选区</button>
+        <details id="styleTemplateTools" class="style-template-tools" title="展开保存和重命名等低频模板管理操作">
+          <summary title="展开或收起模板管理操作">模板管理</summary>
+          <div class="style-template-tool-actions">
+            <button id="saveStyleTemplate" type="button" title="把当前风格参数保存为新的自定义模板"><span aria-hidden="true">&#9636;</span><span data-style-template-save-label>保存模板</span></button>
+            <button id="renameStyleTemplate" type="button" title="重命名当前自定义风格模板；预置模板不能重命名"><span aria-hidden="true">&#9998;</span>重命名</button>
+          </div>
+        </details>
+      </div>
+      <div id="styleTemplatePreview" class="style-template-preview" data-style-template-preview title="点击预览卡可应用对应风格模板，预览只用于界面提示，不生成图片或 SVG 内容"></div>
+      <div class="style-quick-strip" data-command-owner="ribbon" role="group" aria-label="常用样式快捷操作" title="常用样式快捷操作已移至 PowerPoint Ribbon；右侧保留完整参数">
+        <button type="button" data-style-quick="paper" title="应用论文框图默认样式模板"><span aria-hidden="true">&#9733;</span><span>论文</span></button>
+        <button type="button" data-style-quick="whiteFill" title="填充设为白色不透明，适合普通论文节点"><span aria-hidden="true">&#9632;</span><span>白填充</span></button>
+        <button type="button" data-style-quick="noFill" title="关闭填充，适合分组框和辅助边界"><span aria-hidden="true">&#9633;</span><span>无填充</span></button>
+        <button type="button" data-style-quick="brushFill" title="启用宽刷涂刷填充，可在下方继续调整刷宽、密度和重合度"><span aria-hidden="true">&#9682;</span><span>涂刷</span></button>
+        <button type="button" data-style-quick="blackStroke" title="线条设为纯黑不透明"><span aria-hidden="true">&#9473;</span><span>黑线</span></button>
+        <button type="button" data-style-quick="blueStroke" title="线条设为蓝色不透明"><span aria-hidden="true">&#9473;</span><span>蓝线</span></button>
+        <button type="button" data-style-quick="boldLine" title="线条宽度设为 4 磅"><span aria-hidden="true">&#9473;</span><span>粗线</span></button>
+        <button type="button" data-style-quick="dashLine" title="线条设为虚线"><span aria-hidden="true">&#9476;</span><span>虚线</span></button>
+        <button type="button" data-style-quick="endArrow" title="启用末尾箭头，适合流程连接线"><span aria-hidden="true">&#8594;</span><span>末箭头</span></button>
+      </div>
+      <div class="style-param-jump" role="group" aria-label="风格参数分组导航" title="快速展开并定位到对应风格参数组，减少在长参数列表中滚动查找">
+        <button type="button" data-param-group-jump="常用" title="定位常用参数：线宽、粗糙度、弯曲度、颜色和填充"><span aria-hidden="true">&#9733;</span><span>常用</span></button>
+        <button type="button" data-param-group-jump="边界" title="定位边界参数：扰动、偏移、采样、来源和随机种子"><span aria-hidden="true">&#8767;</span><span>边界</span></button>
+        <button type="button" data-param-group-jump="填充纹理" title="定位填充纹理参数：填充来源、透明度、纹理线宽、宽刷涂刷"><span aria-hidden="true">&#9682;</span><span>填充</span></button>
+        <button type="button" data-param-group-jump="嵌套" title="定位嵌套参数：模式、层数、重合度、错位距离和方向"><span aria-hidden="true">&#9635;</span><span>嵌套</span></button>
+        <button type="button" data-param-group-jump="线条" title="定位线条参数：透明度、虚线、箭头和多笔画"><span aria-hidden="true">&#8594;</span><span>线条</span></button>
+      </div>
+      <div class="params-grid">
+        <label title="设置内层边界线宽，单位为 PowerPoint 磅">线宽 <input name="strokeWidthPt" type="range" min="1" max="8" step="0.5" value="2" title="拖动调整线条粗细，重绘后保留 PPT 原生线宽语义"></label>
+        <label title="设置手绘粗糙度，参数来自 Rough.js，数值越大线条越抖动">粗糙度 <input name="roughness" type="range" min="0.2" max="4" step="0.1" value="0.8" title="控制手绘抖动强度"></label>
+        <label title="设置手绘弯曲度，参数来自 Rough.js，数值越大直线越有自然弯曲">弯曲度 <input name="bowing" type="range" min="0" max="4" step="0.05" value="0.35" title="控制直线和边界的自然弯曲程度"></label>
+        <label title="设置边界额外扰动，数值越大边缘越有手绘偏移">边缘扰动 <input name="edgeJitterPt" type="range" min="0.2" max="4" step="0.1" value="1.35" title="控制最终可见边界的额外偏移，单位为 PowerPoint 磅"></label>
+        <label title="设置 Rough.js 最大随机偏移，数值越大草稿线条越散">随机偏移 <input name="maxRandomnessOffset" type="range" min="0.2" max="4" step="0.1" value="1.35" title="控制 Rough.js 最大随机偏移"></label>
+        <label title="设置边界重复笔画数量，数值越大手绘线条越厚重">边界笔画 <input name="strokePasses" type="number" min="1" max="4" step="1" value="1" title="控制可见边界重复笔画数量"></label>
+        <label title="设置曲线和长边采样密度，数值越大细节越多但对象节点更多">采样密度 <input name="curveSampling" type="range" min="0.5" max="2.5" step="0.1" value="1" title="控制曲线和长边上的手绘控制点数量"></label>
+        <label title="设置短笔画碎线强度，数值越大每条边会叠加更多短小手绘笔画；这些笔画不参与填充">短笔画 <input name="fragmentStrokeDensity" type="range" min="0" max="3" step="0.1" value="0" title="控制边缘短笔画叠加数量，填充仍由主边界精确承载"></label>
+        <label title="选择手绘边界的生成引擎；Rough.js 引擎会保留来源库原始笔画，普通引擎使用本插件的可编辑扰动边界">边界引擎
+          <select name="roughEngine" title="选择边界生成引擎，通常随边界来源自动切换">
+            <option value="nativeWarp">插件原生扰动</option>
+            <option value="roughJs">本机 Rough.js</option>
+          </select>
+        </label>
+        <label title="选择边界视觉来源；填充来源可在后续控件中独立混用">边界来源
+          <select name="roughSource" title="选择可见边界来源，修改后会自动选择合适的边界引擎">
+            <option value="native">插件默认</option>
+            <option value="roughjs">原版 Rough.js</option>
+            <option value="excalidraw">手绘 Excalidraw</option>
+            <option value="drawio">手绘 draw.io</option>
+            <option value="d2">草图 D2</option>
+            <option value="tldraw">手绘 tldraw</option>
+          </select>
+        </label>
+        <label title="选择普通手绘或嵌套手绘；嵌套模式会生成多层等尺寸错位边界，填充只作用于交集区域">风格模式
+          <select name="roughMode" title="普通模式保持当前 Rough.js 边界；嵌套模式复刻多层等尺寸错位手绘边界">
+            <option value="classic">普通手绘</option>
+            <option value="nested">嵌套手绘</option>
+          </select>
+        </label>
+        <label class="nested-param" title="嵌套模式下可见边界层数；关闭嵌套模式时禁用">嵌套层数 <input name="nestedLayers" data-nested-param="true" type="number" min="2" max="5" step="1" value="2" title="控制嵌套手绘边界的层数"></label>
+        <label class="nested-param" title="嵌套模式下相邻边界的重合程度；数值越大，多层等尺寸边界越贴近">重合度 <input name="nestedOverlap" data-nested-param="true" type="range" min="0" max="1" step="0.05" value="0.55" title="控制多层边界的贴近程度，1 表示几乎重合"></label>
+        <label class="nested-param" title="嵌套模式下基础错位距离，单位为 PowerPoint 磅；不会缩放形状大小">错位距离 <input name="nestedGapPt" data-nested-param="true" type="range" min="1" max="12" step="0.5" value="4" title="控制每层等尺寸嵌套边界的错位距离"></label>
+        <label class="nested-param" title="嵌套模式下每一层之间的额外扰动差异；数值越大层间越不完全重合">层间扰动 <input name="nestedJitterPt" data-nested-param="true" type="range" min="0" max="3" step="0.1" value="0.8" title="控制嵌套边界之间的轻微错位"></label>
+        <label class="nested-param" title="嵌套模式下等尺寸边界的错位方向；关闭嵌套模式时禁用">错位方向
+          <select name="nestedDirection" data-nested-param="true" title="选择多层等尺寸边界沿左下到右上或左上到右下错位">
+            <option value="leftDownToRightUp">左下到右上</option>
+            <option value="leftUpToRightDown">左上到右下</option>
+          </select>
+        </label>
+        <label class="color-field" title="设置内层边界线颜色，外层扰动只同步视觉不作为样式源">线条颜色 <input name="stroke" type="color" value="#111111" title="选择手绘边界线颜色"></label>
+        <label title="设置内层边界线透明度，0 为不透明，1 为完全透明">线条透明 <input name="strokeTransparency" type="range" min="0" max="1" step="0.05" value="0" title="拖动调整线条透明度"></label>
+        <label title="设置手绘随机种子；相同尺寸和参数下种子相同则视觉稳定">随机种子 <input name="seed" type="number" value="12345" title="修改种子可生成另一组手绘扰动"></label>
+        <label title="选择填充纹理来源；可与边界来源不同，例如 Rough.js 边界搭配 Excalidraw 填充">填充来源
+          <select name="fillSource" title="选择填充纹理的来源，自动表示跟随当前边界来源">
+            <option value="auto">跟随边界</option>
+            <option value="roughjs">原版 Rough.js</option>
+            <option value="excalidraw">手绘 Excalidraw</option>
+            <option value="drawio">手绘 draw.io</option>
+            <option value="d2">草图 D2</option>
+            <option value="tldraw">手绘 tldraw</option>
+            <option value="brush">宽刷涂刷</option>
+            <option value="native">无来源纹理</option>
+          </select>
+        </label>
+        <label title="控制 PPT 原生内层填充对象是否启用填充">填充模式
+          <select name="fillMode" title="选择内层填充区域的 PowerPoint 原生填充模式">
+            <option value="none">无填充</option>
+            <option value="solid">纯色填充</option>
+          </select>
+        </label>
+        <label class="color-field" title="设置内层手绘闭合边界的 PPT 原生填充颜色">填充颜色 <input name="fillColor" type="color" value="#ffffff" title="选择内层填充颜色"></label>
+        <label title="设置内层填充透明度，0 为不透明，1 为完全透明">填充透明 <input name="fillTransparency" type="range" min="0" max="1" step="0.05" value="0" title="拖动调整填充透明度"></label>
+        <label title="设置手绘填充纹理；纹理线是视觉层，PPT 原生填充仍以内层填充对象为准">填充纹理
+          <select name="fillStyle" title="选择手绘纹理线类型；涂刷纹理只作视觉层，不参与填充边界">
+            <option value="none">无纹理</option>
+            <option value="hachure">斜线纹理</option>
+            <option value="cross-hatch">交叉纹理</option>
+            <option value="zigzag">锯齿纹理</option>
+            <option value="dots">点状纹理</option>
+            <option value="dashed">短划纹理</option>
+            <option value="zigzag-line">折线纹理</option>
+            <option value="solid">来源实填充</option>
+            <option value="brush">涂刷纹理</option>
+          </select>
+        </label>
+        <label title="设置 Rough.js 类填充纹理线宽；-1 表示使用来源默认值">纹理线宽 <input name="fillWeight" type="number" min="-1" max="12" step="0.25" value="-1" title="控制斜线、交叉线等纹理线宽，-1 表示来源默认"></label>
+        <label title="设置 Rough.js 类填充纹理间距；-1 表示使用来源默认值">纹理间距 <input name="hachureGap" type="number" min="-1" max="40" step="1" value="-1" title="控制斜线和交叉纹理间距，-1 表示来源默认"></label>
+        <label title="设置 Rough.js 曲线拟合参数，主要影响来源库路径和填充纹理">曲线拟合 <input name="curveFitting" type="range" min="0.5" max="1" step="0.05" value="0.95" title="控制 Rough.js 类路径简化和曲线拟合程度"></label>
+        <label title="设置自研宽刷涂刷纹理线宽，单位为 PowerPoint 磅">刷子宽度 <input name="brushWidthPt" type="number" min="1" max="24" step="0.5" value="5" title="控制宽刷涂刷纹理的单笔宽度"></label>
+        <label title="设置自研宽刷涂刷密度，数值越大涂刷笔画越多">刷子密度 <input name="brushDensity" type="range" min="0.3" max="2.5" step="0.1" value="1" title="控制涂刷纹理覆盖密度"></label>
+        <label title="设置自研宽刷涂刷主方向角度，单位为度">刷子角度 <input name="brushAngleDeg" type="number" min="-90" max="90" step="1" value="-8" title="控制涂刷纹理的主方向角度"></label>
+        <label title="设置自研宽刷涂刷的随机抖动幅度">刷子抖动 <input name="brushJitterPt" type="range" min="0" max="4" step="0.1" value="1.2" title="控制每条刷痕的位置和端点随机变化"></label>
+        <label title="设置相邻刷痕的重叠程度，数值越大越像多次覆盖涂刷">刷痕重合 <input name="brushOverlap" type="range" min="0" max="0.9" step="0.05" value="0.35" title="控制宽刷涂刷笔画之间的重合度"></label>
+        <label title="设置内层边界线的虚线样式，重绘时同步到 Rough 视觉层">虚线
+          <select name="dashStyle" title="选择线条虚线类型">
+            <option value="solid">实线</option>
+            <option value="dash">虚线</option>
+            <option value="dot">点线</option>
+            <option value="dash-dot">点划线</option>
+          </select>
+        </label>
+        <label title="设置线条箭头外观；拉长或旋转后会重新生成自然扰动">箭头
+          <select name="arrowheadStyle" title="选择手绘线条箭头样式">
+            <option value="rough">手绘箭头</option>
+            <option value="none">无箭头</option>
+            <option value="triangle">三角箭头</option>
+            <option value="open">开放箭头</option>
+            <option value="stealth">锐角箭头</option>
+          </select>
+        </label>
+        <label title="设置直线箭头加在起点、终点或两端；仅对直线箭头类对象生效">箭头位置
+          <select name="arrowheadPosition" title="选择箭头加在起点、终点或两端">
+            <option value="end">末尾</option>
+            <option value="start">起始</option>
+            <option value="both">两端</option>
+          </select>
+        </label>
+        <label title="设置手绘箭头三角形沿线方向的长度，单位为 PowerPoint 磅；仅对手绘箭头生效">箭头长度 <input name="arrowheadLengthPt" type="range" min="4" max="40" step="1" value="14" title="单独调整箭头三角形长度"></label>
+        <label title="设置手绘箭头三角形的垂直宽度，单位为 PowerPoint 磅；仅对手绘箭头生效">箭头宽度 <input name="arrowheadWidthPt" type="range" min="4" max="32" step="1" value="10" title="单独调整箭头三角形宽度"></label>
+        <label title="设置 tldraw 边界的额外偏移，单位为 PowerPoint 磅；仅在手绘 tldraw 边界来源下显示">tldraw 偏移 <input name="tldrawOffsetPt" type="range" min="0" max="4" step="0.05" value="0.67" title="控制手绘 tldraw 边界相对原始轮廓的偏移距离"></label>
+      </div>
+    </section>
+
+    <section class="paper-preset-panel panel" data-collapsible="true" data-collapse-key="paperPresets" data-panel-order="5" data-collapse-title="论文图预设" title="插入智能模型、大模型、图文多模态和医学诊断论文图的通用结构预设；全部为 PPT 原生可编辑对象">
+      <header class="panel-head">
+        <strong title="通用论文图结构预设，覆盖智能模型、多模态、医学图像报告、表格、分类和诊断">论文图预设</strong>
+        <span class="panel-head-actions">
+          <span id="paperPresetCount" class="badge" title="当前显示的论文图预设数量"></span>
+          <button class="collapse-toggle" type="button" title="收起或展开论文图预设功能区" aria-expanded="true">收起</button>
+        </span>
+      </header>
+      <div id="paperPresetFilters" class="paper-preset-filters" role="toolbar" aria-label="论文图预设分类筛选" title="按论文图结构类型筛选预设；只改变右侧卡片显示，不会插入或修改 PPT"></div>
+      <div id="paperPresetGrid" class="paper-preset-grid" tabindex="0" title="点击卡片会插入 PPT 原生可编辑组合图；卡片只是界面预览，不作为幻灯片图片内容"></div>
+    </section>
+
+    <section class="chart-import-panel panel" data-collapsible="true" data-collapse-key="charts" data-panel-order="3" data-collapse-title="科研绘图" title="工作流：导入结果，选择推荐图表，再插入 PPT 原生可编辑图表">
+      <header class="panel-head">
+        <strong title="工作流：导入结果，选择推荐图表，再插入 PPT 原生可编辑图表">科研绘图</strong>
+        <span class="panel-head-actions">
+          <span id="zlkChartSummary" class="badge" title="当前导入的数据集、可绘图点和推荐图表数量">未导入</span>
+          <button class="collapse-toggle" type="button" title="收起或展开科研绘图功能区" aria-expanded="true">收起</button>
+        </span>
+      </header>
+      <div class="chart-import-layout" data-chart-layout="data-center" title="数据中心布局：上方导入，中间说明支持范围，下方展示可绘图数据和图表建议">
+        <div class="chart-import-hero" title="科研绘图数据中心只在本机读取用户选择的文件，不依赖网络">
+          <div class="chart-import-copy">
+            <ol class="chart-import-steps" aria-label="科研绘图三步流程" title="先读取本机结果，再选择图表，最后插入 PPT 原生可编辑对象">
+              <li class="current" title="从本机选择实验结果、论文表格或工作目录指标"><span aria-hidden="true">1</span><strong>导入数据</strong></li>
+              <li title="根据字段选择自动推荐的科研图表"><span aria-hidden="true">2</span><strong>选择图表</strong></li>
+              <li title="确认后插入 PPT 原生可编辑图表"><span aria-hidden="true">3</span><strong>插入 PPT</strong></li>
+            </ol>
+          </div>
+          <div class="chart-import-actions" role="group" aria-label="科研绘图导入操作" title="选择 ZLK 集群输出文件或目录，全部在本机浏览器内读取，不会上传网络">
+            <input id="zlkChartFiles" type="file" multiple accept=".json,.csv,.tex,.md" title="选择 ZLK 结果 JSON、CSV、Markdown 摘要或 LaTeX 表格文件；超大文件会被跳过" hidden>
+            <input id="zlkChartFolder" type="file" multiple webkitdirectory directory title="选择包含 zlk_cluster、paper、experiments 或 work_dirs 的结果文件夹" hidden>
+            <button id="zlkChartImport" class="primary-action" type="button" title="选择结果文件并自动识别图表数据"><span aria-hidden="true">&#9637;</span>导入文件</button>
+            <button id="zlkChartFolderButton" type="button" title="选择整个实验结果文件夹，自动识别支持路径内的 JSON、CSV 和 LaTeX 表格"><span aria-hidden="true">&#9638;</span>导入文件夹</button>
+            <button id="zlkChartClear" type="button" title="清空当前导入预览，不删除本机任何文件"><span aria-hidden="true">&#10005;</span>清空</button>
+          </div>
+        </div>
+        <div class="chart-support-grid" title="支持格式、字段识别和推荐图表类型概览">
+          <section title="支持 ZLK 集群实验插件输出的 results 目录">
+            <strong>结果契约</strong>
+            <span>聚合字段：结果摘要、结果注册表、统计摘要、质量门禁和病例数据</span>
+          </section>
+          <section title="支持论文表格、实验 CSV 和 work_dirs 下的指标文件">
+            <strong>表格来源</strong>
+            <span>常见目录：paper/tables、experiments/results、work_dirs</span>
+          </section>
+          <section title="自动识别 method、metric、mean、std、pValue、case_id、subgroup、error_type 等字段">
+            <strong>字段识别</strong>
+            <span>方法、指标、均值、显著性、病例、亚组、错误类型</span>
+          </section>
+          <section title="根据字段推荐排行榜、误差棒、敏感性曲线、亚组对比、病例分布和错误汇总">
+            <strong>图表建议</strong>
+            <span>排行榜、误差棒、敏感性、亚组、分布、错误汇总</span>
+          </section>
+        </div>
+      </div>
+      <details id="chartPresetShell" class="chart-preset-shell" title="常见科研图类型与预览：可先查看示意，再导入自己的数据绘制">
+        <summary class="chart-preset-head" title="展开或收起科研图类型、用途说明和示意预览">
+          <strong title="预置常见科研曲线、散点、柱状和误差图参数，便于快速选型">图表类型与预览</strong>
+          <span class="badge chart-preset-disclosure-state" title="预设只提供参数与示意预览，最终插入仍是 PPT 原生可编辑对象"><span data-chart-preset-closed>展开选择</span><span data-chart-preset-open>收起预览</span></span>
+        </summary>
+        <div id="chartPresetStrip" class="chart-preset-strip" role="listbox" aria-label="科研图预设" title="点击预设查看用途说明和示意预览；导入数据后可按同类图绘制"></div>
+        <div id="chartPresetPreview" class="chart-preset-preview" title="根据当前预设和已导入数据生成的示意预览，不会写入幻灯片"></div>
+      </details>
+      <div id="zlkAutomationStatus" class="zlk-automation-status" title="显示 ZLK 集群插件通过 127.0.0.1 自动调用 PowerPoint 绘图的最近状态">等待外部自动绘图请求。</div>
+      <div id="zlkChartResults" class="chart-import-results" tabindex="0" title="导入后显示每个数据集的识别格式、点数、字段、错误提示和推荐图表"></div>
+    </section>
+
+    <section class="zotero-image-panel panel" data-collapsible="true" data-collapse-key="zoteroImages" data-panel-order="6" data-collapse-title="论文图像与配色库" title="从 Zotero PDF 图片保存插件的本机共享 SQLite 图片库读取参考图像和配色；这里只插入明确选中的参考图像，不改变 Rough 原生图形规则">
+      <header class="panel-head">
+        <strong title="预览 Zotero 保存的论文图片、复用配色，并可反向打开来源 PDF 或定位条目">论文图像与配色库</strong>
+        <span class="panel-head-actions">
+          <span id="zoteroImageSummary" class="badge" title="当前论文图像库读取状态和匹配数量">未读取</span>
+          <button class="collapse-toggle" type="button" title="收起或展开论文图像和配色功能区" aria-expanded="true">收起</button>
+        </span>
+      </header>
+      <div class="zotero-library-toolbar" title="搜索本机共享 SQLite 中的标题、年份、DOI、页码、样式标签和色系">
+        <label class="zotero-search-box" title="输入标题、年份、DOI、页码、样式标签、色系或 HEX 颜色搜索论文图像">
+          <span aria-hidden="true">&#8981;</span>
+          <input id="zoteroImageSearch" type="search" placeholder="搜索论文图像、样式、色系" title="搜索 Zotero 共享图片库：标题、年份、DOI、页码、样式标签、色系、HEX">
+        </label>
+        <button id="zoteroImageReload" type="button" title="重新只读扫描 Zotero PDF 图片保存插件的共享 SQLite 主库"><span aria-hidden="true">&#8635;</span>读取</button>
+      </div>
+      <div id="zoteroImageStatus" class="zotero-image-status" title="显示共享数据库路径、缺失提示、连接回退和最近操作状态">等待读取本机论文图像库。</div>
+      <div class="zotero-palette-shell" title="主题色式配色网格：横向是不同主色，纵向是同一色系的浅色、基准色和深色变化">
+        <header>
+          <strong title="点击色块默认设为填充；右键或菜单可复制 HEX、设为描边、填充或特征块渐变起止色">配色</strong>
+          <span title="每个基准色生成 80% 浅色、60% 浅色、35% 浅色、基准色、20% 深色、40% 深色和 60% 深色">7 阶</span>
+        </header>
+        <div id="zoteroPaletteGrid" class="zotero-palette-grid" tabindex="0" title="Zotero 论文图像配色网格，色块悬浮显示 HEX、来源标题和角色"></div>
+        <details id="paletteToolsDetails" class="palette-tools-details" title="展开取色、导入导出和刷新等配色工具；默认可收起以降低密度">
+          <summary title="展开或收起配色工具">配色工具<span class="quickfind-hint">取色 / 导入 / 分享</span></summary>
+          <div id="paletteLibraryToolbar" class="palette-library-toolbar" title="跨 PPT 文件保存、分享和导入配色方案，也可使用 PPT 内置主题配色">
+          <button id="saveZoteroPalette" type="button" title="把当前 Zotero 搜索结果中的论文图像配色保存到跨文件配色库"><span aria-hidden="true">&#9635;</span>保存论文配色</button>
+          <button id="extractClipboardPalette" type="button" title="从剪贴板图片自动提取主色并保存为配色方案"><span aria-hidden="true">&#9638;</span>剪贴板取色</button>
+          <button id="extractSlidePalette" type="button" title="导出当前 PPT 页面预览并自动提取主色保存为配色方案"><span aria-hidden="true">&#9637;</span>页面取色</button>
+          <button id="importPalettes" type="button" title="从安全 zip 配色分享包导入跨文件可用的配色方案"><span aria-hidden="true">&#8681;</span>导入配色</button>
+          <button id="exportPalettes" type="button" title="把勾选配色导出为体积受控的 zip 分享包；未勾选时导出当前筛选结果"><span aria-hidden="true">&#8679;</span>分享配色</button>
+          <button id="reloadPalettes" type="button" title="重新读取 PPT 内置主题配色和本机保存的配色库"><span aria-hidden="true">&#8635;</span>刷新配色</button>
+        </div>
+        </details>
+        <div id="paletteLibraryHead" class="palette-library-head">
+          <strong title="配色方案支持跨文件保存；PPT 内置主题方案只读显示，用户保存方案可分享导入">配色库</strong>
+          <span id="paletteLibrarySummary" class="badge" title="当前配色库数量和已勾选数量">未读取</span>
+        </div>
+        <div id="paletteSchemeGrid" class="palette-scheme-grid" tabindex="0" title="每个配色方案下展示不同整体替换布局预览，点击布局即可应用到 Rough 风格、PPT 选区和特征块渐变"></div>
+      </div>
+        <div id="zoteroImageGrid" class="zotero-image-grid" tabindex="0" title="论文图像缩略图列表；可插入参考图、打开 PDF、定位条目或复制溯源编号"></div>
+      <div id="zoteroSwatchContextMenu" class="zotero-swatch-menu" hidden role="menu" title="色块菜单：复制 HEX、设为描边、设为填充、设为渐变起点或终点"></div>
+    </section>
+
+    <section class="feature-block-panel panel" title="快速绘制论文图中常见的 2D 或 3D 特征块堆叠，输出为 PPT 原生可编辑对象" data-collapsible="true" data-collapse-key="featureBlock" data-panel-order="7" data-collapse-title="特征块">
+      <header class="panel-head">
+        <strong title="配置并插入由 PPT 原生形状组成的特征块">特征块</strong>
+        <span class="panel-head-actions">
+          <span id="featureBlockSummary" class="badge" title="当前特征块模式和数量">三维 3×3×3</span>
+          <button class="collapse-toggle" type="button" title="收起或展开特征块功能区" aria-expanded="true">收起</button>
+        </span>
+      </header>
+      <div class="feature-grid">
+        <label title="选择二维特征图或三维特征块堆叠">模式
+          <select name="featureMode" data-feature-param="mode" title="二维模式生成平面方块网格，三维模式生成论文特征图常用立方体堆叠">
+            <option value="3d">三维堆叠</option>
+            <option value="2d">二维网格</option>
+          </select>
+        </label>
+        <label title="选择普通干净边缘或轻微手绘线条效果">视觉
+          <select name="featureVisualStyle" data-feature-param="visualStyle" title="普通适合正式论文图，手绘会使用轻微不规则边界表达手绘感">
+            <option value="plain">普通</option>
+            <option value="rough">手绘</option>
+          </select>
+        </label>
+        <label title="水平方向方块数量，可理解为向左或向右增减">横向数量 X <input name="featureCountX" data-feature-param="countX" type="number" min="1" max="32" step="1" value="3" title="调整左右方向的方块数量"></label>
+        <label title="垂直方向方块数量，可理解为向上或向下增减">纵向数量 Y <input name="featureCountY" data-feature-param="countY" type="number" min="1" max="24" step="1" value="3" title="调整上下方向的方块数量"></label>
+        <label data-feature-scope="3d" title="深度方向方块层数，可理解为向前或向后增减">深度层数 Z <input name="featureCountZ" data-feature-param="countZ" type="number" min="1" max="16" step="1" value="3" title="调整前后方向的方块层数；二维模式会自动隐藏此控件"></label>
+        <label title="单个方块宽度，单位为 PowerPoint 磅">块宽 <input name="featureBlockWidthPt" data-feature-param="blockWidthPt" type="number" min="6" max="80" step="1" value="24" title="设置单个方块宽度"></label>
+        <label title="单个方块高度，单位为 PowerPoint 磅">块高 <input name="featureBlockHeightPt" data-feature-param="blockHeightPt" type="number" min="6" max="80" step="1" value="20" title="设置单个方块高度"></label>
+        <label data-feature-scope="3d" title="三维深度方向偏移，单位为 PowerPoint 磅">块深 <input name="featureBlockDepthPt" data-feature-param="blockDepthPt" type="number" min="2" max="48" step="1" value="12" title="设置三维立方体厚度；二维模式会自动隐藏此控件"></label>
+        <label title="方块之间的间距，0 表示紧密贴合">间距 <input name="featureGapPt" data-feature-param="gapPt" type="number" min="0" max="16" step="1" value="0" title="设置方块之间的间隔"></label>
+        <label title="二维和三维方块圆角程度；默认关闭，避免三维堆叠出现圆片式遮挡">圆角 <input name="featureRoundness" data-feature-param="roundness" type="number" min="0" max="0.5" step="0.02" value="0" title="设置方块圆角程度；三维圆角建议确认现成方案后再启用"></label>
+        <label class="color-field" title="渐变起始颜色">起始色 <input name="featureStartColor" data-feature-param="startColor" type="color" value="#f8b6c8" title="选择特征块渐变起始颜色"></label>
+        <label class="color-field" title="渐变结束颜色">结束色 <input name="featureEndColor" data-feature-param="endColor" type="color" value="#c97a96" title="选择特征块渐变结束颜色"></label>
+        <label class="color-field" title="方块边线颜色，默认纯黑">边线色 <input name="featureStrokeColor" data-feature-param="strokeColor" type="color" value="#000000" title="选择方块边线颜色，默认纯黑"></label>
+        <label title="方块边线粗细，单位为 PowerPoint 磅">边线宽 <input name="featureStrokeWidthPt" data-feature-param="strokeWidthPt" type="number" min="0.25" max="6" step="0.25" value="0.8" title="设置方块边线粗细"></label>
+        <label title="选择颜色渐变方向">渐变方向
+          <select name="featureGradientDirection" data-feature-param="gradientDirection" title="选择颜色沿哪个方向变化">
+            <option value="x">左右</option>
+            <option value="y">上下</option>
+            <option value="z">前后</option>
+            <option value="diag">对角</option>
+          </select>
+        </label>
+        <label title="对调当前渐变方向的起止颜色">渐变反向 <input name="featureGradientReverse" data-feature-param="gradientReverse" type="checkbox" title="勾选后沿当前渐变方向反向应用起始色和结束色"></label>
+        <label title="控制渐变变化程度，数值越大越集中到结束色">渐变程度 <input name="featureGradientAmount" data-feature-param="gradientAmount" type="number" min="0.1" max="4" step="0.1" value="1" title="设置渐变变化程度"></label>
+      </div>
+      <div id="featureDirectionGuide" class="feature-direction-guide" data-feature-direction-guide title="显示特征块当前尺寸和最近一次增删方向">
+        <div class="feature-direction-map" aria-hidden="true">
+          <span data-guide-dir="up">上</span>
+          <span data-guide-dir="front" data-feature-scope="3d">前</span>
+          <span data-guide-dir="back" data-feature-scope="3d">后</span>
+          <span data-guide-dir="left">左</span>
+          <strong data-guide-center>尺寸 3×3×3</strong>
+          <span data-guide-dir="right">右</span>
+          <span data-guide-dir="down">下</span>
+        </div>
+        <div class="feature-direction-meta">
+          <span data-feature-size title="当前特征块尺寸">3×3×3</span>
+          <span data-feature-last title="最近一次方向编辑">未选择方向</span>
+        </div>
+      </div>
+      <div class="feature-actions">
+        <details id="featureDirectionTools" class="feature-direction-tools" title="展开六个方向的逐行、逐列或逐层增删操作">
+          <summary title="展开或收起方向增删操作">方向增删</summary>
+          <div class="feature-direction-buttons">
+            <button data-feature-dir="left" data-feature-delta="-1" type="button" aria-label="从左侧删除一列" title="从左侧删除一列，更新选中特征块时右侧尽量保持不动"><span>左减</span></button>
+            <button data-feature-dir="left" data-feature-delta="1" type="button" aria-label="向左侧增加一列" title="向左侧增加一列，更新选中特征块时右侧尽量保持不动"><span>左加</span></button>
+            <button data-feature-dir="right" data-feature-delta="-1" type="button" aria-label="从右侧删除一列" title="从右侧删除一列，左侧位置保持不动"><span>右减</span></button>
+            <button data-feature-dir="right" data-feature-delta="1" type="button" aria-label="向右侧增加一列" title="向右侧增加一列，左侧位置保持不动"><span>右加</span></button>
+            <button data-feature-dir="up" data-feature-delta="-1" type="button" aria-label="从上方删除一行" title="从上方删除一行，更新选中特征块时下方尽量保持不动"><span>上减</span></button>
+            <button data-feature-dir="up" data-feature-delta="1" type="button" aria-label="向上方增加一行" title="向上方增加一行，更新选中特征块时下方尽量保持不动"><span>上加</span></button>
+            <button data-feature-dir="down" data-feature-delta="-1" type="button" aria-label="从下方删除一行" title="从下方删除一行，上方位置保持不动"><span>下减</span></button>
+            <button data-feature-dir="down" data-feature-delta="1" type="button" aria-label="向下方增加一行" title="向下方增加一行，上方位置保持不动"><span>下加</span></button>
+            <button data-feature-dir="front" data-feature-delta="-1" data-feature-scope="3d" type="button" aria-label="从前方删除一层" title="从前方删除一层，更新选中特征块时后方尽量保持不动"><span>前减</span></button>
+            <button data-feature-dir="front" data-feature-delta="1" data-feature-scope="3d" type="button" aria-label="向前方增加一层" title="向前方增加一层，更新选中特征块时后方尽量保持不动"><span>前加</span></button>
+            <button data-feature-dir="back" data-feature-delta="-1" data-feature-scope="3d" type="button" aria-label="从后方删除一层" title="从后方删除一层，前方位置保持不动"><span>后减</span></button>
+            <button data-feature-dir="back" data-feature-delta="1" data-feature-scope="3d" type="button" aria-label="向后方增加一层" title="向后方增加一层，前方位置保持不动"><span>后加</span></button>
+          </div>
+        </details>
+        <details id="featureDefaultTools" class="feature-default-tools" title="展开特征块默认参数管理；不会保存临时方向增删动作">
+          <summary title="展开或收起默认参数管理">默认参数</summary>
+          <div><button id="saveFeatureDefault" type="button" title="把当前特征块参数保存为本机默认值；不会保存六方向临时增删动作"><span aria-hidden="true">&#9636;</span>保存当前为默认</button></div>
+        </details>
+        <button id="insertFeatureBlock" class="primary-action" type="button" title="按当前参数插入三维 PPT 原生可编辑特征块"><span aria-hidden="true">&#9638;</span><span data-feature-primary-label>插入三维特征块</span></button>
+      </div>
+    </section>
+
+    <section class="library-panel panel" data-collapsible="true" data-collapse-key="library" data-panel-order="8" data-collapse-title="我的素材">
+      <header class="panel-head">
+        <strong class="library-title" title="显示从 PPT 选区保存的原生可编辑素材"><span class="library-icon" aria-hidden="true"></span>我的素材</strong>
+        <span class="panel-head-actions">
+          <span id="assetCount" class="badge" title="当前筛选后的素材数量"></span>
+          <button class="collapse-toggle" type="button" title="收起或展开我的素材功能区" aria-expanded="true">收起</button>
+        </span>
+      </header>
+      <div class="asset-actions">
+        <button id="reloadAssets" type="button" title="重新读取本机素材库"><span aria-hidden="true">&#8635;</span>刷新</button>
+        <button id="selectAssets" type="button" title="勾选当前筛选出的全部素材，便于只分享选中素材"><span aria-hidden="true">&#9745;</span>全选</button>
+        <button id="importAssets" type="button" title="从安全 zip 分享素材包导入 PPT 原生素材；自动按原生模板内容跳过重复项"><span aria-hidden="true">&#8681;</span>导入</button>
+        <button id="exportAssets" type="button" title="把勾选素材导出为体积受控的 zip 分享素材包；未勾选时导出当前筛选结果"><span aria-hidden="true">&#8679;</span>分享</button>
+      </div>
+      <div id="userAssets" class="asset-list" title="显示保存到本机的 PPT 原生素材，可用卡片内按钮插入、选择或删除"></div>
+    </section>
+
+    <section class="catalog-panel" title="插入窗口显示所有原生 PPT 形状的手绘版本" data-collapsible="true" data-collapse-key="catalog" data-panel-order="4" data-collapse-title="原生 PPT 形状手绘版">
+      <header class="catalog-head">
+        <strong title="显示所有 PowerPoint 原生形状的 Rough.js 版本，插入后仍是 PPT 原生可编辑对象">原生 PPT 形状手绘版</strong>
+        <span class="panel-head-actions">
+          <span id="count" title="当前筛选后的形状数量"></span>
+          <button class="collapse-toggle" type="button" title="收起或展开形状图库功能区" aria-expanded="true">收起</button>
+        </span>
+      </header>
+      <section class="gallery-shell" title="像 PowerPoint 插入形状一样展开分类图库">
+        <button id="galleryToggle" class="gallery-toggle" type="button" title="展开或收起按 PowerPoint 分类组织的手绘形状图库" aria-expanded="false">
+          <span aria-hidden="true">&#9638;</span>
+          <span>形状图库</span>
+          <span aria-hidden="true">&#9662;</span>
+        </button>
+        <div id="shapeDropdown" class="shape-dropdown" hidden title="形状图库"></div>
+      </section>
+      <section class="quick-shapes" title="固定常用形状后可在这里快速插入">
+        <header>
+          <strong title="快速插入固定的常用形状">快速插入</strong>
+          <div class="quick-shape-tools" title="点击添加后，从紧凑图标库中选择要固定到快速插入栏的形状">
+            <button id="quickAddToggle" type="button" title="打开紧凑图标库，选择要添加到快速插入栏的形状" aria-expanded="false"><span aria-hidden="true">＋</span>添加</button>
+            <button id="reloadQuickShapes" type="button" title="重新读取本机保存的快速插入形状"><span aria-hidden="true">&#8635;</span>刷新</button>
+          </div>
+        </header>
+        <div id="quickShapeDropdown" class="quick-shape-dropdown" hidden title="选择要添加到快速插入栏的形状"></div>
+        <div id="quickShapes" class="quick-shape-list" title="点击图标插入常用形状"></div>
+        <div id="quickShapeContextMenu" class="quick-shape-context-menu" hidden role="menu" title="快速插入管理菜单"></div>
+      </section>
+      <nav id="categories" class="categories" title="按 PowerPoint 原生形状分类筛选手绘形状"></nav>
+      <section id="shapeGrid" class="shape-grid" title="点击任意形状卡片即可插入 PPT 原生可编辑的手绘对象"></section>
+    </section>
+      </div>
+      <nav id="sectionNav" class="app-rail is-collapsed" aria-label="功能导航" title="完整模式功能导航，可按需展开">
+        <button id="sectionNavToggle" class="app-rail-toggle" type="button" aria-expanded="false" title="展开功能导航">功能</button>
+        <div class="app-rail-items">
+          <button type="button" data-section-nav="catalog" title="定位插入形状图库，展开 PPT 原生形状手绘版"><span aria-hidden="true">&#9638;</span><span>形状</span></button>
+          <button type="button" data-section-nav="style" title="定位风格模板、边界、填充和手绘参数"><span aria-hidden="true">&#9881;</span><span>风格</span></button>
+          <button type="button" data-section-nav="selection" title="定位当前选区状态；转换、重绘和检查命令位于 PowerPoint Ribbon"><span aria-hidden="true">&#8635;</span><span>选区</span></button>
+          <button type="button" data-section-nav="charts" title="定位科研绘图导入和图表推荐"><span aria-hidden="true">&#9637;</span><span>数据</span></button>
+          <button type="button" data-section-nav="paperPresets" title="定位智能模型、多模态、医学图像报告、表格、分类和诊断论文图预设"><span aria-hidden="true">&#9635;</span><span>预设</span></button>
+          <button type="button" data-section-nav="library" title="定位我的素材库，可插入、删除、导入或分享素材"><span aria-hidden="true">&#9636;</span><span>素材</span></button>
+          <button type="button" data-section-nav="paletteLibrary" title="定位跨文件配色库、PPT 主题配色和整体替换布局预览"><span aria-hidden="true">&#9632;</span><span>配色</span></button>
+          <button type="button" data-section-nav="featureBlock" title="定位 2D/3D 特征块工具"><span aria-hidden="true">&#9635;</span><span>特征块</span></button>
+        </div>
+      </nav>
+    </div>
+  </main>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

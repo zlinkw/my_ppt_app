@@ -1,0 +1,291 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Office.Core;
+using PowerPoint = Microsoft.Office.Interop.PowerPoint;
+using RoughPptAddin.Models;
+
+namespace RoughPptAddin.Services
+{
+    public sealed class ZlkClusterChartRenderer
+    {
+        private readonly PowerPoint.Application application;
+        private readonly RoughJsBridge bridge;
+
+        public ZlkClusterChartRenderer(PowerPoint.Application application, RoughJsBridge bridge)
+        {
+            this.application = application;
+            this.bridge = bridge;
+        }
+
+        public async Task<ZlkChartRenderResult> RenderAsync(ZlkClusterPlotRequest request, RoughStyle style)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            var projectRoot = SafeProjectRoot(request.ProjectRoot);
+            var warnings = new List<string>();
+            var datasets = new List<ChartDataset>();
+            var markdown = request.MarkdownSummary;
+
+            foreach (var source in request.SourcePaths ?? new List<string>())
+            {
+                var relative = NormalizeRelative(source);
+                if (string.IsNullOrWhiteSpace(relative)) continue;
+                var full = SafeProjectPath(projectRoot, relative);
+                if (!File.Exists(full))
+                {
+                    warnings.Add("源文件不存在：" + relative);
+                    continue;
+                }
+
+                if (relative.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                {
+                    markdown = markdown ?? new ZlkMarkdownSummary { Path = relative, Text = File.ReadAllText(full, Encoding.UTF8) };
+                    continue;
+                }
+
+                var content = File.ReadAllText(full, Encoding.UTF8);
+                var dataset = await bridge.ImportZlkClusterResultAsync(relative, content).ConfigureAwait(true);
+                if (dataset != null)
+                {
+                    datasets.Add(dataset);
+                    if (dataset.Errors != null) warnings.AddRange(dataset.Errors);
+                    if (dataset.Warnings != null) warnings.AddRange(dataset.Warnings);
+                }
+            }
+
+            if (datasets.Count == 0 && markdown == null)
+            {
+                throw new InvalidOperationException("没有可绘图的轻量结果文件。");
+            }
+
+            var presentation = EnsurePresentation(request.Target);
+            var slide = presentation.Slides.Add(presentation.Slides.Count + 1, PowerPoint.PpSlideLayout.ppLayoutBlank);
+            var slideIndex = slide.SlideIndex;
+            var shapeCount = 0;
+            var title = string.IsNullOrWhiteSpace(request.SourceLabel) ? "ZLK 实验结果" : request.SourceLabel.Trim();
+            shapeCount += AddTitle(slide, title);
+
+            var primary = datasets.FirstOrDefault(dataset => dataset.Points != null && dataset.Points.Count > 0) ?? datasets.FirstOrDefault();
+            var chart = SelectChart(primary, request.ChartType);
+            if (primary != null && primary.Points != null && primary.Points.Count > 0)
+            {
+                shapeCount += AddDatasetChart(slide, primary, chart, style ?? new RoughStyle());
+            }
+            else if (markdown != null)
+            {
+                shapeCount += AddMarkdownSummary(slide, markdown);
+            }
+
+            shapeCount += AddSourceSummary(slide, request, datasets, markdown, warnings);
+            return new ZlkChartRenderResult
+            {
+                PresentationPath = SafeFullName(presentation),
+                SlideIndex = slideIndex,
+                ShapeCount = shapeCount,
+                ChartType = chart.ChartType,
+                Warnings = warnings.Distinct().Take(20).ToList()
+            };
+        }
+
+        private PowerPoint.Presentation EnsurePresentation(ZlkPlotTarget target)
+        {
+            var presentationPath = (target?.PresentationPath ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(presentationPath))
+            {
+                presentationPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(presentationPath));
+                for (int i = 1; i <= application.Presentations.Count; i++)
+                {
+                    var open = application.Presentations[i];
+                    if (string.Equals(SafeFullName(open), presentationPath, StringComparison.OrdinalIgnoreCase)) return open;
+                }
+
+                if (File.Exists(presentationPath))
+                {
+                    return application.Presentations.Open(presentationPath, MsoTriState.msoFalse, MsoTriState.msoFalse, MsoTriState.msoTrue);
+                }
+
+                if (target == null || !target.CreateIfMissing)
+                {
+                    throw new FileNotFoundException("指定 PPT 不存在：" + presentationPath);
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(presentationPath) ?? Environment.CurrentDirectory);
+                var created = application.Presentations.Add(MsoTriState.msoTrue);
+                created.SaveAs(presentationPath);
+                return created;
+            }
+
+            if (application.Presentations.Count > 0) return application.ActivePresentation ?? application.Presentations[1];
+            return application.Presentations.Add(MsoTriState.msoTrue);
+        }
+
+        private static int AddTitle(PowerPoint.Slide slide, string text)
+        {
+            var title = slide.Shapes.AddTextbox(MsoTextOrientation.msoTextOrientationHorizontal, 36, 24, 650, 42);
+            title.TextFrame.TextRange.Text = text;
+            title.TextFrame.TextRange.Font.Size = 24;
+            title.TextFrame.TextRange.Font.Bold = MsoTriState.msoTrue;
+            return 1;
+        }
+
+        private static int AddDatasetChart(PowerPoint.Slide slide, ChartDataset dataset, ZlkChartSpec chart, RoughStyle style)
+        {
+            var points = dataset.Points
+                .Where(point => point != null && (point.Y.HasValue || point.Value.HasValue || point.Mean.HasValue))
+                .Take(12)
+                .ToList();
+            if (points.Count == 0) return AddMarkdownSummary(slide, new ZlkMarkdownSummary { Text = "未识别到数值点，已生成摘要页。", Path = dataset.Source?.Path });
+
+            var left = 52f;
+            var top = 130f;
+            var width = 600f;
+            var height = 280f;
+            var max = points.Select(point => Math.Abs(PointValue(point))).DefaultIfEmpty(1).Max();
+            if (max <= 0) max = 1;
+            var color = ParseRgb(style?.FillColor, 0x5B8DEF);
+            var stroke = ParseRgb(style?.Stroke, 0x2F4F7F);
+            var shapes = 0;
+
+            var subtitle = slide.Shapes.AddTextbox(MsoTextOrientation.msoTextOrientationHorizontal, left, 76, 650, 38);
+            subtitle.TextFrame.TextRange.Text = chart.Title + (string.IsNullOrWhiteSpace(chart.Reason) ? string.Empty : "：" + chart.Reason);
+            subtitle.TextFrame.TextRange.Font.Size = 12;
+            subtitle.TextFrame.TextRange.Font.Color.RGB = 0x555555;
+            shapes++;
+
+            var barWidth = Math.Max(18f, Math.Min(46f, width / Math.Max(1, points.Count) - 8f));
+            for (var i = 0; i < points.Count; i++)
+            {
+                var point = points[i];
+                var value = PointValue(point);
+                var barHeight = (float)(Math.Abs(value) / max * (height - 52));
+                var x = left + i * (barWidth + 8f);
+                var y = top + height - barHeight;
+                var bar = slide.Shapes.AddShape(MsoAutoShapeType.msoShapeRectangle, x, y, barWidth, Math.Max(2, barHeight));
+                bar.Fill.ForeColor.RGB = color;
+                bar.Line.ForeColor.RGB = stroke;
+                bar.Line.Weight = 0.75f;
+                shapes++;
+
+                var valueText = slide.Shapes.AddTextbox(MsoTextOrientation.msoTextOrientationHorizontal, x - 4, y - 18, barWidth + 8, 16);
+                valueText.TextFrame.TextRange.Text = value.ToString("0.###", CultureInfo.InvariantCulture);
+                valueText.TextFrame.TextRange.Font.Size = 8;
+                valueText.TextFrame.TextRange.ParagraphFormat.Alignment = PowerPoint.PpParagraphAlignment.ppAlignCenter;
+                shapes++;
+
+                var labelText = slide.Shapes.AddTextbox(MsoTextOrientation.msoTextOrientationHorizontal, x - 12, top + height + 4, barWidth + 24, 40);
+                labelText.TextFrame.TextRange.Text = ShortLabel(point.Label ?? point.Method ?? point.Metric ?? ("结果" + (i + 1)));
+                labelText.TextFrame.TextRange.Font.Size = 8;
+                labelText.TextFrame.TextRange.ParagraphFormat.Alignment = PowerPoint.PpParagraphAlignment.ppAlignCenter;
+                shapes++;
+            }
+
+            return shapes;
+        }
+
+        private static int AddMarkdownSummary(PowerPoint.Slide slide, ZlkMarkdownSummary summary)
+        {
+            var box = slide.Shapes.AddTextbox(MsoTextOrientation.msoTextOrientationHorizontal, 48, 92, 650, 350);
+            box.TextFrame.TextRange.Text = MarkdownPlainText(summary?.Text, summary?.Path);
+            box.TextFrame.TextRange.Font.Size = 13;
+            return 1;
+        }
+
+        private static int AddSourceSummary(PowerPoint.Slide slide, ZlkClusterPlotRequest request, IList<ChartDataset> datasets, ZlkMarkdownSummary markdown, IList<string> warnings)
+        {
+            var lines = new List<string>
+            {
+                "requestId: " + (request.RequestId ?? ""),
+                "source: " + string.Join("; ", (request.SourcePaths ?? new List<string>()).Take(6)),
+                "datasets: " + datasets.Count,
+                "markdown: " + (markdown?.Path ?? ""),
+            };
+            if (warnings.Count > 0) lines.Add("warnings: " + string.Join("；", warnings.Take(3)));
+            var box = slide.Shapes.AddTextbox(MsoTextOrientation.msoTextOrientationHorizontal, 48, 480, 650, 70);
+            box.TextFrame.TextRange.Text = string.Join(Environment.NewLine, lines);
+            box.TextFrame.TextRange.Font.Size = 8;
+            box.TextFrame.TextRange.Font.Color.RGB = 0x666666;
+            return 1;
+        }
+
+        private static ZlkChartSpec SelectChart(ChartDataset dataset, string requested)
+        {
+            if (!string.IsNullOrWhiteSpace(requested) && !string.Equals(requested, "auto", StringComparison.OrdinalIgnoreCase))
+            {
+                return new ZlkChartSpec { ChartType = requested, Title = requested, Reason = "用户指定图类型。" };
+            }
+
+            var rec = dataset?.Recommendations?.OrderByDescending(item => item.Priority).FirstOrDefault();
+            return rec == null
+                ? new ZlkChartSpec { ChartType = "genericTable", Title = "结果摘要图", Reason = "字段不足，生成通用摘要。" }
+                : new ZlkChartSpec { ChartType = rec.ChartType, Title = rec.Title, Reason = rec.Reason };
+        }
+
+        private static string SafeProjectRoot(string root)
+        {
+            if (string.IsNullOrWhiteSpace(root)) throw new InvalidOperationException("缺少 projectRoot。");
+            var full = Path.GetFullPath(Environment.ExpandEnvironmentVariables(root));
+            if (!Directory.Exists(full)) throw new DirectoryNotFoundException("projectRoot 不存在：" + full);
+            return full;
+        }
+
+        private static string SafeProjectPath(string root, string relative)
+        {
+            var full = Path.GetFullPath(Path.Combine(root, NormalizeRelative(relative)));
+            if (!full.Equals(root, StringComparison.OrdinalIgnoreCase) &&
+                !full.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("路径越界：" + relative);
+            }
+
+            return full;
+        }
+
+        private static string NormalizeRelative(string value)
+        {
+            var text = (value ?? string.Empty).Trim().Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+            while (text.StartsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)) text = text.Substring(1);
+            return text;
+        }
+
+        private static double PointValue(ChartPoint point)
+        {
+            return point.Y ?? point.Value ?? point.Mean ?? 0;
+        }
+
+        private static string ShortLabel(string text)
+        {
+            text = (text ?? string.Empty).Trim();
+            return text.Length <= 20 ? text : text.Substring(0, 19) + "…";
+        }
+
+        private static string MarkdownPlainText(string text, string path)
+        {
+            var lines = (text ?? string.Empty).Replace("\r", "").Split('\n')
+                .Select(line => line.Trim().TrimStart('#', '-', '*', ' '))
+                .Where(line => line.Length > 0)
+                .Take(14);
+            var body = string.Join(Environment.NewLine, lines);
+            return (string.IsNullOrWhiteSpace(path) ? "Markdown 摘要" : path) + Environment.NewLine + Environment.NewLine + body;
+        }
+
+        private static int ParseRgb(string hex, int fallback)
+        {
+            var value = (hex ?? string.Empty).Trim().TrimStart('#');
+            if (value.Length != 6) return fallback;
+            int r, g, b;
+            if (!int.TryParse(value.Substring(0, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out r)) return fallback;
+            if (!int.TryParse(value.Substring(2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out g)) return fallback;
+            if (!int.TryParse(value.Substring(4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b)) return fallback;
+            return r + (g << 8) + (b << 16);
+        }
+
+        private static string SafeFullName(PowerPoint.Presentation presentation)
+        {
+            try { return presentation.FullName; } catch { return string.Empty; }
+        }
+    }
+}

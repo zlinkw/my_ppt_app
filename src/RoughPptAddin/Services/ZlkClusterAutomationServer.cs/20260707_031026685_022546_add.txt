@@ -1,0 +1,186 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web.Script.Serialization;
+using RoughPptAddin.Models;
+
+namespace RoughPptAddin.Services
+{
+    public sealed class ZlkClusterAutomationServer : IDisposable
+    {
+        private readonly RoughAddInController controller;
+        private readonly JavaScriptSerializer serializer = new JavaScriptSerializer { MaxJsonLength = 1024 * 1024 * 16 };
+        private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
+        private HttpListener listener;
+        private string token;
+        private int port;
+
+        public ZlkClusterAutomationServer(RoughAddInController controller)
+        {
+            this.controller = controller;
+        }
+
+        public void Start()
+        {
+            if (listener != null) return;
+            token = CreateToken();
+            port = PickLoopbackPort();
+            listener = new HttpListener();
+            listener.Prefixes.Add("http://127.0.0.1:" + port + "/");
+            listener.Start();
+            WriteAutomationFiles();
+            Task.Run(() => ListenAsync(cancellation.Token));
+            AddInLogger.Info("ZLK 自动绘图服务已启动：http://127.0.0.1:" + port);
+        }
+
+        public void Dispose()
+        {
+            cancellation.Cancel();
+            try { listener?.Stop(); } catch { }
+            try { listener?.Close(); } catch { }
+            listener = null;
+        }
+
+        private async Task ListenAsync(CancellationToken cancel)
+        {
+            while (!cancel.IsCancellationRequested && listener != null && listener.IsListening)
+            {
+                try
+                {
+                    var context = await listener.GetContextAsync().ConfigureAwait(false);
+                    _ = Task.Run(() => HandleAsync(context), cancel);
+                }
+                catch (Exception ex)
+                {
+                    if (!cancel.IsCancellationRequested) AddInLogger.Error("ZLK 自动绘图服务监听失败。", ex);
+                }
+            }
+        }
+
+        private async Task HandleAsync(HttpListenerContext context)
+        {
+            try
+            {
+                if (!IPAddress.IsLoopback(context.Request.RemoteEndPoint.Address))
+                {
+                    await WriteJsonAsync(context, 403, new Dictionary<string, object> { ["ok"] = false, ["error"] = "仅允许本机访问。" }).ConfigureAwait(false);
+                    return;
+                }
+
+                var path = context.Request.Url.AbsolutePath.TrimEnd('/');
+                if (string.Equals(context.Request.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(path, "/health", StringComparison.OrdinalIgnoreCase))
+                {
+                    await WriteJsonAsync(context, 200, new Dictionary<string, object>
+                    {
+                        ["ok"] = true,
+                        ["service"] = "RoughPptAddin ZLK automation",
+                        ["port"] = port
+                    }).ConfigureAwait(false);
+                    return;
+                }
+
+                if (!string.Equals(context.Request.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(path, "/api/zlk-cluster/plot", StringComparison.OrdinalIgnoreCase))
+                {
+                    await WriteJsonAsync(context, 404, new Dictionary<string, object> { ["ok"] = false, ["error"] = "未知接口。" }).ConfigureAwait(false);
+                    return;
+                }
+
+                if (!HasValidToken(context.Request))
+                {
+                    await WriteJsonAsync(context, 401, new Dictionary<string, object> { ["ok"] = false, ["error"] = "automation token 无效。" }).ConfigureAwait(false);
+                    return;
+                }
+
+                using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding ?? Encoding.UTF8))
+                {
+                    var body = await reader.ReadToEndAsync().ConfigureAwait(false);
+                    var request = serializer.Deserialize<ZlkClusterPlotRequest>(body);
+                    var result = await controller.PlotZlkClusterResultFromAutomationAsync(request).ConfigureAwait(false);
+                    await WriteJsonAsync(context, 200, new Dictionary<string, object>
+                    {
+                        ["ok"] = true,
+                        ["requestId"] = request?.RequestId ?? string.Empty,
+                        ["presentationPath"] = result.PresentationPath,
+                        ["slideIndex"] = result.SlideIndex,
+                        ["shapeCount"] = result.ShapeCount,
+                        ["chartType"] = result.ChartType,
+                        ["warnings"] = result.Warnings
+                    }).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                AddInLogger.Error("ZLK 自动绘图请求失败。", ex);
+                await WriteJsonAsync(context, 500, new Dictionary<string, object> { ["ok"] = false, ["error"] = ex.Message }).ConfigureAwait(false);
+            }
+        }
+
+        private bool HasValidToken(HttpListenerRequest request)
+        {
+            var auth = request.Headers["Authorization"] ?? string.Empty;
+            if (auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(auth.Substring("Bearer ".Length).Trim(), token, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return string.Equals(request.Headers["X-RoughPpt-Automation-Token"], token, StringComparison.Ordinal) ||
+                   string.Equals(request.Headers["X-Rough-Ppt-Token"], token, StringComparison.Ordinal);
+        }
+
+        private void WriteAutomationFiles()
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RoughPptAddin");
+            Directory.CreateDirectory(dir);
+            var config = new Dictionary<string, object>
+            {
+                ["schemaVersion"] = 1,
+                ["baseUrl"] = "http://127.0.0.1:" + port,
+                ["host"] = "127.0.0.1",
+                ["port"] = port,
+                ["startedAt"] = DateTimeOffset.UtcNow.ToString("o"),
+                ["processId"] = Process.GetCurrentProcess().Id
+            };
+            File.WriteAllText(Path.Combine(dir, "automation.json"), serializer.Serialize(config), Encoding.UTF8);
+            File.WriteAllText(Path.Combine(dir, "automation.token"), token, Encoding.UTF8);
+        }
+
+        private static Task WriteJsonAsync(HttpListenerContext context, int statusCode, object payload)
+        {
+            var serializer = new JavaScriptSerializer { MaxJsonLength = 1024 * 1024 * 16 };
+            var bytes = Encoding.UTF8.GetBytes(serializer.Serialize(payload));
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json; charset=utf-8";
+            context.Response.ContentLength64 = bytes.Length;
+            return context.Response.OutputStream.WriteAsync(bytes, 0, bytes.Length).ContinueWith(_ =>
+            {
+                try { context.Response.OutputStream.Close(); } catch { }
+            });
+        }
+
+        private static int PickLoopbackPort()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var chosen = ((IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            return chosen;
+        }
+
+        private static string CreateToken()
+        {
+            var bytes = new byte[32];
+            using (var rng = RandomNumberGenerator.Create()) rng.GetBytes(bytes);
+            return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        }
+    }
+}

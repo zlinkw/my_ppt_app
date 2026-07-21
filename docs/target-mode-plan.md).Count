@@ -1,0 +1,14 @@
+narrow pane polish
+plan updated
+ui contract ok
+encoding ok
+external plugin compatibility ok
+[feature/rough-ppt-addin 6161697] style: improve narrow task pane confirm and connection
+ 2 files changed, 31 insertions(+), 7 deletions(-)
+6161697 style: improve narrow task pane confirm and connection
+676d5f5 style: improve inline danger confirm prompts
+a04b572 style: clarify asset import and share affordances
+93
+7663
+
+
