@@ -83,6 +83,11 @@ requirePattern(controller, /MaxZlkSourceFileBytes\s*=\s*(?:2L\s*\*\s*1024L\s*\*\
 requirePattern(controller, /MaxZlkTotalSourceBytes\s*=\s*(?:12L\s*\*\s*1024L\s*\*\s*1024L|12582912L)/, "RoughAddInController.cs missing 12 MiB total source limit");
 requirePattern(controller, /application\.Presentations\.Add\(\s*(?:Office\.MsoTriState\.msoTrue\s*)?\)/, "RoughAddInController.cs missing visible presentation creation");
 requirePattern(controller, /\b\w+\.SaveAs\(presentationPath\)/, "RoughAddInController.cs missing new target SaveAs");
+requirePattern(
+  controller,
+  /DefaultZlkSourcePatterns\(\)[\s\S]*?new List<string>\s*\{\s*"zlk_cluster\\\\results\\\\statistics\.json",\s*"paper\\\\tables"/,
+  "RoughAddInController.cs must prioritize statistics.json and paper table sources"
+);
 rejectIncludes(controller, "application.Quit()", "controller must not quit PowerPoint");
 rejectIncludes(controller, "Presentations.Open(presentationPath, Office.MsoTriState.msoFalse, Office.MsoTriState.msoFalse, Office.MsoTriState.msoFalse)", "target PPT must open visibly for append workflow");
 

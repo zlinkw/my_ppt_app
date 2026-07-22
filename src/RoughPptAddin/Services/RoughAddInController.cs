@@ -1275,7 +1275,7 @@ namespace RoughPptAddin.Services
     
     	private static IEnumerable<string> DiscoverZlkFiles(string root)
     	{
-    		string[] array = new string[6] { "zlk_cluster\\results\\summary.json", "zlk_cluster\\results\\result_registry.json", "zlk_cluster\\results\\statistics.json", "zlk_cluster\\results\\quality_gate.json", "zlk_cluster\\results\\case_level_index.json", "zlk_cluster\\datasets\\profile.json" };
+		string[] array = new string[1] { "zlk_cluster\\results\\statistics.json" };
     		foreach (string relative in array)
     		{
     			string path = Path.Combine(root, relative);
@@ -1284,7 +1284,7 @@ namespace RoughPptAddin.Services
     				yield return path;
     			}
     		}
-    		array = new string[2] { "paper\\tables", "experiments\\results" };
+		array = new string[1] { "paper\\tables" };
     		foreach (string dir in array)
     		{
     			string full = Path.Combine(root, dir);
@@ -1301,18 +1301,39 @@ namespace RoughPptAddin.Services
     				yield return item2;
     			}
     		}
+		array = new string[5] { "zlk_cluster\\results\\summary.json", "zlk_cluster\\results\\result_registry.json", "zlk_cluster\\results\\quality_gate.json", "zlk_cluster\\results\\case_level_index.json", "zlk_cluster\\datasets\\profile.json" };
+		foreach (string relative2 in array)
+		{
+			string path2 = Path.Combine(root, relative2);
+			if (File.Exists(path2))
+			{
+				yield return path2;
+			}
+		}
+		string experimentsResults = Path.Combine(root, "experiments\\results");
+		if (Directory.Exists(experimentsResults))
+		{
+			foreach (string item3 in Directory.EnumerateFiles(experimentsResults, "*.csv"))
+			{
+				yield return item3;
+			}
+			foreach (string item4 in Directory.EnumerateFiles(experimentsResults, "*.tex"))
+			{
+				yield return item4;
+			}
+		}
     		string workDirs = Path.Combine(root, "work_dirs");
     		if (!Directory.Exists(workDirs))
     		{
     			yield break;
     		}
-    		foreach (string item3 in Directory.EnumerateFiles(workDirs, "metrics_summary.csv", SearchOption.AllDirectories))
+		foreach (string item5 in Directory.EnumerateFiles(workDirs, "metrics_summary.csv", SearchOption.AllDirectories))
     		{
-    			yield return item3;
+			yield return item5;
     		}
-    		foreach (string item4 in Directory.EnumerateFiles(workDirs, "metrics_case.csv", SearchOption.AllDirectories))
+		foreach (string item6 in Directory.EnumerateFiles(workDirs, "metrics_case.csv", SearchOption.AllDirectories))
     		{
-    			yield return item4;
+			yield return item6;
     		}
     	}
     
@@ -1331,7 +1352,7 @@ namespace RoughPptAddin.Services
     
     	private static IList<string> DefaultZlkSourcePatterns()
     	{
-    		return new List<string> { "zlk_cluster\\results\\summary.json", "zlk_cluster\\results\\result_registry.json", "zlk_cluster\\results\\statistics.json", "zlk_cluster\\results\\quality_gate.json", "zlk_cluster\\results\\case_level_index.json", "zlk_cluster\\datasets\\profile.json", "paper\\tables", "experiments\\results", "work_dirs" };
+		return new List<string> { "zlk_cluster\\results\\statistics.json", "paper\\tables", "zlk_cluster\\results\\summary.json", "zlk_cluster\\results\\result_registry.json", "zlk_cluster\\results\\quality_gate.json", "zlk_cluster\\results\\case_level_index.json", "zlk_cluster\\datasets\\profile.json", "experiments\\results", "work_dirs" };
     	}
     
     	private static string ToRelativeDisplayPath(string root, string path)

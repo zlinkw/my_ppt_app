@@ -84,19 +84,19 @@
 
 ## 活跃队列
 
-1. R001（运行中）：以本机已安装 `530de39`、恢复审计报告和 Codex 会话流水为证据重建删除前源码；本批先建立本地 Git 与私有远程恢复基线。
-2. R002（通过）：已按会话中的 `096509d` 恢复 B503 横向可读布局、鼠标拖动/键盘滚动及科研图卡片正文完整显示；`node scripts/validate-taskpane-ui-interactions.mjs` 通过。
-3. R003（五批统一验证节点）：统一 `npm test` 正在修复恢复源码与旧验证文本的断点。R003-D 已从恢复源码重新生成 203 项形状目录；R003-E 已修正 Zotero bridge 固定 endpoint、ready 状态、`ok:true` 响应和 25 MB `image_blob` 上限，并强化唯一完整图库、刷新顺序、离线只读、缺页恢复、只读 SQL、无页面副本和管理命令边界；两个 Zotero 协议验证通过。全量测试下一断点是恢复后的 UI 合同；通过后再执行 UI 构建和安全打包。保护用户安装态，不执行含进程终止的 `package-run.ps1`。
-4. R004（已实现，待五批统一验证）：配色改为按明确 `imageId` 只读当前单张参考图的全部实际色系；未保存时切换图片使用页面内确认，拒绝则保持当前图，并支持仅存于当前 PowerPoint WebView 内存的免询问；保存成功后解除切换保护。R004-A 未运行测试、构建或打包，仅完成差异检查；统一验证失败时回到本项修复。
-5. R005（已更新，待五批统一验证）：使用说明已补充 Zotero 完整图库复用入口、在线刷新与离线只读行为，以及单图配色、未保存切换确认和会话级免询问；R005-A 仅完成差异检查，未运行测试、构建或打包。累计五个小批次后统一运行完整测试、UI 构建与打包，不自动安装。
+1. SE001（已实现，待五批统一验证）：PPT 缺省结果发现已先用 `statistics.json` 和论文表格，再考虑摘要、索引和 case-level 辅助文件；本批仅完成差异检查，未运行测试或构建。
+2. SE002（运行中）：强化 automation discovery 与 `/health` 的 `schemaVersion=1`、进程身份、忙碌状态和能力字段，保持 additive extension。
+3. SE003（待执行）：按 `requestId` 提供幂等结果缓存，避免 SimpleExperiment 重试造成重复幻灯片，同时继续对不同请求快速返回忙碌状态。
+4. SE004（待执行）：统一任务窗格中的 SimpleExperiment 品牌、连接状态和中文可操作反馈，不暴露旧 ZLK 产品名作为主文案。
+5. SE005（待执行）：补齐连接合同验证；连续五批后统一运行完整 `npm test` 和 UI 构建，不打包、不安装。
 
-### 当前恢复批次
+### 当前 SimpleExperiment 连接批次
 
-- 目标：恢复删除前最新源码与中断的配色工作流。
-- 范围：本仓源码、UI、验证脚本、使用说明、构建和安装产物；当前批次只建立可追踪 Git 基线。
-- 排除：不修改 `D:\GitRepo\my_img_manager`、不生成第二套 Zotero 完整图库、不自动安装、不关闭或重启 PowerPoint/VS Code。
-- 保护区：固定外部 SQLite、`image_blob` 插图、Zotero 生成的完整图库页面、受限 bridge 命令和 PPT 原生可编辑对象约束。
-- 回归检查：Git 忽略恢复副产物和构建输出；初始提交可复现；`origin/master` 与本地 `HEAD` 一致；后续功能批次执行各自合同，五批节点执行全量验证与打包。
+- 目标：提高 SimpleExperiment 到 PPT 原生科研绘图链路的结果选择正确性、连接可诊断性和重试安全性。
+- 范围：PPT automation server、结果发现、任务窗格状态、兼容验证和相关文档。
+- 排除：外部 `D:\GitRepo\MCP\zlk-cluster-orchestrator` 与 `D:\GitRepo\my_img_manager` 只读；不改其源码，不扫描 raw dataset/checkpoint/Agent 全局态，不自动安装、不关闭或重启 PowerPoint/VS Code。
+- 保护区：loopback 与 token 验证、`schemaVersion=1`、已有 PowerPoint 不关闭、结果统一经 importer 归一化、最终对象保持 PPT 原生可编辑。
+- 回归检查：SE001 差异检查通过；每批只做一个同风险面改动并独立提交推送；前四批仅差异检查，第五批统一执行完整测试和 UI 构建。
 
 ## 近期锚点
 
