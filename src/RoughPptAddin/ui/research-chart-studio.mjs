@@ -22,6 +22,8 @@ const CHART_LABELS = {
   ecdf: "经验累积分布图",
   strip: "条带图",
   regression: "回归图",
+  qqPlot: "Q-Q 图",
+  ppPlot: "P-P 图",
   forest: "森林图",
   roc: "ROC 曲线",
   precisionRecall: "精确率召回曲线",
@@ -41,7 +43,7 @@ const CHART_LABELS = {
 const CHART_CATEGORIES = {
   bar: "comparison", groupedBar: "comparison", stackedBar: "comparison", horizontalBar: "comparison", donut: "comparison", polar: "comparison",
   line: "trend", step: "trend", area: "trend", regression: "trend",
-  histogram: "distribution", boxplot: "distribution", density: "distribution", violin: "distribution", ecdf: "distribution", strip: "distribution",
+  histogram: "distribution", boxplot: "distribution", density: "distribution", violin: "distribution", ecdf: "distribution", strip: "distribution", qqPlot: "distribution", ppPlot: "distribution",
   scatter: "multivariate", bubble: "multivariate", heatmap: "multivariate", correlationMatrix: "multivariate", parallelCoordinates: "multivariate",
   roc: "evaluation", precisionRecall: "evaluation", calibration: "evaluation",
   blandAltman: "agreement", forest: "agreement", volcano: "agreement", funnel: "agreement",
@@ -558,6 +560,71 @@ function buildParallelCoordinateRows(identifierField, colorField, facetField) {
   return output;
 }
 
+function errorFunction(value) {
+  const sign = value < 0 ? -1 : 1;
+  const x = Math.abs(value);
+  const t = 1 / (1 + 0.3275911 * x);
+  const polynomial = (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t;
+  return sign * (1 - polynomial * Math.exp(-x * x));
+}
+
+function normalCdf(value) {
+  return 0.5 * (1 + errorFunction(value / Math.SQRT2));
+}
+
+function normalQuantile(probability) {
+  if (!(probability > 0 && probability < 1)) throw new Error("正态分位概率必须位于 0 至 1 之间。");
+  let low = -8;
+  let high = 8;
+  for (let iteration = 0; iteration < 64; iteration += 1) {
+    const middle = (low + high) / 2;
+    if (normalCdf(middle) < probability) low = middle;
+    else high = middle;
+  }
+  return (low + high) / 2;
+}
+
+function buildProbabilityPlotRows(mode, numericField, colorField, facetField) {
+  requireQuantitativeField(numericField, "分布诊断字段");
+  if (facetField && facetField === numericField) throw new Error("分布诊断的分面字段不能与数值字段相同。");
+  const groupField = colorField && colorField !== numericField ? colorField : "";
+  const groups = new Map();
+  for (const row of state.rows) {
+    const value = Number(row[numericField]);
+    if (!Number.isFinite(value)) continue;
+    const facet = facetField ? row[facetField] : "";
+    const group = groupField ? row[groupField] : "全部";
+    const key = JSON.stringify([facet, group]);
+    if (!groups.has(key)) groups.set(key, { facet, group, values: [] });
+    groups.get(key).values.push(value);
+  }
+  const output = [];
+  for (const { facet, group, values } of groups.values()) {
+    values.sort((a, b) => a - b);
+    if (values.length < 3) throw new Error("每个 Q-Q 或 P-P 分组至少需要三个有效数值。");
+    const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (values.length - 1);
+    const standardDeviation = Math.sqrt(variance);
+    if (!(standardDeviation > 0)) throw new Error("Q-Q 或 P-P 图不能使用零方差数据。");
+    values.forEach((value, index) => {
+      const empiricalProbability = (index + 0.5) / values.length;
+      const theoreticalQuantile = normalQuantile(empiricalProbability);
+      const theoreticalProbability = normalCdf((value - mean) / standardDeviation);
+      output.push({
+        ...(facetField ? { [facetField]: facet } : {}),
+        __probabilityGroup: group,
+        __sampleValue: value,
+        __empiricalProbability: empiricalProbability,
+        __theoreticalProbability: theoreticalProbability,
+        __theoreticalQuantile: theoreticalQuantile,
+        __expectedQuantile: mean + standardDeviation * theoreticalQuantile,
+        __probabilityMode: mode
+      });
+    });
+  }
+  return { rows: output, groupField };
+}
+
 function probabilityScale(axisKey) {
   const scale = scaleSpec(axisKey, true);
   if (scale.type === "log") throw new Error("概率曲线包含 0，不能使用对数坐标。");
@@ -849,6 +916,42 @@ function buildSpec() {
       { mark: mark("point", { filled: true, size: pointSize, opacity: 0.7 }), encoding },
       { transform: [{ regression: yField, on: xField, ...(colorField ? { groupby: [colorField] } : {}) }], mark: mark("line", { strokeWidth: lineWidth, opacity: 1 }), encoding }
     ];
+  } else if (state.chartType === "qqPlot" || state.chartType === "ppPlot") {
+    const numericField = fieldType(xField) === "quantitative" ? xField : yField;
+    const probabilityRows = buildProbabilityPlotRows(state.chartType, numericField, colorField, els.facetField.value);
+    chartData = probabilityRows.rows;
+    const diagnosticColor = probabilityRows.groupField ? {
+      field: "__probabilityGroup",
+      type: "nominal",
+      scale: { range: PALETTES[state.palette] },
+      legend: els.showLegend.checked ? { title: probabilityRows.groupField } : null
+    } : null;
+    if (state.chartType === "qqPlot") {
+      const pointEncoding = {
+        x: { field: "__theoreticalQuantile", type: "quantitative", title: els.xAxisTitle.value || "理论正态分位数", axis: axis(els.xAxisTitle.value || "理论正态分位数", true, "x"), scale: scaleSpec("x", false) },
+        y: { field: "__sampleValue", type: "quantitative", title: els.yAxisTitle.value || numericField, axis: axis(els.yAxisTitle.value || numericField, true, "y"), scale: scaleSpec("y", false) },
+        tooltip: [{ field: "__theoreticalQuantile", type: "quantitative", title: "理论分位数", format: ".3f" }, { field: "__sampleValue", type: "quantitative", title: "样本分位数" }]
+      };
+      if (diagnosticColor) pointEncoding.color = diagnosticColor;
+      const lineEncoding = { x: pointEncoding.x, y: { field: "__expectedQuantile", type: "quantitative", scale: scaleSpec("y", false) }, detail: { field: "__probabilityGroup", type: "nominal" }, order: { field: "__theoreticalQuantile", type: "quantitative" } };
+      if (diagnosticColor) lineEncoding.color = diagnosticColor;
+      layers = [
+        { mark: mark("line", { strokeWidth: Math.max(1, lineWidth * 0.75), strokeDash: [6, 4], opacity: 0.75 }), encoding: lineEncoding },
+        { mark: mark("point", { filled: true, size: pointSize, stroke: "#ffffff", strokeWidth: 0.6 }), encoding: pointEncoding }
+      ];
+    } else {
+      const ppScale = { domain: [0, 1], zero: true };
+      const pointEncoding = {
+        x: { field: "__theoreticalProbability", type: "quantitative", title: els.xAxisTitle.value || "理论累计概率", axis: axis(els.xAxisTitle.value || "理论累计概率", true, "x"), scale: ppScale },
+        y: { field: "__empiricalProbability", type: "quantitative", title: els.yAxisTitle.value || "经验累计概率", axis: axis(els.yAxisTitle.value || "经验累计概率", true, "y"), scale: ppScale },
+        tooltip: [{ field: "__theoreticalProbability", type: "quantitative", title: "理论概率", format: ".3f" }, { field: "__empiricalProbability", type: "quantitative", title: "经验概率", format: ".3f" }, { field: "__sampleValue", type: "quantitative", title: numericField }]
+      };
+      if (diagnosticColor) pointEncoding.color = diagnosticColor;
+      layers = [
+        { data: { values: [{}] }, mark: { type: "rule", color: els.axisColor.value, strokeWidth: 1.2, strokeDash: [6, 4] }, encoding: { x: { datum: 0 }, x2: { datum: 1 }, y: { datum: 0 }, y2: { datum: 1 } } },
+        { mark: mark("point", { filled: true, size: pointSize, stroke: "#ffffff", strokeWidth: 0.6 }), encoding: pointEncoding }
+      ];
+    }
   } else if (state.chartType === "forest") {
     requireQuantitativeField(yField, "森林图的 Y 轴效应值");
     const { low, high } = requireIntervalFields();
@@ -1039,7 +1142,7 @@ function buildSpec() {
     throw new Error("当前图表类型不受支持。");
   }
 
-  if (!["density", "violin", "forest", "blandAltman", "volcano", "funnel", "correlationMatrix", "parallelCoordinates", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
+  if (!["density", "violin", "qqPlot", "ppPlot", "forest", "blandAltman", "volcano", "funnel", "correlationMatrix", "parallelCoordinates", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
 
   const chartWidth = numericValue(els.chartWidth, 760, 360, 1600);
   const chartHeight = numericValue(els.chartHeight, 480, 260, 1200);
