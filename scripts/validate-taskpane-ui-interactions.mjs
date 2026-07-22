@@ -41,7 +41,6 @@ try {
       mobile: width <= 420
     });
     const readable = await evaluate(client, horizontalControlProbe());
-    if (!readable.connectionScrollable) violations.push(`${width}px: 连接状态条未保留可读宽度或横向滚动 ${JSON.stringify(readable.connectionDebug)}`);
     if (!readable.chartScrollable) violations.push(`${width}px: 科研图预设轨道未保留可读宽度或横向滚动`);
     if (!readable.dragReady) violations.push(`${width}px: 横向轨道未启用鼠标拖动滚动`);
     if (!readable.cardsReadable) violations.push(`${width}px: 科研图预设卡片文字被裁切或压缩`);
@@ -328,23 +327,12 @@ function horizontalControlProbe() {
     const rect = element => element?.getBoundingClientRect();
     const setFullMode = () => document.querySelector('#uiModeFull')?.click();
     setFullMode();
-    const strip = document.querySelector('#connectionHealthStrip');
     const chartShell = document.querySelector('#chartPresetShell');
     if (chartShell) chartShell.open = true;
     const chart = document.querySelector('#chartPresetStrip');
-    const chips = [...(strip?.querySelectorAll('.connection-chip') ?? [])].filter(visible);
     const cards = [...(chart?.querySelectorAll('.chart-preset-card') ?? [])].filter(visible);
-    const connectionDebug = {
-      visible: visible(strip),
-      chipCount: chips.length,
-      chipWidths: chips.map(chip => Math.round(rect(chip).width)),
-      clientWidth: strip?.clientWidth ?? 0,
-      scrollWidth: strip?.scrollWidth ?? 0
-    };
-    const connectionScrollable = Boolean(connectionDebug.visible && connectionDebug.chipCount >= 2 && connectionDebug.chipWidths.every(width => width >= 175) && (connectionDebug.scrollWidth > connectionDebug.clientWidth + 1 || connectionDebug.chipWidths.reduce((sum, width) => sum + width, 0) <= connectionDebug.clientWidth));
     const chartScrollable = Boolean(visible(chart) && cards.length >= 3 && cards.every(card => rect(card).width >= 167) && chart.scrollWidth > chart.clientWidth + 1);
     const dragReady = Boolean(
-      strip?.classList.contains('horizontal-drag-scroll') && strip?.dataset.dragScrollReady === 'true' &&
       chart?.classList.contains('horizontal-drag-scroll') && chart?.dataset.dragScrollReady === 'true'
     );
     const cardsReadable = cards.length >= 3 && cards.every(card => {
@@ -354,7 +342,7 @@ function horizontalControlProbe() {
         (!title || (title.scrollWidth <= title.clientWidth + 1 && title.scrollHeight <= title.clientHeight + 1)) &&
         (!summary || (summary.scrollWidth <= summary.clientWidth + 1 && summary.scrollHeight <= summary.clientHeight + 1));
     });
-    return { connectionScrollable, connectionDebug, chartScrollable, dragReady, cardsReadable };
+    return { chartScrollable, dragReady, cardsReadable };
   })()`;
 }
 

@@ -404,8 +404,6 @@ const els = {
   zlkChartClear: document.querySelector("#zlkChartClear"),
   zlkChartSummary: document.querySelector("#zlkChartSummary"),
   zlkAutomationStatus: document.querySelector("#zlkAutomationStatus"),
-  connectionZlk: document.querySelector("#connectionZlk"),
-  connectionZotero: document.querySelector("#connectionZotero"),
   zlkChartResults: document.querySelector("#zlkChartResults"),
   chartPresetShell: document.querySelector("#chartPresetShell"),
   chartPresetStrip: document.querySelector("#chartPresetStrip"),
@@ -1639,10 +1637,6 @@ function markSectionNavActive(key) {
     button.classList.toggle("active", active);
     button.setAttribute("aria-current", active ? "true" : "false");
   }
-  const zlkActive = key === "charts";
-  const zoteroActive = key === "zoteroImages" || key === "paletteLibrary";
-  if (els.connectionZlk) els.connectionZlk.setAttribute("aria-current", zlkActive ? "true" : "false");
-  if (els.connectionZotero) els.connectionZotero.setAttribute("aria-current", zoteroActive ? "true" : "false");
 }
 
 function activateStarterAction(action) {
@@ -4038,7 +4032,6 @@ function renderChartImportPanel() {
     els.zlkAutomationStatus.dataset.statusTone = tone;
     setLocalStatusTone(els.zlkAutomationStatus, tone);
   }
-  renderConnectionHealthStrip();
   els.zlkChartResults.innerHTML = "";
 
   if (!state.chartDatasets.length) {
@@ -4371,7 +4364,6 @@ function renderZoteroImagePanel() {
     els.zoteroImageStatus.title = `共享数据库：${state.zoteroDatabasePath || "%LOCALAPPDATA%\\ZLK\\paper-image-library\\paper_images.sqlite"}；来源：${state.zoteroDatabaseSource || "等待 Zotero library.json 或默认路径检测"}`;
     setLocalStatusTone(els.zoteroImageStatus, zoteroLocalStatusTone());
   }
-  renderConnectionHealthStrip();
 
   renderZoteroPaletteGrid();
   els.zoteroImageGrid.innerHTML = "";
@@ -4452,60 +4444,6 @@ function renderZoteroImagePanel() {
       renderZoteroImagePanel();
     }));
   }
-}
-
-function renderConnectionHealthStrip() {
-  const zlkState = zlkConnectionState();
-  const zoteroState = zoteroConnectionState();
-  const zlkText = state.zlkAutomationStatus || "等待 SimpleExperiment 连接";
-  const zlkTitle = state.zlkAutomationResult
-    ? `最近一次 SimpleExperiment 自动绘图：${state.zlkAutomationResult.chartType ?? state.zlkAutomationResult.ChartType ?? "图表"}，${state.zlkAutomationResult.shapeCount ?? state.zlkAutomationResult.ShapeCount ?? 0} 个 PPT 原生对象`
-    : "SimpleExperiment 自动绘图通过本机 127.0.0.1 连接；点此定位到科研绘图面板";
-  const zoteroText = state.zoteroDatabaseFound
-    ? `共享数据库已读取 ${state.zoteroImages.length} 张`
-    : (state.zoteroImageStatus || "等待读取共享数据库");
-  const zoteroTitle = `Zotero 共享库：${state.zoteroDatabasePath || "%LOCALAPPDATA%\\ZLK\\paper-image-library\\paper_images.sqlite"}；来源：${state.zoteroDatabaseSource || "等待 Zotero library.json 或默认路径探测"}；点此定位论文图像与配色库。`;
-
-  updateConnectionChip(els.connectionZlk, "zlk", zlkState, zlkText, zlkTitle);
-  updateConnectionChip(els.connectionZotero, "zotero", zoteroState, zoteroText, zoteroTitle);
-}
-
-
-
-function updateConnectionChip(chip, key, stateName, text, title) {
-  if (!chip) return;
-  chip.dataset.domain = key === "zlk" ? "zlk" : key === "zotero" ? "zotero" : (key || "");
-  chip.classList.remove("idle", "ok", "warn", "error", "ready");
-  chip.classList.add(stateName);
-  const target = chip.querySelector(`[data-connection-${key}]`) || chip.querySelector("small");
-  if (target) target.textContent = compactConnectionText(text);
-  chip.title = title || text || chip.title;
-  if (!chip.getAttribute("aria-label")) {
-    const label = chip.querySelector("strong")?.textContent?.trim() || key;
-    chip.setAttribute("aria-label", `外部连接：${label}`);
-  }
-}
-
-function zlkConnectionState() {
-  const text = state.zlkAutomationStatus || "";
-  if (/失败|错误|无效|缺少|超时/.test(text)) return "error";
-  if (state.zlkAutomationResult) return "ok";
-  if (/已启动|已就绪|监听中|服务已启动|127\.0\.0\.1/.test(text)) return "ok";
-  if (/正在|处理中|请求/.test(text) && !/等待/.test(text)) return "warn";
-  return "idle";
-}
-
-function zoteroConnectionState() {
-  const text = state.zoteroImageStatus || "";
-  if (/失败|错误|拒绝|不可用/.test(text)) return "error";
-  if (state.zoteroDatabaseFound) return "ok";
-  if (/未找到|缺失|未读取/.test(text)) return "warn";
-  return "idle";
-}
-
-function compactConnectionText(text) {
-  const value = String(text || "").replace(/\s+/g, " ").trim();
-  return value.length > 28 ? `${value.slice(0, 27)}…` : value;
 }
 
 function renderZoteroImageCard(image) {
@@ -8419,7 +8357,7 @@ function safeInitStep(label, fn) {
 
 function initHorizontalDragScroll() {
   const containers = document.querySelectorAll(
-    ".connection-health-strip, .chart-preset-strip"
+    ".chart-preset-strip"
   );
   for (const container of containers) {
     if (container.dataset.dragScrollReady === "true") continue;

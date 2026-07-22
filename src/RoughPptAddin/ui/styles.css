@@ -2975,154 +2975,6 @@ button.selection-primary .function-icon,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-.connection-health-strip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 3px;
-}
-
-.connection-chip {
-  min-width: 0;
-  min-height: 22px;
-  display: grid;
-  grid-template-columns: 7px minmax(0, 1fr);
-  gap: 4px;
-  align-items: center;
-  padding: 1px 7px;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--ink);
-  text-align: left;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.85);
-  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
-}
-
-.connection-chip.idle {
-  border-color: #d7d7d7;
-  background: #eef2f8;
-  color: var(--muted);
-}
-
-.connection-chip.idle .connection-dot {
-  background: #a0aab8;
-  box-shadow: 0 0 0 2px #eef2f7;
-}
-
-.connection-chip:hover,
-.connection-chip:focus-visible {
-  border-color: var(--accent);
-  outline: 0;
-  background: #eef4fc;
-  box-shadow: var(--focus-ring);
-}
-
-.connection-chip:focus-visible,
-.connection-chip[aria-current="true"] {
-  border-color: var(--accent);
-  outline: 0;
-  background: var(--panel);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
-}
-
-
-.connection-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #94a3b8;
-  box-shadow: 0 0 0 2px #f1f5f9;
-}
-
-.connection-copy {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 4px;
-}
-
-.connection-copy strong,
-.connection-copy small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.connection-copy strong {
-  font-size: 10px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.connection-copy small {
-  font-size: 10px;
-  color: var(--muted);
-}
-
-.connection-chip.ok {
-  border-color: #9ac7f7;
-  background: #eef4fc;
-  box-shadow: inset 0 0 0 1px rgba(15, 108, 189, 0.04);
-}
-
-.connection-chip.ok .connection-dot {
-  background: #0f6cbd;
-  box-shadow: 0 0 0 3px #dbeafe;
-}
-
-.connection-chip.warn {
-  border-color: #f5d18b;
-  background: #fef0ef;
-  box-shadow: inset 0 0 0 1px rgba(183, 121, 31, 0.05);
-}
-
-.connection-chip.warn .connection-dot {
-  background: #b7791f;
-  box-shadow: 0 0 0 3px #fef3c7;
-}
-
-.connection-chip.error {
-  border-color: #f2b8b5;
-  background: #fef0ef;
-  box-shadow: inset 0 0 0 1px rgba(164, 38, 44, 0.05);
-}
-
-.connection-chip.error .connection-dot {
-  background: var(--red);
-  box-shadow: 0 0 0 3px #fee2e2;
-}
-
-#connectionZlk.ok {
-  border-color: #8fd19e;
-  background: #ecf8f0;
-}
-
-#connectionZlk.ok .connection-dot {
-  background: #2f9e44;
-  box-shadow: 0 0 0 3px #d3f9d8;
-}
-
-#connectionZotero.ok {
-  border-color: #c0b0ef;
-  background: #f3eeff;
-}
-
-#connectionZotero.ok .connection-dot {
-  background: #7c5cbf;
-  box-shadow: 0 0 0 3px #efe8ff;
-}
-
-#connectionZlk.warn .connection-dot {
-  background: #2f9e44;
-}
-
-#connectionZotero.warn .connection-dot {
-  background: #7c5cbf;
-}
-
-
 .chart-import-layout {
   display: grid;
   gap: 5px;
@@ -5170,15 +5022,6 @@ button.selection-primary .function-icon,
     padding: 4px;
   }
 
-  .connection-health-strip {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-
-  .connection-copy strong {
-    max-width: 42%;
-  }
-
   .workflow-more summary,
   .workflow-quickfind summary {
     min-height: 24px;
@@ -5703,7 +5546,6 @@ body.ux-simple .workflow-actions button {
   min-height: 36px;
   font-size: 13px;
 }
-body.ux-simple .connection-health-strip,
 body.ux-simple .workflow-more,
 body.ux-simple .chart-support-grid {
   display: none;
@@ -6426,19 +6268,6 @@ body.ux-simple .zotero-palette-shell > header span {
   display: none;
 }
 
-.connection-chip strong {
-  font-size: 11px;
-}
-
-.connection-chip small {
-  font-size: 10px;
-  opacity: 0.9;
-}
-
-body.ux-full .connection-health-strip {
-  margin-top: 2px;
-}
-
 .feature-block-panel .feature-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6486,7 +6315,6 @@ body.ux-simple .catalog-panel[data-collapse-key="catalog"] {
 }
 
 body.ux-full .workflow-actions,
-body.ux-full .connection-health-strip,
 body.ux-full .workflow-more,
 body.ux-full .chart-support-grid {
   display: revert;
@@ -6625,20 +6453,6 @@ body.ux-simple .selection-empty-actions {
 @keyframes focusPulseSoft {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent); }
   100% { box-shadow: var(--shadow); }
-}
-.connection-chip[data-domain="zlk"].ok,
-.connection-chip[data-domain="zlk"].ready {
-  border-color: color-mix(in srgb, #107c10 40%, var(--line));
-  background: #ecf7ee;
-}
-.connection-chip[data-domain="zotero"].ok,
-.connection-chip[data-domain="zotero"].ready {
-  border-color: color-mix(in srgb, #8764b8 40%, var(--line));
-  background: #f3eeff;
-}
-.connection-chip.error {
-  border-color: color-mix(in srgb, var(--red) 42%, var(--line));
-  background: #fef0ef;
 }
 .search-scope button[aria-pressed="true"][data-search-scope="chart"] {
   color: #0b6a0b;
@@ -10347,47 +10161,6 @@ body.ux-simple .topbar .status:not(.expanded) {
   user-select: none;
 }
 
-.connection-health-strip {
-  min-width: 0;
-  max-width: 100%;
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: stretch;
-  gap: 6px;
-  padding-bottom: 4px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-}
-
-body.ux-full .connection-health-strip {
-  display: flex !important;
-}
-
-.connection-health-strip > .connection-chip {
-  flex: 1 0 176px;
-  width: auto;
-  min-width: 176px;
-  max-width: 280px;
-  min-height: 38px;
-  padding-block: 4px;
-}
-
-.connection-health-strip .connection-copy {
-  grid-template-columns: minmax(0, 1fr);
-  align-content: center;
-  gap: 1px;
-}
-
-.connection-health-strip .connection-copy strong,
-.connection-health-strip .connection-copy small {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  writing-mode: horizontal-tb;
-}
-
 .chart-preset-shell > .chart-preset-strip {
   display: grid;
   grid-template-columns: none !important;
@@ -10459,9 +10232,4 @@ body.ux-full .connection-health-strip {
   stroke: #ffffff;
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
-}
-
-/* B519: simple mode owns one compact connection row; full details stay full-mode only. */
-body.ux-simple #connectionHealthStrip {
-  display: none !important;
 }

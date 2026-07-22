@@ -81,18 +81,8 @@ if (!index.includes("快捷工作台") || !index.includes("starter-panel") || !i
 if (!index.includes('id="buildInfo"') || !index.includes("版本检测")) {
   violations.push("index.html: top bar must expose build/version verification button");
 }
-for (const snippet of [
-  'id="connectionHealthStrip"',
-  'class="connection-health-strip"',
-  'id="connectionZlk"',
-  'data-section-nav="charts"',
-  'data-connection-zlk',
-  'id="connectionZotero"',
-  'data-section-nav="zoteroImages"',
-  'data-connection-zotero',
-  '外部连接状态'
-]) {
-  if (!index.includes(snippet)) violations.push(`index.html: first-screen external connection strip missing ${snippet}`);
+for (const obsolete of ["connectionHealthStrip", "connectionZlk", "connectionZotero", "connection-health-strip", "connection-chip", "data-connection-zlk", "data-connection-zotero"]) {
+  if (index.includes(obsolete)) violations.push(`index.html: duplicate external connection button remains ${obsolete}`);
 }
 if (!index.includes("paperPresetGrid") || !index.includes("paperPresetFilters") || !index.includes("论文图预设") || !index.includes("data-collapse-key=\"paperPresets\"")) {
   violations.push("index.html: paper figure preset panel missing stable Chinese hooks");
@@ -205,9 +195,6 @@ for (const [i, match] of [...index.matchAll(/<(strong|small|option|button)\b[^>]
 const app = fs.readFileSync("src/RoughPptAddin/ui/app.mjs", "utf8");
 const styles = fs.readFileSync("src/RoughPptAddin/ui/styles.css", "utf8");
 for (const snippet of [
-  "renderConnectionHealthStrip",
-  "zlkConnectionState",
-  "已启动|已就绪|监听中|服务已启动",
   "formatBuildTimeShort",
   "setSelectionBadge",
   "setSummaryBadge",
@@ -216,22 +203,13 @@ for (const snippet of [
   "zlkLocalStatusTone",
   "zoteroLocalStatusTone",
   "setSelectionStateTone",
-  "zoteroConnectionState",
-  "compactConnectionText",
   "state.zlkAutomationResult",
   "state.zoteroDatabaseFound",
-  "data-connection-${key}",
   "if (key === \"zoteroImages\")"
 ]) {
-  if (!app.includes(snippet)) violations.push(`app.mjs: external connection strip missing ${snippet}`);
+  if (!app.includes(snippet)) violations.push(`app.mjs: status presentation missing ${snippet}`);
 }
 for (const snippet of [
-  ".connection-health-strip",
-  ".connection-chip",
-  ".connection-chip.ok",
-  ".connection-chip.warn",
-  ".connection-chip.error",
-  ".connection-dot",
   ".badge.tone-ready",
   ".selection-state.feature",
   ".zlk-automation-status.ok",

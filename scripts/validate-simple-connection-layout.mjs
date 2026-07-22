@@ -4,7 +4,7 @@ const css = fs.readFileSync("src/RoughPptAddin/ui/styles.css", "utf8");
 const html = fs.readFileSync("src/RoughPptAddin/ui/index.html", "utf8");
 const app = fs.readFileSync("src/RoughPptAddin/ui/app.mjs", "utf8");
 
-for (const obsolete of ["simpleConnectionZlk", "simpleConnectionZotero", "simple-connection-chip", "data-simple-connection-"]) {
+for (const obsolete of ["simpleConnectionZlk", "simpleConnectionZotero", "simple-connection-chip", "data-simple-connection-", "connectionHealthStrip", "connectionZlk", "connectionZotero", "connection-health-strip", "connection-chip", "data-connection-zlk", "data-connection-zotero"]) {
   if (html.includes(obsolete) || css.includes(obsolete) || app.includes(obsolete)) {
     throw new Error(`简洁模式重复连接入口仍有残留：${obsolete}`);
   }
