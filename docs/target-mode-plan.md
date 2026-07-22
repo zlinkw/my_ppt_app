@@ -113,6 +113,20 @@
 - 保护区：当前用户安装范围、UpgradeCode、覆盖安装、ZIP/MSI/EXE 三入口、VSTO/证书/前置环境合同。
 - 当前状态：已完成。首次统一验证在部署文档旧措辞合同处失败，修正后完整测试、UI 构建、签名 Release、Ribbon 运行时图标、安装包内部合同和三种产物清单校验均通过；发布目录为 `releases/RoughPptAddin-0.1.726-8e0c2115/`，等待用户关闭 PowerPoint 后手动安装验证。
 
+### 当前 UI 与科研绘图工作区批次
+
+- 批次队列：B505、B506、B507、B508、B509。
+- 目标：修复简洁模式连接状态按钮在窄窗和全局流式规则下的纵向挤压；将“科研绘图”入口打开独立本地网页工作区，支持同一 CSV 切换多种预览类型，并把选中类型交回现有 PPT 原生图表渲染链路。
+- 范围：`src/RoughPptAddin/ui/**`、科研绘图独立 WebView2 窗口、任务窗格入口消息、相关静态合同与项目文档。
+- 排除：不移除旧任务窗格导入入口；不改变 ZLK `schemaVersion=1`、loopback/token 协议和结果 importer；不把 Canvas/SVG/图片作为 PPT 最终对象。
+- 保护区：PowerPoint 不自动关闭或重启；现有图表 renderer 继续只生成原生 `Shape`、`Line`、`Textbox`、`Table`；Chart.js 仅用于网页预览，CSV 通过 Papa Parse 解析。
+- 批次边界：每个小批次不单独测试、构建或打包；B505-B509 完成后统一运行完整 `npm test`、`npm run build:ui`，通过后按用户要求打包，供手动安装验证。
+- B505：按钮最终尺寸和可用宽度合同。
+- B506：独立科研绘图网页的本地静态界面、CSV 解析和 Chart.js 预览。
+- B507：独立 WebView2 窗口及本地资源映射。
+- B508：网页插入消息回传、PPT 原生图表插入和任务窗格入口跳转。
+- B509：资源清单、使用说明和端到端静态回归合同。
+
 ## 近期锚点
 
 - B485：安装入口补齐 PowerPoint、.NET Framework 4.8、WebView2 和 VSTO 的前置检测；缺少 WebView2/VSTO 时优先经 winget 自动安装，缺少 .NET、PowerPoint、winget 或自动安装失败时打开对应 Microsoft 官方页面并给出中文补齐提示，端用户路径仍不安装 Build Tools。

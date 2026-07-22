@@ -10691,3 +10691,66 @@ body.ux-simple .simple-connection-note > #simpleModeFullSwitch {
     justify-self: stretch;
   }
 }
+
+/* B505: final compact connection sizing must win over global fluid button rules. */
+body.ux-simple .simple-connection-note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-auto-rows: minmax(40px, 44px);
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  max-height: 48px;
+  padding-bottom: 0;
+  overflow: hidden !important;
+}
+
+body.ux-simple .simple-connection-note > .simple-connection-chip {
+  grid-template-columns: 8px minmax(0, 1fr);
+  align-self: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  height: 40px;
+  max-height: 40px;
+  padding: 4px 8px;
+  overflow: hidden;
+}
+
+body.ux-simple .simple-connection-note > #simpleModeFullSwitch {
+  align-self: center;
+  width: auto;
+  min-width: max-content;
+  min-height: 40px;
+  height: 40px;
+  max-height: 40px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+body.ux-simple .simple-connection-chip > .simple-connection-copy,
+body.ux-simple .simple-connection-chip > .simple-connection-copy > strong,
+body.ux-simple .simple-connection-chip > .simple-connection-copy > small {
+  min-width: 0;
+  max-width: 100%;
+  writing-mode: horizontal-tb;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 420px) {
+  body.ux-simple .simple-connection-note {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 40px;
+    max-height: 86px;
+  }
+
+  body.ux-simple .simple-connection-note > #simpleModeFullSwitch {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
