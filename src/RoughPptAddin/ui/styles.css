@@ -10856,3 +10856,8 @@ body.ux-simple .simple-connection-note.workflow-actions > #simpleModeFullSwitch 
     width: 100%;
   }
 }
+
+/* B519: simple mode owns one compact connection row; full details stay full-mode only. */
+body.ux-simple #connectionHealthStrip {
+  display: none !important;
+}
