@@ -42,8 +42,19 @@ if (-not $msbuildPath) {
     throw "MSBuild not found. Install Visual Studio Build Tools with Office/VSTO workload, then rerun scripts\build.ps1."
 }
 
+$certificateSubject = "CN=RoughPptAddin Dev"
+$signingCertificate = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue |
+    Where-Object { $_.Subject -eq $certificateSubject -and $_.HasPrivateKey -and $_.NotAfter -gt [DateTime]::Now } |
+    Sort-Object NotAfter -Descending |
+    Select-Object -First 1
+if (-not $signingCertificate) {
+    $signingCertificate = New-SelfSignedCertificate -Type CodeSigningCert -Subject $certificateSubject -CertStoreLocation Cert:\CurrentUser\My
+}
+
 Write-Host "Building VSTO add-in"
-Invoke-Checked { & $msbuildPath RoughPptAddin.sln /t:Rebuild /p:Configuration=Release /m } "MSBuild Rebuild"
+Invoke-Checked {
+    & $msbuildPath RoughPptAddin.sln /t:Rebuild /p:Configuration=Release /p:LangVersion=latest /p:SignManifests=true /p:ManifestCertificateThumbprint=$($signingCertificate.Thumbprint) /m
+} "MSBuild Rebuild"
 
 Write-Host "Verifying compiled Ribbon icons"
 Invoke-Checked { powershell -ExecutionPolicy Bypass -File scripts\verify-ribbon-icons.ps1 } "verify-ribbon-icons"

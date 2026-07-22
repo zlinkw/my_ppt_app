@@ -17,6 +17,10 @@ requireIncludes(deploy, 'Invoke-CheckedScript "scripts\\verify-deploy-package.ps
 requireIncludes(deploy, 'Invoke-CheckedScript "scripts\\install.ps1" @("-SkipBuild", "-InstallPrereqs")', "deploy.ps1: final local install must use runtime prerequisite self-healing");
 requireOrder(deploy, "scripts\\package-installers.ps1", "scripts\\verify-deploy-package.ps1", "deploy.ps1: package-installers must run before final deploy verification");
 requireIncludes(build, "/t:Rebuild", "build.ps1: VSTO build must force a rebuild so updated Ribbon icons cannot reuse stale binaries");
+requireIncludes(build, "New-SelfSignedCertificate -Type CodeSigningCert", "build.ps1: missing local ClickOnce certificate bootstrap");
+requireIncludes(build, "/p:LangVersion=latest", "build.ps1: recovered C# sources require the current compiler language version");
+requireIncludes(build, "/p:SignManifests=true", "build.ps1: VSTO ClickOnce manifests must be signed");
+requireIncludes(build, "/p:ManifestCertificateThumbprint=$($signingCertificate.Thumbprint)", "build.ps1: VSTO build must use the resolved signing certificate");
 requireIncludes(build, "scripts\\verify-ribbon-icons.ps1", "build.ps1: built Ribbon icons must pass runtime rendering verification");
 
 requireIncludes(verify, "[switch]$SkipInstallers", "verify-deploy-package.ps1: missing SkipInstallers switch");
