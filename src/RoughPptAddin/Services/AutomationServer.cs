@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -19,9 +20,15 @@ public sealed class AutomationServer : IDisposable
 
 	private const int SchemaVersion = 1;
 
+	private const int CompletedRequestCacheLimit = 32;
+
 	private readonly Func<ZlkClusterPlotRequest, Task<ZlkChartRenderResult>> plotHandler;
 
 	private readonly SemaphoreSlim plotGate = new SemaphoreSlim(1, 1);
+
+	private readonly ConcurrentDictionary<string, CachedPlotResponse> completedRequests = new ConcurrentDictionary<string, CachedPlotResponse>(StringComparer.Ordinal);
+
+	private readonly ConcurrentQueue<string> completedRequestOrder = new ConcurrentQueue<string>();
 
 	private readonly JavaScriptSerializer serializer = new JavaScriptSerializer
 	{
@@ -37,6 +44,10 @@ public sealed class AutomationServer : IDisposable
 	private string endpoint;
 
 	private Task loopTask;
+
+	private string activeRequestId;
+
+	private string activeRequestFingerprint;
 
 	public string Endpoint => endpoint;
 
@@ -174,36 +185,68 @@ public sealed class AutomationServer : IDisposable
 					await WriteErrorAsync(context, 405, "接口方法不支持。").ConfigureAwait(continueOnCapturedContext: false);
 					return;
 				}
+				string body = await ReadBodyAsync(context.Request, 1048576, cancel).ConfigureAwait(continueOnCapturedContext: false);
+				ZlkClusterPlotRequest request = serializer.Deserialize<ZlkClusterPlotRequest>(body) ?? new ZlkClusterPlotRequest();
+				if (request.SchemaVersion != SchemaVersion)
+				{
+					await WriteErrorAsync(context, 400, "自动绘图请求 schemaVersion 不兼容，仅支持 1。").ConfigureAwait(continueOnCapturedContext: false);
+					return;
+				}
+				if (string.IsNullOrWhiteSpace(request.ChartType))
+				{
+					request.ChartType = "auto";
+				}
+				if (string.IsNullOrWhiteSpace(request.StyleMode))
+				{
+					request.StyleMode = "activePpt";
+				}
+				string requestId = (request.RequestId ?? string.Empty).Trim();
+				string requestFingerprint = CreateRequestFingerprint(request);
+				if (!string.IsNullOrEmpty(requestId) && completedRequests.TryGetValue(requestId, out CachedPlotResponse completed))
+				{
+					if (!string.Equals(completed.Fingerprint, requestFingerprint, StringComparison.Ordinal))
+					{
+						await WriteErrorAsync(context, 409, "requestId 已被其它自动绘图内容使用，请生成新的 requestId。").ConfigureAwait(continueOnCapturedContext: false);
+						return;
+					}
+					Dictionary<string, object> replay = new Dictionary<string, object>(completed.Payload)
+					{
+						["replayed"] = true
+					};
+					await WriteJsonAsync(context, 200, replay).ConfigureAwait(continueOnCapturedContext: false);
+					return;
+				}
 				if (await plotGate.WaitAsync(0, cancel).ConfigureAwait(continueOnCapturedContext: false))
 				{
 					try
 					{
-						string body = await ReadBodyAsync(context.Request, 1048576, cancel).ConfigureAwait(continueOnCapturedContext: false);
-						ZlkClusterPlotRequest request = serializer.Deserialize<ZlkClusterPlotRequest>(body) ?? new ZlkClusterPlotRequest();
-						if (string.IsNullOrWhiteSpace(request.ChartType))
-						{
-							request.ChartType = "auto";
-						}
-						if (string.IsNullOrWhiteSpace(request.StyleMode))
-						{
-							request.StyleMode = "activePpt";
-						}
+						Volatile.Write(ref activeRequestId, requestId);
+						Volatile.Write(ref activeRequestFingerprint, requestFingerprint);
 						ZlkChartRenderResult result = await plotHandler(request).ConfigureAwait(continueOnCapturedContext: false);
-						await WriteJsonAsync(context, 200, new Dictionary<string, object>
+						Dictionary<string, object> payload = BuildPlotResponse(result, requestId, replayed: false);
+						if (!string.IsNullOrEmpty(requestId))
 						{
-							["ok"] = true,
-							["presentationPath"] = result.PresentationPath,
-							["slideIndex"] = result.SlideIndex,
-							["shapeCount"] = result.ShapeCount,
-							["chartType"] = result.ChartType,
-							["warnings"] = result.Warnings ?? new List<string>()
-						}).ConfigureAwait(continueOnCapturedContext: false);
+							CacheCompletedRequest(requestId, requestFingerprint, payload);
+						}
+						await WriteJsonAsync(context, 200, payload).ConfigureAwait(continueOnCapturedContext: false);
 						return;
 					}
 					finally
 					{
+						Volatile.Write(ref activeRequestFingerprint, null);
+						Volatile.Write(ref activeRequestId, null);
 						plotGate.Release();
 					}
+				}
+				string currentRequestId = Volatile.Read(ref activeRequestId);
+				if (!string.IsNullOrEmpty(requestId) && string.Equals(currentRequestId, requestId, StringComparison.Ordinal))
+				{
+					string currentFingerprint = Volatile.Read(ref activeRequestFingerprint);
+					string message = string.Equals(currentFingerprint, requestFingerprint, StringComparison.Ordinal)
+						? "同一 PPT 自动绘图请求正在执行，请稍后以相同 requestId 重试；完成后将直接返回缓存结果。"
+						: "requestId 正被其它自动绘图内容使用，请生成新的 requestId。";
+					await WriteErrorAsync(context, 409, message).ConfigureAwait(continueOnCapturedContext: false);
+					return;
 				}
 				await WriteErrorAsync(context, 409, "已有 PPT 自动绘图请求正在执行，请等待完成后再试。").ConfigureAwait(continueOnCapturedContext: false);
 				return;
@@ -214,6 +257,40 @@ public sealed class AutomationServer : IDisposable
 		{
 			AddInLogger.Error("ZLK 自动绘图请求失败。", ex);
 			await WriteErrorAsync(context, 500, "自动绘图失败：" + ex.Message).ConfigureAwait(continueOnCapturedContext: false);
+		}
+	}
+
+	private Dictionary<string, object> BuildPlotResponse(ZlkChartRenderResult result, string requestId, bool replayed)
+	{
+		return new Dictionary<string, object>
+		{
+			["ok"] = true,
+			["requestId"] = requestId,
+			["replayed"] = replayed,
+			["presentationPath"] = result.PresentationPath,
+			["slideIndex"] = result.SlideIndex,
+			["shapeCount"] = result.ShapeCount,
+			["chartType"] = result.ChartType,
+			["warnings"] = result.Warnings ?? new List<string>()
+		};
+	}
+
+	private void CacheCompletedRequest(string requestId, string fingerprint, Dictionary<string, object> payload)
+	{
+		completedRequests[requestId] = new CachedPlotResponse(fingerprint, payload);
+		completedRequestOrder.Enqueue(requestId);
+		while (completedRequests.Count > CompletedRequestCacheLimit && completedRequestOrder.TryDequeue(out string oldestRequestId))
+		{
+			completedRequests.TryRemove(oldestRequestId, out CachedPlotResponse ignored);
+		}
+	}
+
+	private string CreateRequestFingerprint(ZlkClusterPlotRequest request)
+	{
+		byte[] bytes = Encoding.UTF8.GetBytes(serializer.Serialize(request));
+		using (SHA256 sha256 = SHA256.Create())
+		{
+			return Convert.ToBase64String(sha256.ComputeHash(bytes));
 		}
 	}
 
@@ -314,5 +391,18 @@ public sealed class AutomationServer : IDisposable
 		catch
 		{
 		}
+	}
+
+	private sealed class CachedPlotResponse
+	{
+		public CachedPlotResponse(string fingerprint, Dictionary<string, object> payload)
+		{
+			Fingerprint = fingerprint;
+			Payload = payload;
+		}
+
+		public string Fingerprint { get; }
+
+		public Dictionary<string, object> Payload { get; }
 	}
 }

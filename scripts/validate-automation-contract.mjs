@@ -46,6 +46,14 @@ for (const snippet of [
   "WriteErrorAsync(context, 405",
   "SemaphoreSlim",
   "plotGate.WaitAsync(0, cancel)",
+  "completedRequests.TryGetValue(requestId",
+  "CreateRequestFingerprint(request)",
+  "CacheCompletedRequest(requestId, requestFingerprint, payload)",
+  '["replayed"] = true',
+  "CompletedRequestCacheLimit = 32",
+  "同一 PPT 自动绘图请求正在执行",
+  "requestId 已被其它自动绘图内容使用",
+  "request.SchemaVersion != SchemaVersion",
   '["ready"] = true',
   '["busy"] = plotGate.CurrentCount == 0',
   '["service"] = ServiceName',
@@ -62,6 +70,7 @@ for (const snippet of [
 ]) {
   requireIncludes(automation, snippet, `AutomationServer.cs missing ${snippet}`);
 }
+requirePattern(automation, /ReadBodyAsync\(context\.Request,[\s\S]*completedRequests\.TryGetValue[\s\S]*plotGate\.WaitAsync\(0, cancel\)/, "completed request replay must run before acquiring the plot gate");
 for (const forbidden of ["http://*", "http://+", "IPAddress.Any", "application.Quit()", ".Close("]) {
   rejectIncludes(automation, forbidden, `AutomationServer.cs must not use ${forbidden}`);
 }

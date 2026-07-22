@@ -26,6 +26,8 @@ PowerPoint 加载 VSTO 后启动本机自动绘图服务，只监听 `127.0.0.1`
 
 `POST /api/zlk-cluster/plot` 只接收轻量绘图请求。C# 读取请求指定的结果文件后投递给 WebView，WebView 复用 `zlk-cluster-result-importer.mjs` 完成格式探测、字段归一化和图表推荐，再通过 `insertZlkChart` host message 交回 C#。`PptZlkChartRenderer` 使用 PowerPoint 原生 `Shape`、`Line`、`Textbox` 和 `Group` 绘制结果，禁止把 ZLK 图表做成图片、SVG 或 Canvas 截图。
 
+服务按 `requestId` 缓存最近 32 个成功响应。SimpleExperiment 在响应丢失后用相同请求内容和 `requestId` 重试时直接得到 `replayed=true` 的原结果，不会重复创建幻灯片；同一 `requestId` 对应不同内容时返回中文 `409`。正在执行的相同请求提示稍后重试，其它并发请求仍快速返回忙碌状态，不进入 PowerPoint UI 队列。
+
 当外部 ZLK 请求只提供 Markdown 摘要且没有同名 JSON 时，`MarkdownSummary` 会被作为 `markdown_summary` 轻量输入处理，仅生成 PPT 原生文本表格摘要页，不作为数值图。数值图仍优先使用 `statistics.json`、论文表格 CSV、case-level JSON/CSV 等机器可读结果。
 
 ZLK runtime 的 Agent cache、事件 journal 和 Worker command queue 属于 Agent runtime state；文件传输状态、归档 manifest、删除墓碑和 PPT 绘图审计请求属于项目态，必须在当前项目 `zlk_cluster/` 内落盘。PPT 插件只读取请求内显式传入的项目内轻量文件，不从 `ZLK_AGENT_STATE_DIR` 扫描结果或审计文件。
