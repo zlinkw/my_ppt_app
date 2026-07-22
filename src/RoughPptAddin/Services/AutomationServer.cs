@@ -15,6 +15,10 @@ namespace RoughPptAddin.Services;
 
 public sealed class AutomationServer : IDisposable
 {
+	private const string ServiceName = "rough-ppt-automation";
+
+	private const int SchemaVersion = 1;
+
 	private readonly Func<ZlkClusterPlotRequest, Task<ZlkChartRenderResult>> plotHandler;
 
 	private readonly SemaphoreSlim plotGate = new SemaphoreSlim(1, 1);
@@ -152,9 +156,14 @@ public sealed class AutomationServer : IDisposable
 				await WriteJsonAsync(context, 200, new Dictionary<string, object>
 				{
 					["ok"] = true,
-					["schemaVersion"] = 1,
+					["ready"] = true,
+					["busy"] = plotGate.CurrentCount == 0,
+					["schemaVersion"] = SchemaVersion,
+					["service"] = ServiceName,
 					["pid"] = Process.GetCurrentProcess().Id,
-					["endpoint"] = endpoint
+					["processName"] = Process.GetCurrentProcess().ProcessName,
+					["endpoint"] = endpoint,
+					["capabilities"] = new string[4] { "nativeEditableCharts", "sharedResultImporter", "fastBusyResponse", "additiveSchema" }
 				}).ConfigureAwait(continueOnCapturedContext: false);
 				return;
 			}
@@ -234,10 +243,15 @@ public sealed class AutomationServer : IDisposable
 		{
 			["endpoint"] = endpoint,
 			["baseUrl"] = endpoint,
+			["healthPath"] = "/health",
+			["plotPath"] = "/api/zlk-cluster/plot",
 			["tokenPath"] = TokenPath,
+			["tokenHeaders"] = new string[3] { "Authorization: Bearer", "X-Rough-Ppt-Token", "X-RoughPpt-Automation-Token" },
+			["service"] = ServiceName,
 			["pid"] = Process.GetCurrentProcess().Id,
+			["processName"] = Process.GetCurrentProcess().ProcessName,
 			["startedAt"] = DateTime.UtcNow.ToString("o"),
-			["schemaVersion"] = 1
+			["schemaVersion"] = SchemaVersion
 		};
 		File.WriteAllText(DiscoveryPath, serializer.Serialize(discovery), Encoding.UTF8);
 	}

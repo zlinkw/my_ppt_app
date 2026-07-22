@@ -85,8 +85,8 @@
 ## 活跃队列
 
 1. SE001（已实现，待五批统一验证）：PPT 缺省结果发现已先用 `statistics.json` 和论文表格，再考虑摘要、索引和 case-level 辅助文件；本批仅完成差异检查，未运行测试或构建。
-2. SE002（运行中）：强化 automation discovery 与 `/health` 的 `schemaVersion=1`、进程身份、忙碌状态和能力字段，保持 additive extension。
-3. SE003（待执行）：按 `requestId` 提供幂等结果缓存，避免 SimpleExperiment 重试造成重复幻灯片，同时继续对不同请求快速返回忙碌状态。
+2. SE002（已实现，待五批统一验证）：discovery 与 `/health` 已补充服务和进程身份、固定路径、token header 清单、`ready`、`busy` 和 additive capabilities；本批仅完成差异检查，未运行测试或构建。
+3. SE003（运行中）：按 `requestId` 提供幂等结果缓存，避免 SimpleExperiment 重试造成重复幻灯片，同时继续对不同请求快速返回忙碌状态。
 4. SE004（待执行）：统一任务窗格中的 SimpleExperiment 品牌、连接状态和中文可操作反馈，不暴露旧 ZLK 产品名作为主文案。
 5. SE005（待执行）：补齐连接合同验证；连续五批后统一运行完整 `npm test` 和 UI 构建，不打包、不安装。
 
@@ -96,7 +96,7 @@
 - 范围：PPT automation server、结果发现、任务窗格状态、兼容验证和相关文档。
 - 排除：外部 `D:\GitRepo\MCP\zlk-cluster-orchestrator` 与 `D:\GitRepo\my_img_manager` 只读；不改其源码，不扫描 raw dataset/checkpoint/Agent 全局态，不自动安装、不关闭或重启 PowerPoint/VS Code。
 - 保护区：loopback 与 token 验证、`schemaVersion=1`、已有 PowerPoint 不关闭、结果统一经 importer 归一化、最终对象保持 PPT 原生可编辑。
-- 回归检查：SE001 差异检查通过；每批只做一个同风险面改动并独立提交推送；前四批仅差异检查，第五批统一执行完整测试和 UI 构建。
+- 回归检查：SE001-SE002 差异检查通过；每批只做一个同风险面改动并独立提交推送；前四批仅差异检查，第五批统一执行完整测试和 UI 构建。
 
 ## 近期锚点
 

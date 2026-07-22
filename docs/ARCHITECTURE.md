@@ -22,7 +22,7 @@ This preserves common PowerPoint operations such as drag, align, resize, rotate,
 
 ## ZLK Cluster Automation
 
-PowerPoint 加载 VSTO 后启动本机自动绘图服务，只监听 `127.0.0.1`。发现文件写入 `%LOCALAPPDATA%\RoughPptAddin\automation.json`，令牌写入 `%LOCALAPPDATA%\RoughPptAddin\automation.token`，外部请求必须携带 `X-Rough-Ppt-Token`。
+PowerPoint 加载 VSTO 后启动本机自动绘图服务，只监听 `127.0.0.1`。发现文件写入 `%LOCALAPPDATA%\RoughPptAddin\automation.json`，令牌写入 `%LOCALAPPDATA%\RoughPptAddin\automation.token`，外部请求可同时携带冻结的三种 token header。discovery 公开 `schemaVersion`、服务和进程身份、固定路径及 token header 清单；`/health` 公开 `ready`、`busy`、服务和进程身份及 additive capabilities，便于 SimpleExperiment 区分未启动、忙碌和协议不兼容。
 
 `POST /api/zlk-cluster/plot` 只接收轻量绘图请求。C# 读取请求指定的结果文件后投递给 WebView，WebView 复用 `zlk-cluster-result-importer.mjs` 完成格式探测、字段归一化和图表推荐，再通过 `insertZlkChart` host message 交回 C#。`PptZlkChartRenderer` 使用 PowerPoint 原生 `Shape`、`Line`、`Textbox` 和 `Group` 绘制结果，禁止把 ZLK 图表做成图片、SVG 或 Canvas 截图。
 
