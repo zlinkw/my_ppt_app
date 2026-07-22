@@ -84,11 +84,11 @@
 
 ## 活跃队列
 
-1. SE001（已实现，待五批统一验证）：PPT 缺省结果发现已先用 `statistics.json` 和论文表格，再考虑摘要、索引和 case-level 辅助文件；本批仅完成差异检查，未运行测试或构建。
-2. SE002（已实现，待五批统一验证）：discovery 与 `/health` 已补充服务和进程身份、固定路径、token header 清单、`ready`、`busy` 和 additive capabilities；本批仅完成差异检查，未运行测试或构建。
-3. SE003（已实现，待五批统一验证）：automation server 已缓存最近 32 个成功 `requestId`，相同内容重试返回 `replayed=true` 且不重复建页，不同内容复用 ID 与并发请求均快速返回中文 `409`；本批仅完成差异检查，未运行测试或构建。
-4. SE004（已实现，待五批统一验证）：任务窗格连接片、导入提示、自动绘图状态、错误反馈和默认图表标题已统一使用 SimpleExperiment 品牌；保留 ZLK 仅作为协议 ID、内部标记和兼容搜索词。本批仅完成差异检查，未运行测试或构建。
-5. SE005（运行中）：补齐连接合同验证；连续五批后统一运行完整 `npm test` 和 UI 构建，不打包、不安装。
+1. SE001（统一验证通过）：PPT 缺省结果发现优先使用 `statistics.json` 和论文表格，再考虑摘要、索引和 case-level 辅助文件；`npm test` 已覆盖结果选择合同。
+2. SE002（统一验证通过）：discovery 与 `/health` 已补充服务和进程身份、固定路径、token header 清单、`ready`、`busy` 和 additive capabilities；`npm test` 已覆盖连接诊断合同。
+3. SE003（统一验证通过）：automation server 已缓存最近 32 个成功 `requestId`，相同内容重试返回 `replayed=true` 且不重复建页，不同内容复用 ID 与并发请求均快速返回中文 `409`；`npm test` 已覆盖幂等合同。
+4. SE004（统一验证通过）：任务窗格连接片、导入提示、自动绘图状态、错误反馈和默认图表标题已统一使用 SimpleExperiment 品牌；保留 ZLK 仅作为协议 ID、内部标记和兼容搜索词。
+5. SE005（统一验证通过）：连接合同验证、恢复源码等价实现兼容、部署与完整卸载入口、Office 版本兼容和批量重绘合同均已通过；完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过。本批不打包、不安装。
 
 ### 当前 SimpleExperiment 连接批次
 
@@ -96,7 +96,7 @@
 - 范围：PPT automation server、结果发现、任务窗格状态、兼容验证和相关文档。
 - 排除：外部 `D:\GitRepo\MCP\zlk-cluster-orchestrator` 与 `D:\GitRepo\my_img_manager` 只读；不改其源码，不扫描 raw dataset/checkpoint/Agent 全局态，不自动安装、不关闭或重启 PowerPoint/VS Code。
 - 保护区：loopback 与 token 验证、`schemaVersion=1`、已有 PowerPoint 不关闭、结果统一经 importer 归一化、最终对象保持 PPT 原生可编辑。
-- 回归检查：SE001-SE004 差异检查通过；每批只做一个同风险面改动并独立提交推送；前四批仅差异检查，第五批统一执行完整测试和 UI 构建。
+- 回归检查：SE001-SE005 已通过完整 `npm.cmd test` 与 `npm.cmd run build:ui`；本批未运行打包或安装，后续只有用户明确要求时才生成安装包。
 
 ## 近期锚点
 
