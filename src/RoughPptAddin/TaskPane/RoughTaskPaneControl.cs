@@ -328,6 +328,10 @@ public sealed class RoughTaskPaneControl : UserControl
 			controller.ShowResearchChartStudio();
 			PostStatus("已打开独立科研绘图工作区。", isError: false);
 			break;
+		case "openResearchChartWebsite":
+			ResearchChartStudioService.OpenWebsite(ReadString(message, "siteId", string.Empty));
+			PostStatus("已使用系统浏览器打开科研绘图网站。", isError: false);
+			break;
 		case "getShapeIcons":
 			SendShapeIcons();
 			break;

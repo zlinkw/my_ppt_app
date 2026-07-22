@@ -134,7 +134,13 @@ public sealed class ResearchChartStudioWindow : Form
 		try
 		{
 			var message = serializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(e.WebMessageAsJson);
-			if (!string.Equals(Convert.ToString(message?["type"]), "insertResearchChart", StringComparison.OrdinalIgnoreCase))
+			string messageType = ReadString(message, "type", string.Empty);
+			if (string.Equals(messageType, "openResearchChartWebsite", StringComparison.OrdinalIgnoreCase))
+			{
+				OpenResearchChartWebsite(ReadString(message, "siteId", string.Empty));
+				return;
+			}
+			if (!string.Equals(messageType, "insertResearchChart", StringComparison.OrdinalIgnoreCase))
 			{
 				return;
 			}
@@ -158,6 +164,36 @@ public sealed class ResearchChartStudioWindow : Form
 			PostResult(string.Empty, false, string.Empty, ex.Message);
 			reportStatus?.Invoke("科研绘图工作区插入失败：" + ex.Message, true);
 		}
+	}
+
+	private void OpenResearchChartWebsite(string websiteId)
+	{
+		try
+		{
+			ResearchChartStudioService.OpenWebsite(websiteId);
+			PostWebsiteResult(true, null);
+			reportStatus?.Invoke("已使用系统浏览器打开科研绘图网站。", false);
+		}
+		catch (Exception ex)
+		{
+			AddInLogger.Error("打开科研绘图网站失败。", ex);
+			PostWebsiteResult(false, ex.Message);
+			reportStatus?.Invoke("打开科研绘图网站失败：" + ex.Message, true);
+		}
+	}
+
+	private void PostWebsiteResult(bool ok, string error)
+	{
+		if (webView.CoreWebView2 == null)
+		{
+			return;
+		}
+		webView.CoreWebView2.PostWebMessageAsJson(serializer.Serialize(new
+		{
+			type = "researchWebsiteOpenResult",
+			ok,
+			error = error ?? string.Empty
+		}));
 	}
 
 	private void PostResult(string requestId, bool ok, string chartType, string error)

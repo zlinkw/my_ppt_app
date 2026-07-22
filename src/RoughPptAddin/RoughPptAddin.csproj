@@ -87,6 +87,7 @@
     <Compile Include="Services\PptFreeformWriter.cs" />
     <Compile Include="Services\PptZlkChartRenderer.cs" />
     <Compile Include="Services\QuickShapeService.cs" />
+    <Compile Include="Services\ResearchChartStudioService.cs" />
     <Compile Include="Services\RoughAddInController.cs" />
     <Compile Include="Services\RoughJsBridge.cs" />
     <Compile Include="Services\SelectionCaptureService.cs" />

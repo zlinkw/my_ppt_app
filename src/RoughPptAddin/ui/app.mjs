@@ -3779,7 +3779,8 @@ function openResearchChartStudio() {
     setStatus("当前页面未连接 PowerPoint，无法打开科研绘图工作区。", true);
     return;
   }
-  setStatus("正在打开独立科研绘图工作区。");
+  setStatus("正在打开 RAWGraphs 与科研 SVG 工作区。");
+  postHost({ type: "openResearchChartWebsite", siteId: "rawgraphs" });
   postHost({ type: "openResearchChartStudio" });
 }
 

@@ -143,7 +143,7 @@
 - 批次边界：单个小批次不运行测试、构建或打包；B513-B517 完成后统一运行完整 `npm.cmd test`、`npm.cmd run build:ui`、Release 编译并打包 ZIP/MSI/EXE。
 - B513（待统一验证）：三个简洁模式状态按钮改用 `workflow-actions` 容器与同一按钮尺寸、边框、间距和响应式网格；记录科研 SVG 窄范围例外。
 - B514（待统一验证）：科研绘图工作区已改为四个网站入口、受控 SVG 选择、同源预览和插入状态工作台；移除本地 Chart.js/CSV 预览主流程，不影响任务窗格旧原生导入入口。
-- B515（待开始）：系统浏览器 URL 白名单与主入口默认打开 RAWGraphs。
+- B515（待统一验证）：系统浏览器仅接受 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定 HTTPS 地址；科研绘图主入口默认打开 RAWGraphs，并同时保留本地 SVG 工作区。
 - B516（待开始）：SVG 文件选择、内容校验、同源预览和当前幻灯片插入。
 - B517（待开始）：使用说明、架构、验证合同与兼容说明同步。
 
