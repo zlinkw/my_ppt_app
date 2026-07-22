@@ -18,8 +18,11 @@ const CHART_LABELS = {
   histogram: "直方图",
   boxplot: "箱线图",
   density: "密度图",
+  violin: "小提琴图",
+  ecdf: "经验累积分布图",
   strip: "条带图",
   regression: "回归图",
+  forest: "森林图",
   heatmap: "热力图",
   donut: "环形图",
   polar: "极坐标图"
@@ -353,6 +356,21 @@ function fieldType(field, fallback = "nominal") {
   return state.fieldTypes[field] || fallback;
 }
 
+function requireQuantitativeField(field, label) {
+  if (!field || fieldType(field) !== "quantitative") throw new Error(`${label}必须选择数值字段。`);
+}
+
+function requireIntervalFields() {
+  const low = els.errorLowField.value;
+  const high = els.errorHighField.value;
+  if (!low || !high) throw new Error("森林图需要选择误差下限和误差上限字段。");
+  requireQuantitativeField(low, "误差下限");
+  requireQuantitativeField(high, "误差上限");
+  const invalid = state.rows.find(row => !Number.isFinite(Number(row[low])) || !Number.isFinite(Number(row[high])) || Number(row[low]) > Number(row[high]));
+  if (invalid) throw new Error("森林图的误差上下限必须是数值，且下限不得大于上限。");
+  return { low, high };
+}
+
 function sortValue() {
   return els.sortMode.value === "ascending" || els.sortMode.value === "descending" ? els.sortMode.value : null;
 }
@@ -523,6 +541,8 @@ function buildSpec() {
   const lineWidth = numericValue(els.lineWidth, 2, 1, 8);
   const pointSize = numericValue(els.markSize, 90, 10, 500);
   let layers;
+  let violinSpec = null;
+  let annotationXField = xField;
 
   if (["bar", "groupedBar", "stackedBar"].includes(state.chartType)) {
     const encoding = addColor({ x, y: { ...y, stack: state.chartType === "stackedBar" ? "zero" : null } }, state.chartType === "bar" ? "" : colorField);
@@ -576,6 +596,37 @@ function buildSpec() {
       mark: mark("area", { opacity: 0.28, line: { strokeWidth: lineWidth } }),
       encoding
     }];
+  } else if (state.chartType === "violin") {
+    requireQuantitativeField(yField, "小提琴图的 Y 轴");
+    const densityField = "__violinDensity";
+    const densityGroup = [xField, ...(colorField && colorField !== xField ? [colorField] : [])];
+    violinSpec = {
+      transform: [{ density: yField, groupby: densityGroup, as: [yField, densityField] }],
+      mark: mark("area", { orient: "horizontal", opacity: 0.42, line: { strokeWidth: lineWidth } }),
+      encoding: addColor({
+        x: { field: densityField, type: "quantitative", stack: "center", impute: null, title: null, axis: { labels: false, values: [0], grid: false, ticks: true, domain: false } },
+        y: { field: yField, type: "quantitative", title: els.yAxisTitle.value || yField, axis: axis(els.yAxisTitle.value || yField, true, "y"), scale: scaleSpec("y", false) },
+        tooltip: [{ field: xField, type: fieldType(xField) }, { field: yField, type: "quantitative", title: yField }]
+      }, colorField || xField)
+    };
+  } else if (state.chartType === "ecdf") {
+    const numericField = fieldType(xField) === "quantitative" ? xField : yField;
+    requireQuantitativeField(numericField, "经验累积分布图的数值轴");
+    annotationXField = numericField;
+    const groupby = colorField ? [colorField] : [];
+    const probabilityScale = scaleSpec("y", true);
+    probabilityScale.domainMax = 1;
+    if (probabilityScale.type !== "log") probabilityScale.domainMin = 0;
+    const encoding = addColor({
+      x: { field: numericField, type: "quantitative", title: els.xAxisTitle.value || numericField, axis: axis(els.xAxisTitle.value || numericField, true, "x"), scale: scaleSpec("x", false) },
+      y: { field: "__ecdf", type: "quantitative", title: "累计概率", axis: axis("累计概率", true, "y"), scale: probabilityScale },
+      tooltip: [{ field: numericField, type: "quantitative", title: numericField }, { field: "__ecdf", type: "quantitative", title: "累计概率", format: ".3f" }]
+    }, colorField);
+    layers = [{
+      transform: [{ window: [{ op: "cume_dist", as: "__ecdf" }], sort: [{ field: numericField, order: "ascending" }], ...(groupby.length ? { groupby } : {}) }],
+      mark: mark("line", { interpolate: "step-after", strokeWidth: lineWidth, point: { filled: true, size: Math.max(18, pointSize * 0.32) } }),
+      encoding
+    }];
   } else if (state.chartType === "strip") {
     layers = [{
       mark: mark("point", { filled: true, size: pointSize, opacity: 0.66, stroke: "#ffffff", strokeWidth: 0.5 }),
@@ -591,6 +642,22 @@ function buildSpec() {
       { mark: mark("point", { filled: true, size: pointSize, opacity: 0.7 }), encoding },
       { transform: [{ regression: yField, on: xField, ...(colorField ? { groupby: [colorField] } : {}) }], mark: mark("line", { strokeWidth: lineWidth, opacity: 1 }), encoding }
     ];
+  } else if (state.chartType === "forest") {
+    requireQuantitativeField(yField, "森林图的 Y 轴效应值");
+    const { low, high } = requireIntervalFields();
+    const category = { field: xField, type: fieldType(xField), title: els.yAxisTitle.value || xField, axis: axis(els.yAxisTitle.value || xField, false), sort: sortValue() };
+    const effect = { field: yField, type: "quantitative", title: els.xAxisTitle.value || yField, axis: axis(els.xAxisTitle.value || yField, true, "x"), scale: scaleSpec("x", false) };
+    const intervalColor = colorEncoding(colorField);
+    const withColor = encoding => intervalColor ? { ...encoding, color: intervalColor } : encoding;
+    layers = [
+      { mark: { type: "rule", color: PALETTES[state.palette][0], strokeWidth: Math.max(1.5, lineWidth) }, encoding: withColor({ x: { field: low, type: "quantitative", scale: scaleSpec("x", false) }, x2: { field: high }, y: category }) },
+      { mark: { type: "tick", color: PALETTES[state.palette][0], orient: "vertical", size: 10, thickness: 1.5 }, encoding: withColor({ x: { field: low, type: "quantitative", scale: scaleSpec("x", false) }, y: category }) },
+      { mark: { type: "tick", color: PALETTES[state.palette][0], orient: "vertical", size: 10, thickness: 1.5 }, encoding: withColor({ x: { field: high, type: "quantitative", scale: scaleSpec("x", false) }, y: category }) },
+      { mark: mark("point", { filled: true, size: pointSize, stroke: "#ffffff", strokeWidth: 0.8 }), encoding: withColor({ x: effect, y: category, tooltip: [{ field: xField, type: fieldType(xField) }, { field: yField, type: "quantitative", title: "效应值" }, { field: low, type: "quantitative", title: "下限" }, { field: high, type: "quantitative", title: "上限" }] }) }
+    ];
+    const reference = optionalNumber(els.referenceX);
+    if (reference !== null) layers.unshift({ mark: { type: "rule", color: els.annotationColor.value, strokeWidth: 1.5, strokeDash: [6, 4] }, encoding: { x: { datum: reference } } });
+    if (els.showLabels.checked) layers.push({ mark: mark("text", { color: els.textColor.value, dx: 8, align: "left", opacity: 1 }), encoding: { x: effect, y: category, text: { field: yField, type: "quantitative", format: ".3~g" } } });
   } else if (state.chartType === "heatmap") {
     const yCategory = colorField || xField;
     layers = [{
@@ -623,7 +690,7 @@ function buildSpec() {
     throw new Error("当前图表类型不受支持。");
   }
 
-  if (!["density", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(xField));
+  if (!["density", "violin", "forest", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
 
   const chartWidth = numericValue(els.chartWidth, 760, 360, 1600);
   const chartHeight = numericValue(els.chartHeight, 480, 260, 1200);
@@ -643,6 +710,22 @@ function buildSpec() {
       text: { font: "Segoe UI, Microsoft YaHei" }
     }
   };
+
+  if (violinSpec) {
+    const facet = facetField
+      ? {
+          row: { field: facetField, type: fieldType(facetField), header: { title: null, labelColor: els.textColor.value } },
+          column: { field: xField, type: fieldType(xField), header: { title: els.xAxisTitle.value || xField, labelColor: els.textColor.value } }
+        }
+      : { field: xField, type: fieldType(xField), header: { title: els.xAxisTitle.value || xField, labelColor: els.textColor.value } };
+    return {
+      ...common,
+      facet,
+      ...(facetField ? {} : { columns: facetColumns }),
+      spec: { width: Math.max(150, Math.floor(chartWidth / facetColumns) - 46), height: chartHeight, ...violinSpec },
+      resolve: { scale: { x: "independent", y: "shared" } }
+    };
+  }
 
   if (facetField) {
     return {
