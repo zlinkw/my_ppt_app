@@ -134,20 +134,21 @@
 
 ### 当前网页科研绘图与 SVG 所见即所得批次
 
-- 批次队列：B513、B514、B515、B516、B517。
+- 批次队列：B513、B514、B515、B516、B517、B518，均已完成并统一验证。
 - 目标：让简洁模式三个状态按钮直接复用快捷工作台按钮样式；科研绘图主入口打开系统浏览器中的成熟绘图网站；网站导出的 SVG 以同一份内容完成预览和 PPT 插入，消除颜色、坐标与排版差异。
 - 范围：简洁模式连接按钮、独立科研绘图工作区、系统浏览器白名单、SVG 选择/校验/插入、使用说明与静态合同。
 - 排除：不移除旧任务窗格 JSON/CSV/SimpleExperiment 原生绘图入口；不改变 ZLK `schemaVersion=1`、loopback/token 协议、结果 importer 或原生 renderer；不允许任意 URL、脚本化 SVG、外部资源或 Canvas 截图插入。
 - 保护区：PowerPoint 不自动关闭或重启；Rough 与 ZLK 自动绘图继续只生成原生对象；浏览器只打开 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定地址；科研 SVG 只接受用户显式选择的本地文件，插件不伪造来源证明，并在插入前再次校验内容一致性。
 - 回归检查：连接按钮共享布局、系统浏览器白名单、SVG 安全校验、预览/插入同源、旧 ZLK 原生链路、Office 兼容提示、无渐变 UI、中文 tooltip。
 - 批次边界：单个小批次不运行测试、构建或打包；B513-B517 完成后统一运行完整 `npm.cmd test`、`npm.cmd run build:ui`、Release 编译并打包 ZIP/MSI/EXE。
-- B513（待统一验证）：三个简洁模式状态按钮改用 `workflow-actions` 容器与同一按钮尺寸、边框、间距和响应式网格；记录科研 SVG 窄范围例外。
-- B514（待统一验证）：科研绘图工作区已改为四个网站入口、受控 SVG 选择、同源预览和插入状态工作台；移除本地 Chart.js/CSV 预览主流程，不影响任务窗格旧原生导入入口。
-- B515（待统一验证）：系统浏览器仅接受 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定 HTTPS 地址；科研绘图主入口默认打开 RAWGraphs，并同时保留本地 SVG 工作区。
-- B516（待统一验证）：宿主文件选择器限制 4 MB UTF-8 SVG，拒绝 DTD、脚本、事件、动画、外部 URL/资源和嵌入图像；校验内容固定到插件会话缓存，预览和插入复用同一 SHA256 内容，并在 PowerPoint 2016 及更高版本居中等比插入当前幻灯片。
-- B517（待统一验证）：使用说明、架构、验证清单和源码隔离扫描已同步网站绘图、SVG 安全边界、同源预览/插入、PowerPoint 2016 版本门禁与 PowerPoint 2013 原生入口回退。
-- 统一验证（首次失败后已修正）：源码扫描器的旧宽泛表达式把工作区 HTML 中“插入 ... SVG”的说明文字误判为越界插入；规则已收窄为科研 SVG 消息/方法标识，实际 `Shapes.AddPicture` 仍仅允许两个隔离服务。修正后完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过，等待签名 Release 编译与三种安装产物打包。
-- 打包后视觉复核（已修正，待重打包）：首次 `0.1.743` 三件套生成成功，但帮助截图暴露隐藏预览图仍被作者样式强制显示为破图占位，Plotly 长按钮文字被省略。现已恢复 `[hidden]` 语义、允许网站按钮文字自然换行并更新真实截图；重新运行完整 `npm.cmd test` 与 `npm.cmd run build:ui` 均通过。旧安装包不交付，等待基于修正提交重新打包。
+- B513（统一验证通过）：三个简洁模式状态按钮改用 `workflow-actions` 容器与同一按钮尺寸、边框、间距和响应式网格；记录科研 SVG 窄范围例外。
+- B514（统一验证通过）：科研绘图工作区改为四个网站入口、受控 SVG 选择、同源预览和插入状态工作台；移除本地 Chart.js/CSV 预览主流程，不影响任务窗格旧原生导入入口。
+- B515（统一验证通过）：系统浏览器仅接受 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定 HTTPS 地址；科研绘图主入口默认打开 RAWGraphs，并同时保留本地 SVG 工作区。
+- B516（统一验证通过）：宿主文件选择器限制 4 MB UTF-8 SVG，拒绝 DTD、脚本、事件、动画、外部 URL/资源和嵌入图像；校验内容固定到插件会话缓存，预览和插入复用同一 SHA256 内容，并在 PowerPoint 2016 及更高版本居中等比插入当前幻灯片。
+- B517（统一验证通过）：使用说明、架构、验证清单和源码隔离扫描已同步网站绘图、SVG 安全边界、同源预览/插入、PowerPoint 2016 版本门禁与 PowerPoint 2013 原生入口回退。
+- B518（统一验证通过）：修复科研 SVG 空状态破图占位和 Plotly 长按钮文字截断，允许网站按钮自然换行，并以真实工作区截图更新使用说明；旧 `0.1.743` 发布目录已登记为人工清理候选，不再交付。
+- 统一验证与发布：源码扫描误报修正后，完整 `npm.cmd test`、`npm.cmd run build:ui`、签名 Release 编译和 79 个 Ribbon 功能图标运行时验证均通过。最终三种产物位于 `releases/RoughPptAddin-0.1.744-c4df37f5/`；ZIP 内构建信息为版本 `0.1.744`、提交 `c4df37f5a162`、`master`、`dirty=false`，科研 SVG 工作区、插件 DLL、安装、环境补齐、卸载和彻底卸载入口均存在。
+- 产物复核：ZIP 为 `4763111` 字节，SHA256 `36D530BD37D84B686FAE60DC0986496AB2BF322E535FA0B182CD66E7A443D594`；MSI 为 `4775936` 字节，SHA256 `A7D72CEA497E891327B2EC3F2C3ACF03334ACDF6AA5AD6CF543893EC49A5DFBB`；EXE 为 `4923392` 字节，SHA256 `471ED0A141EBF26F04CF098168A2282074323AB314699F7EB7BB41723C0EC036`。三项均与 `installer-manifest.json` 一致；未自动安装、未关闭或重启 PowerPoint/VS Code。
 
 ## 近期锚点
 
