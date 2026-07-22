@@ -121,13 +121,16 @@
 - 排除：不移除旧任务窗格导入入口；不改变 ZLK `schemaVersion=1`、loopback/token 协议和结果 importer；不把 Canvas/SVG/图片作为 PPT 最终对象。
 - 保护区：PowerPoint 不自动关闭或重启；现有图表 renderer 继续只生成原生 `Shape`、`Line`、`Textbox`、`Table`；Chart.js 仅用于网页预览，CSV 通过 Papa Parse 解析。
 - 批次边界：每个小批次不单独测试、构建或打包；B505-B509 完成后统一运行完整 `npm test`、`npm run build:ui`，通过后按用户要求打包，供手动安装验证。
-- B505（待统一验证）：按钮最终尺寸和可用宽度合同。
-- B506（待统一验证）：独立科研绘图网页的本地静态界面、CSV 解析和 Chart.js 预览。
-- B507（待统一验证）：独立 WebView2 窗口及本地资源映射。
-- B508（待统一验证）：网页插入消息回传、PPT 原生图表插入和任务窗格入口跳转。
-- B509（待统一验证）：资源清单、使用说明和端到端静态回归合同。
-- B510（纠正验证）：首次全量验证在第三方 Chart.js 包含可选 Canvas 导出 API 处触发最终对象禁用规则；允许扫描器识别该只读 vendor 文件，同时新增工作区集成脚本不得调用 Canvas 捕获或导出的定向合同。UI 构建已通过，完整验证待重跑。
-- B511（纠正验证）：全量 UI 合同要求每个任务窗格 host 消息同时登记在 `bridge-contract.mjs`；补登记独立科研绘图工作区消息类型，待重跑完整验证。
+- B505（统一验证通过）：按钮最终尺寸和可用宽度合同。
+- B506（统一验证通过）：独立科研绘图网页的本地静态界面、CSV 解析和 Chart.js 预览。
+- B507（统一验证通过）：独立 WebView2 窗口及本地资源映射。
+- B508（统一验证通过）：网页插入消息回传、PPT 原生图表插入和任务窗格入口跳转。
+- B509（统一验证通过）：资源清单、使用说明和端到端静态回归合同。
+- B510（已纠正）：第三方 Chart.js 包含可选 Canvas 导出 API；扫描器现只对该只读 vendor 文件豁免，工作区集成脚本禁止调用 Canvas 捕获或导出。
+- B511（已纠正）：独立科研绘图工作区消息已登记到 `bridge-contract.mjs`，全量 UI 合同通过。
+- B512（待统一验证）：独立工作区回传消息的 `requestId` 仅用于页面应答，不能传给 `InsertZlkChart` 作为自动化请求标识；否则会错误创建新演示文稿。宿主现强制使用当前 PPT 幻灯片目标，待重跑完整验证并重新打包。
+- 统一验证：`npm.cmd test`、`npm.cmd run build:ui`、`node --check` 和签名 Release 编译均通过；直接运行旧 `scripts/build.ps1` 仍因未传入 Restore/LangVersion 参数失败，不作为发布链路，`npm.cmd run package` 使用独立 Restore 与最新 C# 语言版本成功。
+- 发布产物：`releases/RoughPptAddin-0.1.734-33073eb3/`，ZIP、MSI、EXE 清单与 SHA256 已复核；未自动安装、未关闭或重启 PowerPoint/VS Code。
 
 ## 近期锚点
 

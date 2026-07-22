@@ -143,7 +143,8 @@ public sealed class ResearchChartStudioWindow : Form
 			string requestId = ReadString(message, "requestId", "studio-" + DateTime.UtcNow.Ticks);
 			ZlkClusterPlotRequest request = new ZlkClusterPlotRequest
 			{
-				RequestId = requestId,
+				// Keep the UI correlation id out of the automation target resolver so insertion stays in the current presentation.
+				RequestId = string.Empty,
 				ChartType = spec.ChartType ?? "genericTable",
 				SourceLabel = dataset.Source?.Path ?? "科研绘图工作区"
 			};

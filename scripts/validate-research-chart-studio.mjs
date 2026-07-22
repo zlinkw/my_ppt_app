@@ -36,7 +36,7 @@ for (const snippet of ["display: grid", "display: flex", "#5871ef", "min-height:
 for (const snippet of ["window.Papa", "window.Chart", "leaderboardBar", "sensitivityCurve", "scatterPlot", "subgroupComparison", "meanStdErrorBar", "caseLevelDistribution", "genericTable", "insertResearchChart", "toHostDataset"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图工作区脚本合同缺少：${snippet}`);
 }
-for (const snippet of ["ResearchChartStudioWindow", "research-chart-studio.html", "WebMessageReceived", "insertChart(dataset, spec, request)", "researchChartInsertResult"]) {
+for (const snippet of ["ResearchChartStudioWindow", "research-chart-studio.html", "WebMessageReceived", "insertChart(dataset, spec, request)", "researchChartInsertResult", "RequestId = string.Empty"]) {
   if (!windowHost.includes(snippet)) throw new Error(`科研绘图工作区宿主合同缺少：${snippet}`);
 }
 for (const snippet of ["ShowResearchChartStudio", "researchChartStudioWindow?.Dispose()", "InsertZlkChart"]) {
