@@ -59,6 +59,9 @@ for (const snippet of [
   'id="annotationY"',
   'id="showErrorBand"',
   'id="chartTypeGrid"',
+  'id="chartSearch"',
+  'id="chartCategory"',
+  'id="chartSearchSummary"',
   'id="websiteList"',
   'id="selectSvgButton"',
   'id="insertButton"',
@@ -95,6 +98,9 @@ for (const snippet of [
   'event.key === "Escape"'
 ]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图工作区脚本合同缺少：${snippet}`);
+}
+for (const snippet of ["CHART_CATEGORIES", "filterChartTypeButtons", "aria-hidden", "显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表"]) {
+  if (!app.includes(snippet)) throw new Error(`科研绘图入口发现性合同缺少：${snippet}`);
 }
 for (const snippet of ["scaleSpec", "axisKeyElements", "domainMin", "domainMax", "xReverse", "yReverse", "xTickFormat", "yTickFormat"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图坐标控制合同缺少：${snippet}`);

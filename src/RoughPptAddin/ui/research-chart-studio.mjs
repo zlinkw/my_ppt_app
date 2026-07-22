@@ -36,6 +36,16 @@ const CHART_LABELS = {
   polar: "极坐标图"
 };
 
+const CHART_CATEGORIES = {
+  bar: "comparison", groupedBar: "comparison", stackedBar: "comparison", horizontalBar: "comparison", donut: "comparison", polar: "comparison",
+  line: "trend", step: "trend", area: "trend", regression: "trend",
+  histogram: "distribution", boxplot: "distribution", density: "distribution", violin: "distribution", ecdf: "distribution", strip: "distribution",
+  scatter: "multivariate", bubble: "multivariate", heatmap: "multivariate",
+  roc: "evaluation", precisionRecall: "evaluation", calibration: "evaluation",
+  blandAltman: "agreement", forest: "agreement", volcano: "agreement", funnel: "agreement",
+  survival: "survival", cumulativeHazard: "survival"
+};
+
 const PALETTES = {
   simple: ["#5871ef", "#2f9e44", "#7c5cbf", "#d97706", "#0f9f9a", "#d44773", "#6b83ed", "#64748b"],
   academic: ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#8c564b", "#7f7f7f"],
@@ -120,6 +130,9 @@ const els = {
   saveConfigButton: byId("saveConfigButton"),
   loadConfigButton: byId("loadConfigButton"),
   chartTypeGrid: byId("chartTypeGrid"),
+  chartSearch: byId("chartSearch"),
+  chartCategory: byId("chartCategory"),
+  chartSearchSummary: byId("chartSearchSummary"),
   currentChartType: byId("currentChartType"),
   xField: byId("xField"),
   yField: byId("yField"),
@@ -235,6 +248,23 @@ function setFullscreenState(fullscreen) {
   if (els.fullscreenButton) {
     els.fullscreenButton.title = state.fullscreen ? "退出全屏并恢复窗口大小；也可按 Esc" : "让科研绘图工作区占满屏幕；再次点击或按 Esc 恢复窗口";
   }
+}
+
+function filterChartTypeButtons() {
+  const query = String(els.chartSearch?.value || "").trim().toLocaleLowerCase("zh-CN");
+  const category = els.chartCategory?.value || "all";
+  let visible = 0;
+  els.chartTypeGrid?.querySelectorAll("[data-chart-type]").forEach(button => {
+    const chartType = button.dataset.chartType;
+    const label = String(CHART_LABELS[chartType] || button.textContent || "").toLocaleLowerCase("zh-CN");
+    const matchesQuery = !query || label.includes(query) || chartType.toLocaleLowerCase("en-US").includes(query);
+    const matchesCategory = category === "all" || CHART_CATEGORIES[chartType] === category;
+    const show = matchesQuery && matchesCategory;
+    button.hidden = !show;
+    button.setAttribute("aria-hidden", show ? "false" : "true");
+    if (show) visible += 1;
+  });
+  if (els.chartSearchSummary) els.chartSearchSummary.textContent = `显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表`;
 }
 
 function toggleFullscreen() {
@@ -1183,6 +1213,8 @@ function bindEvents() {
     }
   });
   els.chartTypeGrid.querySelectorAll("[data-chart-type]").forEach(button => button.addEventListener("click", () => setChartType(button.dataset.chartType)));
+  els.chartSearch?.addEventListener("input", filterChartTypeButtons);
+  els.chartCategory?.addEventListener("change", filterChartTypeButtons);
   els.paletteList.querySelectorAll("[data-palette]").forEach(button => button.addEventListener("click", () => setPalette(button.dataset.palette)));
 
   els.filterField.addEventListener("change", applyFilterAndRender);
@@ -1254,6 +1286,7 @@ window.chrome?.webview?.addEventListener?.("message", event => {
 window.addEventListener("beforeunload", clearPreviewUrl);
 renderWebsites();
 bindEvents();
+filterChartTypeButtons();
 setFullscreenState(false);
 postHost({ type: "researchChartStudioReady" });
 applyData("内置示例", { render: false });

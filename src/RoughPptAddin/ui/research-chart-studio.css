@@ -104,6 +104,10 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
 .source-label { text-align: right; }
 
 .chart-type-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.chart-discovery { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(112px, .9fr); gap: 6px; margin-bottom: 5px; }
+.chart-discovery label { min-width: 0; display: grid; gap: 3px; color: #475467; font-size: 11px; }
+.chart-search-field input { min-width: 0; }
+.chart-search-summary { margin: 0 0 6px; color: var(--muted); font-size: 10px; }
 .chart-type-grid button {
   min-width: 0;
   min-height: 42px;
@@ -117,6 +121,7 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
   white-space: normal;
   overflow-wrap: anywhere;
 }
+.chart-type-grid button[hidden] { display: none; }
 .chart-type-grid button:hover, .chart-type-grid button:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent-soft); }
 .chart-type-grid button.active, .chart-type-grid button[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); color: #3249c9; box-shadow: inset 0 -2px 0 var(--accent); }
 
@@ -189,6 +194,7 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
   .header-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .header-actions .button { width: 100%; white-space: normal; }
   .chart-type-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-discovery { grid-template-columns: minmax(0, 1fr); }
   .field-grid, .number-grid { grid-template-columns: minmax(0, 1fr); }
   .style-panel { grid-template-columns: minmax(0, 1fr); }
   .style-panel .control-section { padding: 0 0 12px; border-right: 0; border-bottom: 1px solid var(--line); }
