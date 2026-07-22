@@ -14,6 +14,7 @@ const server = read("src/RoughPptAddin/Services/AutomationServer.cs");
 const controller = read("src/RoughPptAddin/Services/RoughAddInController.cs");
 const taskPane = read("src/RoughPptAddin/TaskPane/RoughTaskPaneControl.cs");
 const app = read("src/RoughPptAddin/ui/app.mjs");
+const index = read("src/RoughPptAddin/ui/index.html");
 const clusterImporter = read("src/RoughPptAddin/ui/zlk-cluster-result-importer.mjs");
 const packageJson = read("package.json");
 
@@ -26,6 +27,9 @@ requireIncludes(server, "automation.token", "automation token");
 requireIncludes(server, "X-Rough-Ppt-Token", "cluster token header");
 requireIncludes(server, "X-RoughPpt-Automation-Token", "cluster token header compatibility");
 requireIncludes(server, "Authorization", "bearer token compatibility");
+requireIncludes(server, '["busy"] = plotGate.CurrentCount == 0', "automation health busy state");
+requireIncludes(server, "completedRequests.TryGetValue(requestId", "automation request replay cache");
+requireIncludes(server, ' ["replayed"] = true'.trim(), "automation replay response marker");
 requireIncludes(controller, "StartAutomationServer()", "controller startup");
 requireIncludes(controller, "PlotZlkClusterAsync", "controller plot handler");
 requireIncludes(controller, "MaxZlkSourceFiles = 64", "controller source file count guard");
@@ -42,6 +46,7 @@ requireIncludes(taskPane, "insertZlkChart", "taskpane insert message");
 requireIncludes(app, "normalizeZlkChartFilesForHost", "ui normalization");
 requireIncludes(app, "importZlkClusterResultFile", "ui uses shared ZLK importer");
 requireIncludes(clusterImporter, "buildChartRecommendations", "shared chart recommendations");
+requireIncludes(index + app + taskPane, "SimpleExperiment 自动绘图", "SimpleExperiment primary connection copy");
 requireIncludes(packageJson, "node scripts/validate-zlk-automation-server.mjs", "npm test");
 requireIncludes(packageJson, "node scripts/validate-external-plugin-compat.mjs", "external compatibility validation in npm test");
 

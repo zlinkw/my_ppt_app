@@ -1,5 +1,7 @@
 # Architecture
 
+All user-visible pages and dialogs are Chinese-first. Official product names, protocol IDs and file paths may remain in their required form, but surrounding labels, tooltips, states and errors use native Chinese wording.
+
 ## Object Model
 
 Each inserted rough object is a PowerPoint `Group`.

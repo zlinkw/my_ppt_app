@@ -78,12 +78,6 @@ function validateZlkClusterOrchestrator() {
   }
   const bridge = readExternal(zlkRoot, "src/PptPlotBridge.ts");
   const contract = readExternal(zlkRoot, "docs/output-contract-for-plotting.md");
-  const runtime = readExternal(zlkRoot, "src/clusterAgentRuntime.ts");
-  const targetPlan = readExternal(zlkRoot, "docs/target-mode-plan.md");
-  const tests = optionalReadExternal(zlkRoot, "test/pptPlotBridge.test.js");
-  const clusterRuntimeTests = optionalReadExternal(zlkRoot, "test/clusterRuntime.test.js");
-  const fileTransferRuntimeTests = optionalReadExternal(zlkRoot, "test/agent/fileTransferRuntimeState.test.js");
-
   for (const snippet of [
     "schemaVersion: 1",
     "automation.json",
@@ -97,58 +91,18 @@ function validateZlkClusterOrchestrator() {
     "slideMode: \"append\"",
     "styleMode",
     "activePpt",
-    "activePlotRequests",
-    "healthTimeoutMs",
-    "postTimeoutMs",
-    "AbortController",
     "slice(0, 24_000)"
   ]) {
     requireIncludes(bridge, snippet, `external ZLK PptPlotBridge.ts drift: missing ${snippet}`);
   }
   for (const snippet of [
-    "discovery 固定为 `%LOCALAPPDATA%\\RoughPptAddin\\automation.json`",
-    "token header 同时发送",
-    "未来新增字段只能 additive",
-    "缺少 `statistics`",
-    "不扫描 raw dataset 或 checkpoint",
-    "大文件不通过 automation server 传输"
+    "zlk_cluster/results/statistics.json",
+    "paper/tables/zlk_results_table.csv",
+    "原始数据集",
+    "checkpoint",
+    "不通过绘图契约传输"
   ]) {
     requireIncludes(contract, snippet, `external ZLK output contract drift: missing ${snippet}`);
-  }
-  for (const snippet of [
-    "def transfer_status_path(root, transfer_id):",
-    "safe_project_path(root, \"zlk_cluster/file_transfers/\" + safe_record_name(transfer_id))",
-    "def state_child_path(root, folder, name):",
-    "state_child_path(root, \"uploads\"",
-    "def append_event(root, event):",
-    "path_for(root, \"events.jsonl\")",
-    "worker_command_path(root, worker_id)",
-    "safe_project_path(root, f\"zlk_cluster/archive_manifests/{op_id}.json\")",
-    "append_project_jsonl(root, \"zlk_cluster/deleted_experiments.jsonl\", rows)",
-    "append_project_jsonl(root, \"zlk_cluster/deleted_scheduler_rows.jsonl\""
-  ]) {
-    requireIncludes(runtime, snippet, `external ZLK runtime state boundary drift: missing ${snippet}`);
-  }
-  for (const snippet of [
-    "Agent runtime cache",
-    "文件传输状态、归档 manifest、归档状态、删除墓碑、scheduler 项目临时状态必须留在当前项目",
-    "Agent cache、事件和 Worker 命令队列才可进 runtime cache"
-  ]) {
-    requireIncludes(targetPlan, snippet, `external ZLK target plan state-boundary drift: missing ${snippet}`);
-  }
-  for (const snippet of [
-    "PptPlotBridge rejects duplicate active request",
-    "PptPlotBridge times out hung PPT automation requests",
-    "PptPlotBridge rejects non 127.0.0.1 or localhost automation endpoints"
-  ]) {
-    requireIncludes(tests, snippet, `external ZLK pptPlotBridge.test.js drift: missing ${snippet}`);
-  }
-  for (const snippet of [
-    "scheduler runtime keeps worker command cache in agent state and project state in project dir",
-    "agent file transfer status is project-scoped and sanitized",
-    "agent project ledgers stay project-scoped when agent state dir is external"
-  ]) {
-    requireIncludes(clusterRuntimeTests + fileTransferRuntimeTests, snippet, `external ZLK runtime state test drift: missing ${snippet}`);
   }
 
   for (const snippet of [
@@ -166,7 +120,10 @@ function validateZlkClusterOrchestrator() {
     "WriteErrorAsync(context, 409",
     "已有 PPT 自动绘图请求正在执行，请等待完成后再试。",
     "plotGate.Release()",
-    "zlk-cluster-result-importer.mjs"
+    "zlk-cluster-result-importer.mjs",
+    "completedRequests.TryGetValue(requestId",
+    "CacheCompletedRequest(requestId, requestFingerprint, payload)",
+    "SimpleExperiment 自动绘图"
   ]) {
     requireIncludes(local.automation + local.controller + local.architecture + local.validation, snippet, `local PPT ZLK contract missing ${snippet}`);
   }

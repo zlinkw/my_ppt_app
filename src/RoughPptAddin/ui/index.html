@@ -35,11 +35,16 @@
         <strong title="右侧用于风格参数和科研绘图；插入、转换、重绘等高频命令位于 PowerPoint Ribbon">右侧工作区</strong>
         <span class="badge" title="右侧保留配置、预览、资源管理和大空间工作流">参数与数据</span>
       </header>
-      <div class="workflow-actions" title="右侧工作区入口：风格参数和科研绘图">
+      <div class="workflow-actions" title="快捷工作台：直接定位右侧工作区；高频执行仍由 PowerPoint Ribbon 完成">
+        <span class="workflow-actions-label" title="快捷工作台保留八个主路径入口">快捷工作台（含 AI 预设）</span>
         <button id="jumpToShapes" class="primary-action" data-command-owner="ribbon" type="button" data-starter-action="catalog" title="直接展开 PPT 原生形状手绘版图库，可搜索或点击插入形状" aria-label="插入形状：展开形状图库"><span aria-hidden="true">&#9638;</span><span>插入形状</span></button>
+        <button id="jumpToNext" data-command-owner="ribbon" type="button" data-starter-action="next" title="根据 PowerPoint 当前选区自动选择下一步：无选区打开形状图库，普通形状转换，手绘对象重绘" aria-label="下一步：根据当前选区自动执行或定位"><span aria-hidden="true">&#8250;</span><span>下一步</span></button>
         <button id="jumpToRedraw" data-command-owner="ribbon" type="button" data-starter-action="redraw" title="独立重绘入口：选中手绘对象后按当前风格参数立即重绘；无可重绘选区时只定位到当前选区区" aria-label="重绘选区：按当前参数重新生成手绘对象"><span aria-hidden="true">&#8635;</span><span>重绘选区</span></button>
         <button id="jumpToStyle" type="button" data-starter-action="style" title="定位风格模板和线条、填充、Rough.js 参数"><span aria-hidden="true">&#9881;</span><span>风格参数</span></button>
         <button id="jumpToCharts" type="button" data-starter-action="charts" title="定位科研绘图导入，可识别 SimpleExperiment 实验结果并推荐排行榜、误差棒、敏感性曲线等图表"><span aria-hidden="true">&#9637;</span><span>科研绘图</span></button>
+        <button id="jumpToPaperPresets" type="button" data-starter-action="paperPresets" title="定位智能模型、多模态、医学图像报告和诊断论文图预设"><span aria-hidden="true">&#9635;</span><span>论文预设 AI</span></button>
+        <button id="jumpToAssets" type="button" data-starter-action="library" title="定位我的素材库，可插入、删除、导入和分享素材"><span aria-hidden="true">&#9636;</span><span>素材库</span></button>
+        <button id="jumpToFeature" type="button" data-starter-action="featureBlock" title="定位 2D/3D 特征块工具"><span aria-hidden="true">&#9635;</span><span>特征块</span></button>
       </div>
       <div id="noviceGuideStrip" class="novice-guide-strip" data-command-owner="ribbon" title="高频插入和重绘操作已移至 PowerPoint Ribbon">
         <button type="button" data-starter-action="catalog" title="第一步：插入 PPT 原生手绘形状"><span class="novice-step">1</span><span>插入形状</span></button>
@@ -50,7 +55,7 @@
       <div id="simpleConnectionNote" class="simple-connection-note" title="简洁模式下的外部连接摘要；点状态片可跳转，完整模式可查看更多详情">
         <button id="simpleConnectionZlk" type="button" class="simple-connection-chip idle" data-section-nav="charts" data-domain="zlk" title="定位科研绘图与 SimpleExperiment 自动绘图状态">
           <span class="connection-dot" aria-hidden="true"></span>
-          <span class="simple-connection-copy"><strong>SimpleExperiment</strong><small data-simple-connection-zlk>等待连接</small></span>
+          <span class="simple-connection-copy"><strong>SimpleExperiment 科研绘图</strong><small data-simple-connection-zlk>等待连接</small></span>
         </button>
         <button id="simpleConnectionZotero" type="button" class="simple-connection-chip idle" data-section-nav="zoteroImages" data-domain="zotero" title="定位 Zotero 论文图像与配色库">
           <span class="connection-dot" aria-hidden="true"></span>
@@ -61,7 +66,7 @@
       <div id="connectionHealthStrip" class="connection-health-strip" role="group" aria-label="外部连接状态" title="显示本机外部连接概况；点击可定位到对应功能区，不会执行危险操作">
         <button id="connectionZlk" class="connection-chip idle" type="button" data-section-nav="charts" title="定位 SimpleExperiment 自动绘图和科研绘图导入状态">
           <span class="connection-dot" aria-hidden="true"></span>
-          <span class="connection-copy"><strong>SimpleExperiment</strong><small data-connection-zlk>等待绘图请求</small></span>
+          <span class="connection-copy"><strong>SimpleExperiment 科研绘图</strong><small data-connection-zlk>等待绘图请求</small></span>
         </button>
         <button id="connectionZotero" class="connection-chip idle" type="button" data-section-nav="zoteroImages" title="定位 Zotero 论文图像与配色库读取状态">
           <span class="connection-dot" aria-hidden="true"></span>
@@ -74,13 +79,10 @@
           <span class="quickfind-hint" title="添加常用、转换、重绘、模板、填充、素材等路径提示">添加常用 / 转换 / 重绘 / 路径</span>
         </summary>
         <div class="workflow-more-actions" role="group" aria-label="更多开始操作" title="这里的操作与原开始入口一致，默认收起以降低首屏拥挤">
-          <button id="jumpToNext" data-command-owner="ribbon" type="button" data-starter-action="next" title="根据 PowerPoint 当前选区自动选择下一步：无选区打开形状图库，普通形状转换，手绘对象重绘" aria-label="下一步：根据当前选区自动执行或定位"><span aria-hidden="true">&#8250;</span><span>下一步</span></button>
-          <button id="jumpToPaperPresets" type="button" data-starter-action="paperPresets" title="定位智能模型、多模态、医学图像报告和诊断论文图预设"><span aria-hidden="true">&#9635;</span><span>论文预设</span></button>
-          <button id="jumpToAssets" type="button" data-starter-action="library" title="定位我的素材库，可插入、删除、导入和分享素材"><span aria-hidden="true">&#9636;</span><span>素材库</span></button>
-          <button id="jumpToFeature" type="button" data-starter-action="featureBlock" title="定位 2D/3D 特征块工具"><span aria-hidden="true">&#9635;</span><span>特征块</span></button>
           <button id="jumpToQuickInsert" type="button" data-starter-action="quickInsert" title="直接展开快速插入的添加图库，把常用形状固定到快速插入栏和顶部 Ribbon" aria-label="添加常用形状：打开快速插入添加图库"><span aria-hidden="true">＋</span><span>添加常用</span></button>
           <button id="jumpToSearch" type="button" data-starter-action="search" title="聚焦功能搜索，可输入重绘、填充、模板、素材等关键词" aria-label="功能搜索：定位搜索框"><span aria-hidden="true">&#8981;</span><span>功能搜索</span></button>
           <button id="jumpToConvert" data-command-owner="ribbon" type="button" data-starter-action="convert" title="选区可转换时一键执行转换；无可用选区时定位到当前选区区" aria-label="转换选区：把普通 PPT 形状转为手绘风格"><span aria-hidden="true">&#9998;</span><span>转换选区</span></button>
+          <button id="jumpToMoreRedraw" data-command-owner="ribbon" type="button" data-starter-action="redraw" title="定位当前选区的重绘入口；不会在未选中对象时执行"><span aria-hidden="true">&#8635;</span><span>重绘选区</span></button>
           <button id="jumpToPaperTemplate" data-command-owner="ribbon" type="button" data-starter-action="paperTemplate" title="一键应用论文框图风格模板，并同步后续插入和重绘参数" aria-label="论文模板：应用论文框图手绘风格"><span aria-hidden="true">&#9733;</span><span>论文模板</span></button>
         </div>
         <div class="workflow-quickfind-divider" title="下面是只定位不执行的功能路径提示">功能路径</div>
