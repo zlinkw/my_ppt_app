@@ -146,6 +146,7 @@
 - B515（待统一验证）：系统浏览器仅接受 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定 HTTPS 地址；科研绘图主入口默认打开 RAWGraphs，并同时保留本地 SVG 工作区。
 - B516（待统一验证）：宿主文件选择器限制 4 MB UTF-8 SVG，拒绝 DTD、脚本、事件、动画、外部 URL/资源和嵌入图像；校验内容固定到插件会话缓存，预览和插入复用同一 SHA256 内容，并在 PowerPoint 2016 及更高版本居中等比插入当前幻灯片。
 - B517（待统一验证）：使用说明、架构、验证清单和源码隔离扫描已同步网站绘图、SVG 安全边界、同源预览/插入、PowerPoint 2016 版本门禁与 PowerPoint 2013 原生入口回退。
+- 统一验证（首次失败后已修正）：源码扫描器的旧宽泛表达式把工作区 HTML 中“插入 ... SVG”的说明文字误判为越界插入；规则已收窄为科研 SVG 消息/方法标识，实际 `Shapes.AddPicture` 仍仅允许两个隔离服务。修正后完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过，等待签名 Release 编译与三种安装产物打包。
 
 ## 近期锚点
 

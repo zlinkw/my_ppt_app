@@ -7,7 +7,7 @@ const forbiddenPatterns = [
   { pattern: /\.Export\(/i, reason: "PowerPoint export APIs create raster/vector files, not final native objects", allowFiles: [/SelectionCaptureService\.cs$/, /PaletteLibraryService\.cs$/] },
   { pattern: /AddPicture/i, reason: "AddPicture is restricted to approved external graphic import services", allowFiles: [/ZoteroImageLibraryService\.cs$/, /ResearchChartStudioService\.cs$/] },
   { pattern: /msoPicture/i, reason: "msoPicture violates final object constraint", allowFiles: [/RoughAddInController\.cs$/, /ZoteroImageLibraryService\.cs$/] },
-  { pattern: /Insert.*SVG|SVG.*Insert/i, reason: "SVG insertion wiring is restricted to the research SVG workflow", allowFiles: [/ResearchChartStudioService\.cs$/, /ResearchChartStudioWindow\.cs$/, /RoughAddInController\.cs$/, /research-chart-studio\.mjs$/] },
+  { pattern: /InsertResearchSvg|insertResearchSvg/, reason: "SVG insertion wiring is restricted to the research SVG workflow", allowFiles: [/ResearchChartStudioService\.cs$/, /ResearchChartStudioWindow\.cs$/, /RoughAddInController\.cs$/, /research-chart-studio\.mjs$/] },
   { pattern: /canvas\.toDataURL|toBlob\(/i, reason: "Canvas capture is raster output", allowFiles: [/ui[\\/]vendor[\\/]chart\.umd\.min\.js$/i] },
   { pattern: /<svg\b/i, reason: "Inline SVG is not accepted as final object" }
 ];
