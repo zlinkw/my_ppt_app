@@ -66,7 +66,7 @@ for (const snippet of [
 ]) {
   if (!html.includes(snippet)) throw new Error(`科研绘图工作区 HTML 合同缺少：${snippet}`);
 }
-if ((html.match(/data-chart-type=/g) || []).length !== 20) throw new Error("科研绘图工作区必须保留 20 种图表入口。");
+if ((html.match(/data-chart-type=/g) || []).length !== 23) throw new Error("科研绘图工作区必须保留 23 种图表入口。");
 if (/\b(?:src|href)\s*=\s*["']https?:\/\//i.test(html)) throw new Error("科研绘图工作区运行时不得依赖外部 CDN。");
 if (/gradient\s*\(/i.test(css)) throw new Error("科研绘图工作区不得使用渐变。");
 if (/position\s*:\s*(?:fixed|sticky)/i.test(css)) throw new Error("科研绘图工作区不得用 fixed/sticky 遮挡滚动内容。");
@@ -102,7 +102,7 @@ for (const snippet of ["scaleSpec", "axisKeyElements", "domainMin", "domainMax",
 for (const snippet of ["errorBandLayer", "annotationLayers", "annotationDatum", 'type: "rule"', 'type: "rect"', 'type: "text"', "strokeDash", "showErrorBand"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图论文标注合同缺少：${snippet}`);
 }
-for (const chartType of ["bar", "groupedBar", "stackedBar", "horizontalBar", "line", "step", "area", "scatter", "bubble", "histogram", "boxplot", "density", "violin", "ecdf", "strip", "regression", "forest", "heatmap", "donut", "polar"]) {
+for (const chartType of ["bar", "groupedBar", "stackedBar", "horizontalBar", "line", "step", "area", "scatter", "bubble", "histogram", "boxplot", "density", "violin", "ecdf", "strip", "regression", "forest", "roc", "precisionRecall", "calibration", "heatmap", "donut", "polar"]) {
   if (!app.includes(`${chartType}:`)) throw new Error(`科研绘图脚本缺少图表类型：${chartType}`);
 }
 for (const snippet of ['id="facetField"', 'id="facetColumns"']) {
@@ -113,6 +113,9 @@ for (const snippet of ["density:", "regression:", 'state.chartType === "step" ? 
 }
 for (const snippet of ['state.chartType === "violin"', 'density: yField', 'stack: "center"', 'state.chartType === "ecdf"', 'op: "cume_dist"', 'state.chartType === "forest"', "requireIntervalFields", 'x2: { field: high }']) {
   if (!app.includes(snippet)) throw new Error(`科研绘图统计图合同缺少：${snippet}`);
+}
+for (const snippet of ['["roc", "precisionRecall", "calibration"]', "requireUnitIntervalField", "probabilityScale", 'x2: { datum: 1 }', 'y2: { datum: 1 }']) {
+  if (!app.includes(snippet)) throw new Error(`科研绘图评估曲线合同缺少：${snippet}`);
 }
 for (const snippet of ["CONFIG_STORAGE_KEY", "PERSISTED_CONTROL_IDS", "applyFilter", "state.rawRows", "localStorage.setItem", "localStorage.getItem", "captureConfig", "restoreConfig", "downloadCurrentSvg", "state.latestSvgText", 'link.download =', "resetSvgOutput"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图筛选、配置或 SVG 下载合同缺少：${snippet}`);
@@ -151,7 +154,7 @@ for (const file of ["research-chart-studio.html", "research-chart-studio.css", "
   if (!bridge.includes(file.split("/").at(-1)) || !project.includes(windowsPath)) throw new Error(`启动与构建资源清单缺少：${file}`);
 }
 if (!project.includes("Services\\ResearchChartStudioService.cs")) throw new Error("项目文件缺少科研 SVG 服务。");
-for (const snippet of ["Vega Lite", "20 种图表", "小提琴", "经验累积分布", "森林图", "数据筛选", "保存配置", "下载 SVG", "实时预览", "同一份 SVG", "PowerPoint 2016", "插入 PPT", "不会自动打开浏览器"]) {
+for (const snippet of ["Vega Lite", "23 种图表", "小提琴", "经验累积分布", "森林图", "ROC", "精确率召回", "校准曲线", "数据筛选", "保存配置", "下载 SVG", "实时预览", "同一份 SVG", "PowerPoint 2016", "插入 PPT", "不会自动打开浏览器"]) {
   if (!help.includes(snippet)) throw new Error(`使用说明缺少本地科研绘图内容：${snippet}`);
 }
 

@@ -23,6 +23,9 @@ const CHART_LABELS = {
   strip: "条带图",
   regression: "回归图",
   forest: "森林图",
+  roc: "ROC 曲线",
+  precisionRecall: "精确率召回曲线",
+  calibration: "校准曲线",
   heatmap: "热力图",
   donut: "环形图",
   polar: "极坐标图"
@@ -360,6 +363,21 @@ function requireQuantitativeField(field, label) {
   if (!field || fieldType(field) !== "quantitative") throw new Error(`${label}必须选择数值字段。`);
 }
 
+function requireUnitIntervalField(field, label) {
+  requireQuantitativeField(field, label);
+  if (state.rows.some(row => !Number.isFinite(Number(row[field])) || Number(row[field]) < 0 || Number(row[field]) > 1)) {
+    throw new Error(`${label}必须全部位于 0 至 1。`);
+  }
+}
+
+function probabilityScale(axisKey) {
+  const scale = scaleSpec(axisKey, true);
+  if (scale.type === "log") throw new Error("概率曲线包含 0，不能使用对数坐标。");
+  scale.domainMin = 0;
+  scale.domainMax = 1;
+  return scale;
+}
+
 function requireIntervalFields() {
   const low = els.errorLowField.value;
   const high = els.errorHighField.value;
@@ -658,6 +676,25 @@ function buildSpec() {
     const reference = optionalNumber(els.referenceX);
     if (reference !== null) layers.unshift({ mark: { type: "rule", color: els.annotationColor.value, strokeWidth: 1.5, strokeDash: [6, 4] }, encoding: { x: { datum: reference } } });
     if (els.showLabels.checked) layers.push({ mark: mark("text", { color: els.textColor.value, dx: 8, align: "left", opacity: 1 }), encoding: { x: effect, y: category, text: { field: yField, type: "quantitative", format: ".3~g" } } });
+  } else if (["roc", "precisionRecall", "calibration"].includes(state.chartType)) {
+    const xLabel = state.chartType === "roc" ? "假阳性率" : state.chartType === "precisionRecall" ? "召回率" : "预测概率";
+    const yLabel = state.chartType === "roc" ? "真阳性率" : state.chartType === "precisionRecall" ? "精确率" : "观测概率";
+    requireUnitIntervalField(xField, xLabel);
+    requireUnitIntervalField(yField, yLabel);
+    const encoding = addColor({
+      x: { field: xField, type: "quantitative", title: els.xAxisTitle.value || xLabel, axis: axis(els.xAxisTitle.value || xLabel, true, "x"), scale: probabilityScale("x") },
+      y: { field: yField, type: "quantitative", title: els.yAxisTitle.value || yLabel, axis: axis(els.yAxisTitle.value || yLabel, true, "y"), scale: probabilityScale("y") },
+      order: { field: xField, type: "quantitative", sort: "ascending" },
+      tooltip: [{ field: xField, type: "quantitative", title: xLabel, format: ".3f" }, { field: yField, type: "quantitative", title: yLabel, format: ".3f" }]
+    }, colorField);
+    layers = [{ mark: mark("line", { strokeWidth: lineWidth, point: { filled: true, size: Math.max(24, pointSize * 0.4) } }), encoding }];
+    if (state.chartType !== "precisionRecall") {
+      layers.unshift({
+        data: { values: [{}] },
+        mark: { type: "rule", color: els.axisColor.value, strokeWidth: 1.2, strokeDash: [6, 4], opacity: 0.8 },
+        encoding: { x: { datum: 0 }, x2: { datum: 1 }, y: { datum: 0 }, y2: { datum: 1 } }
+      });
+    }
   } else if (state.chartType === "heatmap") {
     const yCategory = colorField || xField;
     layers = [{
