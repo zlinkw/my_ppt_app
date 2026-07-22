@@ -150,6 +150,14 @@ public sealed class ResearchChartStudioWindow : Form
 				SelectResearchSvg();
 				return;
 			}
+			if (string.Equals(messageType, "stageResearchSvg", StringComparison.OrdinalIgnoreCase))
+			{
+				StageResearchSvg(
+					ReadString(message, "requestId", string.Empty),
+					ReadString(message, "svgText", string.Empty),
+					ReadString(message, "fileName", "local-research-chart.svg"));
+				return;
+			}
 			if (string.Equals(messageType, "insertResearchSvg", StringComparison.OrdinalIgnoreCase))
 			{
 				InsertResearchSvg(ReadString(message, "requestId", string.Empty));
@@ -178,6 +186,23 @@ public sealed class ResearchChartStudioWindow : Form
 			AddInLogger.Error("科研绘图工作区插入失败。", ex);
 			PostResult(string.Empty, false, string.Empty, ex.Message);
 			reportStatus?.Invoke("科研绘图工作区插入失败：" + ex.Message, true);
+		}
+	}
+
+	private void StageResearchSvg(string requestId, string svgText, string fileName)
+	{
+		try
+		{
+			selectedSvg = ResearchChartStudioService.StageSvg(svgText, fileName);
+			PostSvgStageResult(requestId, selectedSvg, null);
+			reportStatus?.Invoke("本地科研 SVG 已通过安全校验。", false);
+		}
+		catch (Exception ex)
+		{
+			selectedSvg = null;
+			AddInLogger.Error("暂存本地科研 SVG 失败。", ex);
+			PostSvgStageResult(requestId, null, ex.Message);
+			reportStatus?.Invoke("本地科研 SVG 校验失败：" + ex.Message, true);
 		}
 	}
 
@@ -249,6 +274,26 @@ public sealed class ResearchChartStudioWindow : Form
 			width = document?.Width ?? 0.0,
 			height = document?.Height ?? 0.0,
 			svgText = document?.SvgText ?? string.Empty,
+			error = error ?? string.Empty
+		}));
+	}
+
+	private void PostSvgStageResult(string requestId, ResearchSvgDocument document, string error)
+	{
+		if (webView.CoreWebView2 == null)
+		{
+			return;
+		}
+		webView.CoreWebView2.PostWebMessageAsJson(serializer.Serialize(new
+		{
+			type = "researchSvgStageResult",
+			requestId,
+			ok = document != null,
+			fileName = document?.FileName ?? string.Empty,
+			sizeBytes = document?.SizeBytes ?? 0L,
+			width = document?.Width ?? 0.0,
+			height = document?.Height ?? 0.0,
+			sha256 = document?.Sha256 ?? string.Empty,
 			error = error ?? string.Empty
 		}));
 	}

@@ -77,7 +77,38 @@ public static class ResearchChartStudioService
 		{
 			throw new InvalidDataException("请选择扩展名为 .svg 的文件。");
 		}
-		byte[] bytes = ReadBoundedSvg(fullPath);
+		return StageSvgBytes(ReadBoundedSvg(fullPath), fullPath, Path.GetFileName(fullPath));
+	}
+
+	public static ResearchSvgDocument StageSvg(string svgText, string fileName)
+	{
+		if (string.IsNullOrWhiteSpace(svgText))
+		{
+			throw new InvalidDataException("SVG 内容为空。");
+		}
+		byte[] bytes;
+		try
+		{
+			bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetBytes(svgText);
+		}
+		catch (EncoderFallbackException ex)
+		{
+			throw new InvalidDataException("SVG 文本包含无效的 Unicode 字符。", ex);
+		}
+		if (bytes.LongLength > MaxSvgBytes)
+		{
+			throw new InvalidDataException("SVG 文件超过 4 MB 上限。");
+		}
+		string safeFileName = Path.GetFileName(string.IsNullOrWhiteSpace(fileName) ? "local-research-chart.svg" : fileName.Trim());
+		if (!string.Equals(Path.GetExtension(safeFileName), ".svg", StringComparison.OrdinalIgnoreCase))
+		{
+			safeFileName += ".svg";
+		}
+		return StageSvgBytes(bytes, string.Empty, safeFileName);
+	}
+
+	private static ResearchSvgDocument StageSvgBytes(byte[] bytes, string sourcePath, string fileName)
+	{
 		string text;
 		try
 		{
@@ -95,9 +126,9 @@ public static class ResearchChartStudioService
 		File.WriteAllBytes(cachedPath, bytes);
 		return new ResearchSvgDocument
 		{
-			SourcePath = fullPath,
+			SourcePath = sourcePath ?? string.Empty,
 			CachedPath = cachedPath,
-			FileName = Path.GetFileName(fullPath),
+			FileName = string.IsNullOrWhiteSpace(fileName) ? "research-chart.svg" : fileName,
 			SvgText = text,
 			Sha256 = ComputeSha256(bytes),
 			SizeBytes = bytes.LongLength,
