@@ -6,6 +6,7 @@ const automation = read("src/RoughPptAddin/Services/AutomationServer.cs");
 const controller = read("src/RoughPptAddin/Services/RoughAddInController.cs");
 const taskPane = read("src/RoughPptAddin/TaskPane/RoughTaskPaneControl.cs");
 const app = read("src/RoughPptAddin/ui/app.mjs");
+const index = read("src/RoughPptAddin/ui/index.html");
 const contract = read("src/RoughPptAddin/ui/bridge-contract.mjs");
 const importer = read("src/RoughPptAddin/ui/zlk-cluster-result-importer.mjs");
 const models = read("src/RoughPptAddin/Models/RoughModels.cs");
@@ -130,6 +131,16 @@ for (const snippet of [
   "zlkAutomationStatus"
 ]) {
   requireIncludes(app, snippet, `app.mjs missing ${snippet}`);
+}
+for (const snippet of [
+  "SimpleExperiment 自动绘图",
+  "SimpleExperiment 实验结果",
+  "正在处理 SimpleExperiment 自动绘图请求"
+]) {
+  requireIncludes(index + app + taskPane + controller + models + renderer, snippet, `SimpleExperiment user-facing copy missing ${snippet}`);
+}
+for (const obsolete of ["集群绘图 ZLK", "显示 ZLK 集群插件", "正在插入 ZLK 图表", "已插入 ZLK 图表", "ZLK 实验结果"]) {
+  rejectIncludes(index + app + taskPane + controller + models + renderer, obsolete, `obsolete ZLK user-facing copy remains: ${obsolete}`);
 }
 
 requireIncludes(contract, 'insertZlkChart: "insertZlkChart"', "bridge contract missing insertZlkChart");

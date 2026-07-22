@@ -424,7 +424,7 @@ namespace RoughPptAddin.Models
     {
     	public string ChartType { get; set; } = "genericTable";
     
-    	public string Title { get; set; } = "ZLK 实验结果";
+	public string Title { get; set; } = "SimpleExperiment 实验结果";
     
     	public string Reason { get; set; }
     }

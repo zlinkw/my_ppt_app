@@ -402,7 +402,7 @@ public sealed class PptZlkChartRenderer
 	private static string ChartTitle(ChartDataset dataset, string chartType)
 	{
 		string source = dataset?.Source?.Path;
-		return (string.IsNullOrWhiteSpace(source) ? "ZLK 实验结果" : (source.Split('/', '\\').LastOrDefault() ?? source)) + " · " + ChartTypeLabel(chartType);
+		return (string.IsNullOrWhiteSpace(source) ? "SimpleExperiment 实验结果" : (source.Split('/', '\\').LastOrDefault() ?? source)) + " · " + ChartTypeLabel(chartType);
 	}
 
 	private static string ChartTypeLabel(string chartType)

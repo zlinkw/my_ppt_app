@@ -98,7 +98,7 @@ public sealed class RoughTaskPaneControl : UserControl
 		{
 			pendingZlkCharts[request.RequestId] = completion;
 		}
-		PostZlkAutomationStatus("正在归一化外部 ZLK 绘图请求：" + request.RequestId, null, isError: false);
+		PostZlkAutomationStatus("正在归一化 SimpleExperiment 绘图请求：" + request.RequestId, null, isError: false);
 		PostToWeb(new Dictionary<string, object>
 		{
 			["type"] = "normalizeZlkChartFile",
@@ -111,7 +111,7 @@ public sealed class RoughTaskPaneControl : UserControl
 			{
 				pendingZlkCharts.Remove(request.RequestId);
 			}
-			throw new TimeoutException("ZLK 绘图数据归一化或插入超时。");
+			throw new TimeoutException("SimpleExperiment 绘图数据归一化或插入超时。");
 		}
 		return await completion.Task.ConfigureAwait(continueOnCapturedContext: true);
 	}
@@ -390,17 +390,17 @@ public sealed class RoughTaskPaneControl : UserControl
 				ZlkChartSpec chartSpec = ReadMessageValue<ZlkChartSpec>(message, "chartSpec") ?? new ZlkChartSpec();
 				ZlkChartRenderResult result = controller.InsertZlkChart(dataset, chartSpec, request);
 				CompletePendingZlkChart(request.RequestId, result, null);
-				PostZlkAutomationStatus("已插入 ZLK 图表：" + result.ChartType + "，第 " + result.SlideIndex + " 页。", result, isError: false);
-				PostStatus("已插入 ZLK 图表：" + result.ChartType, isError: false);
+				PostZlkAutomationStatus("已插入 SimpleExperiment 图表：" + result.ChartType + "，第 " + result.SlideIndex + " 页。", result, isError: false);
+				PostStatus("已插入 SimpleExperiment 图表：" + result.ChartType, isError: false);
 				SendSelectionState();
 				break;
 			}
 			catch (Exception ex16)
 			{
-				AddInLogger.Error("插入 ZLK 图表失败。", ex16);
+				AddInLogger.Error("插入 SimpleExperiment 图表失败。", ex16);
 				CompletePendingZlkChart(request.RequestId, null, ex16);
-				PostZlkAutomationStatus("插入 ZLK 图表失败：" + ex16.Message, null, isError: true);
-				PostStatus("插入 ZLK 图表失败：" + ex16.Message, isError: true);
+				PostZlkAutomationStatus("插入 SimpleExperiment 图表失败：" + ex16.Message, null, isError: true);
+				PostStatus("插入 SimpleExperiment 图表失败：" + ex16.Message, isError: true);
 				break;
 			}
 		}

@@ -340,7 +340,7 @@ const state = {
   chartDatasets: [],
   chartDatasetVisibleCount: CHART_DATASET_RENDER_BATCH,
   chartImportError: "",
-  zlkAutomationStatus: "等待外部自动绘图请求。",
+  zlkAutomationStatus: "等待 SimpleExperiment 自动绘图请求。",
   zlkAutomationResult: null,
   buildInfo: null,
   buildInfoUnavailable: false,
@@ -1106,7 +1106,7 @@ const commandSearchItems = Object.freeze([
   { id: "cmd-paper-recommended-presets", icon: "\u2605", title: "推荐预设", detail: "只定位到推荐论文图预设筛选，不直接插入对象；用于快速查看智能模型、医学和多模态高频结构", panel: "paperPresets", target: "paperPresetGrid", paperPresetCategory: "recommended", keywords: ["推荐预设", "推荐论文预设", "推荐", "高频预设", "常用推荐", "AI推荐", "医学推荐", "论文套件"] },
   { id: "cmd-paper-recent-presets", icon: "\u21ba", title: "最近预设", detail: "只定位到最近使用的论文图预设筛选，不直接插入对象；插入预设后会自动记录到最近", panel: "paperPresets", target: "paperPresetGrid", paperPresetCategory: "recent", keywords: ["最近预设", "最近使用预设", "最近论文预设", "刚用过", "历史预设", "论文套件"] },
   { id: "cmd-paper-favorite-presets", icon: "\u2606", title: "常用预设", detail: "只定位到星标固定的常用论文图预设筛选，不直接插入对象；星标只保存本机偏好", panel: "paperPresets", target: "paperPresetGrid", paperPresetCategory: "favorites", keywords: ["常用预设", "常用论文预设", "收藏预设", "固定预设", "星标预设", "我的预设", "论文套件"] },
-  { id: "cmd-zlk-chart-import", icon: "\u25a5", title: "科研绘图导入", detail: "定位到 ZLK 集群实验结果导入面板，可识别 metrics_summary、result_registry、statistics、quality_gate、case_level 和论文表格", panel: "charts", target: "zlkChartImport", keywords: ["科研绘图", "实验结果", "导入结果", "结果导入", "ZLK", "zlk cluster", "metrics_summary", "statistics", "quality_gate", "paper table", "论文表格", "误差棒", "排行榜", "敏感性曲线", "亚组分析"] },
+  { id: "cmd-zlk-chart-import", icon: "\u25a5", title: "科研绘图导入", detail: "定位到 SimpleExperiment 实验结果导入面板，可识别 metrics_summary、result_registry、statistics、quality_gate、case_level 和论文表格", panel: "charts", target: "zlkChartImport", keywords: ["科研绘图", "实验结果", "导入结果", "结果导入", "SimpleExperiment", "ZLK", "zlk cluster", "metrics_summary", "statistics", "quality_gate", "paper table", "论文表格", "误差棒", "排行榜", "敏感性曲线", "亚组分析"] },
   { id: "cmd-zotero-image-library", icon: "\u25a8", title: "论文图像与配色库", detail: "定位到 Zotero PDF 图片保存插件的共享 SQLite 图片库，可预览论文图、取色、插入参考图和反向溯源", panel: "zoteroImages", target: "zoteroImageSearch", keywords: ["论文图像与配色库", "论文图像", "论文图片", "参考图", "配色库", "取色", "Zotero", "PDF Image Saver", "样式标签", "色系", "打开PDF", "定位条目", "复制溯源", "palette", "swatch"] },
   { id: "cmd-palette-library", icon: "\u25d2", title: "配色库", detail: "保存 Zotero 配色、从剪贴板图片或当前页面提取配色，并使用 PPT 内置主题配色布局预览后一键替换", panel: "zoteroImages", target: "paletteSchemeGrid", keywords: ["配色库", "配色方案", "保存配色", "分享配色", "导入配色", "剪贴板取色", "页面取色", "PPT内置配色", "主题色", "整体换色", "配色布局", "palette scheme", "theme colors"] },
   { id: "cmd-paper-node", icon: "\u25a2", title: "论文节点", detail: "只定位到圆角矩形图库，不直接插入；插入后可用论文模板、白填充和黑线形成普通论文节点", panel: "catalog", target: "galleryToggle", shapeQuery: "圆角矩形", shapeCategory: "rectangles", focusSearchAfterOpen: false, keywords: ["论文节点", "普通节点", "模块节点", "白底节点", "圆角节点", "圆角矩形"] },
@@ -3965,7 +3965,7 @@ function renderChartPresetPreview() {
   useBtn.textContent = usingData ? "插入此预设图表" : "先导入数据";
   useBtn.title = usingData
     ? ("按 " + preset.title + " 插入当前识别到的数据集（PPT 原生 shape/line/text）；插入后仍可编辑")
-    : "先导入 ZLK 结果或 CSV，再预览并绘制";
+    : "先导入 SimpleExperiment 结果或 CSV，再预览并绘制";
   useBtn.addEventListener("click", () => {
     if (!usingData) {
       els.zlkChartImport && els.zlkChartImport.click();
@@ -4022,17 +4022,17 @@ function renderChartImportPanel() {
       ? `${state.chartDatasets.length} 个数据集 | ${totalPoints} 个点 | ${totalRecommendations} 个推荐`
       : "未导入",
     state.chartDatasets.length
-      ? "当前已导入的 ZLK 集群实验绘图数据、可绘图点和推荐图表数量"
+      ? "当前已导入的 SimpleExperiment 实验绘图数据、可绘图点和推荐图表数量"
       : "还没有导入科研绘图数据",
     state.chartDatasets.length ? "ok" : "idle"
   );
   if (els.zlkAutomationStatus) {
     const result = state.zlkAutomationResult;
     const tone = zlkLocalStatusTone();
-    els.zlkAutomationStatus.textContent = state.zlkAutomationStatus || "等待外部自动绘图请求。";
+    els.zlkAutomationStatus.textContent = state.zlkAutomationStatus || "等待 SimpleExperiment 自动绘图请求。";
     els.zlkAutomationStatus.title = result
-      ? `最近一次外部自动绘图：${result.chartType ?? result.ChartType ?? ""}，第 ${result.slideIndex ?? result.SlideIndex ?? ""} 页，${result.shapeCount ?? result.ShapeCount ?? ""} 个对象`
-      : "显示 ZLK 集群插件通过 127.0.0.1 自动调用 PowerPoint 绘图的最近状态";
+      ? `最近一次 SimpleExperiment 自动绘图：${result.chartType ?? result.ChartType ?? ""}，第 ${result.slideIndex ?? result.SlideIndex ?? ""} 页，${result.shapeCount ?? result.ShapeCount ?? ""} 个对象`
+      : "显示 SimpleExperiment 通过 127.0.0.1 自动调用 PowerPoint 绘图的最近状态";
     els.zlkAutomationStatus.dataset.statusTone = tone;
     setLocalStatusTone(els.zlkAutomationStatus, tone);
   }
@@ -4051,7 +4051,7 @@ function renderChartImportPanel() {
     title.textContent = "当前搜索词没有匹配已导入的数据集";
     title.title = "切换到全部或数据范围，或清空搜索词后查看全部导入结果";
     const detail = document.createElement("span");
-    detail.textContent = "可清空搜索、切换到数据范围，或重新导入 ZLK 实验结果。";
+    detail.textContent = "可清空搜索、切换到数据范围，或重新导入 SimpleExperiment 实验结果。";
     detail.title = "科研绘图只绘制 PPT 原生 shape/line/text/table，不会插入截图";
     const actions = document.createElement("div");
     actions.className = "chart-import-empty-actions";
@@ -4104,7 +4104,7 @@ function renderChartImportPanel() {
 function renderChartEmptyState() {
   const wrap = document.createElement("div");
   wrap.className = "chart-import-empty chart-import-guidance";
-  wrap.title = "使用上方唯一导入入口，选择 ZLK 集群结果输出、论文表格或 experiments/work_dirs 下的结果 CSV";
+  wrap.title = "使用上方唯一导入入口，选择 SimpleExperiment 结果输出、论文表格或 experiments/work_dirs 下的结果 CSV";
   const title = document.createElement("strong");
   title.textContent = "等待导入实验结果";
   title.title = "支持排行榜、均值误差、敏感性曲线、亚组对比、病例级分布和错误类型汇总";
@@ -4455,10 +4455,10 @@ function renderZoteroImagePanel() {
 function renderConnectionHealthStrip() {
   const zlkState = zlkConnectionState();
   const zoteroState = zoteroConnectionState();
-  const zlkText = state.zlkAutomationStatus || "等待外部自动绘图连接";
+  const zlkText = state.zlkAutomationStatus || "等待 SimpleExperiment 连接";
   const zlkTitle = state.zlkAutomationResult
-    ? `最近一次外部自动绘图：${state.zlkAutomationResult.chartType ?? state.zlkAutomationResult.ChartType ?? "图表"}，${state.zlkAutomationResult.shapeCount ?? state.zlkAutomationResult.ShapeCount ?? 0} 个 PPT 原生对象`
-    : "ZLK 自动绘图服务通过本机 127.0.0.1 接收外部请求；点此定位到科研绘图面板";
+    ? `最近一次 SimpleExperiment 自动绘图：${state.zlkAutomationResult.chartType ?? state.zlkAutomationResult.ChartType ?? "图表"}，${state.zlkAutomationResult.shapeCount ?? state.zlkAutomationResult.ShapeCount ?? 0} 个 PPT 原生对象`
+    : "SimpleExperiment 自动绘图通过本机 127.0.0.1 连接；点此定位到科研绘图面板";
   const zoteroText = state.zoteroDatabaseFound
     ? `共享数据库已读取 ${state.zoteroImages.length} 张`
     : (state.zoteroImageStatus || "等待读取共享数据库");
@@ -5287,7 +5287,7 @@ function normalizeZlkRequestForHost(request = null) {
 
 function insertZlkChartDataset(dataset, recommendation = null, request = null) {
   const chartSpec = zlkChartSpecFor(dataset, recommendation?.chartType ?? request?.chartType ?? request?.ChartType ?? "auto", recommendation);
-  setStatus(`正在插入 ZLK 图表：${chartSpec.Title}`);
+  setStatus(`正在插入 SimpleExperiment 图表：${chartSpec.Title}`);
   postHost({
     type: "insertZlkChart",
     requestId: request?.requestId ?? request?.RequestId ?? "",
@@ -6775,7 +6775,7 @@ function handleHostMessage(message) {
   }
 
   if (message.type === "zlkAutomationStatus") {
-    state.zlkAutomationStatus = message.text ?? "等待外部自动绘图请求。";
+    state.zlkAutomationStatus = message.text ?? "等待 SimpleExperiment 自动绘图请求。";
     state.zlkAutomationResult = message.result ?? null;
     renderChartImportPanel();
     setStatus(state.zlkAutomationStatus, Boolean(message.isError));
@@ -6786,7 +6786,7 @@ function handleHostMessage(message) {
       const request = message.request ?? {};
       const requestId = request.requestId ?? request.RequestId ?? message.requestId ?? "";
       try {
-        state.zlkAutomationStatus = `正在处理外部自动绘图请求：${requestId || "未命名"}`;
+        state.zlkAutomationStatus = `正在处理 SimpleExperiment 自动绘图请求：${requestId || "未命名"}`;
         renderChartImportPanel();
         const normalized = await normalizeZlkChartFilesForHost(request, message.files ?? []);
         postHost({
@@ -6797,7 +6797,7 @@ function handleHostMessage(message) {
           chartSpec: normalized.chartSpec
         });
       } catch (error) {
-        state.zlkAutomationStatus = `外部自动绘图失败：${error?.message || error}`;
+        state.zlkAutomationStatus = `SimpleExperiment 自动绘图失败：${error?.message || error}`;
         renderChartImportPanel();
         postHost({
           type: "insertZlkChart",

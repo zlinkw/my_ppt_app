@@ -39,7 +39,7 @@
         <button id="jumpToShapes" class="primary-action" data-command-owner="ribbon" type="button" data-starter-action="catalog" title="直接展开 PPT 原生形状手绘版图库，可搜索或点击插入形状" aria-label="插入形状：展开形状图库"><span aria-hidden="true">&#9638;</span><span>插入形状</span></button>
         <button id="jumpToRedraw" data-command-owner="ribbon" type="button" data-starter-action="redraw" title="独立重绘入口：选中手绘对象后按当前风格参数立即重绘；无可重绘选区时只定位到当前选区区" aria-label="重绘选区：按当前参数重新生成手绘对象"><span aria-hidden="true">&#8635;</span><span>重绘选区</span></button>
         <button id="jumpToStyle" type="button" data-starter-action="style" title="定位风格模板和线条、填充、Rough.js 参数"><span aria-hidden="true">&#9881;</span><span>风格参数</span></button>
-        <button id="jumpToCharts" type="button" data-starter-action="charts" title="定位科研绘图导入，可识别 ZLK 集群实验结果并推荐排行榜、误差棒、敏感性曲线等图表"><span aria-hidden="true">&#9637;</span><span>科研绘图</span></button>
+        <button id="jumpToCharts" type="button" data-starter-action="charts" title="定位科研绘图导入，可识别 SimpleExperiment 实验结果并推荐排行榜、误差棒、敏感性曲线等图表"><span aria-hidden="true">&#9637;</span><span>科研绘图</span></button>
       </div>
       <div id="noviceGuideStrip" class="novice-guide-strip" data-command-owner="ribbon" title="高频插入和重绘操作已移至 PowerPoint Ribbon">
         <button type="button" data-starter-action="catalog" title="第一步：插入 PPT 原生手绘形状"><span class="novice-step">1</span><span>插入形状</span></button>
@@ -48,9 +48,9 @@
         <button type="button" data-starter-action="charts" title="可选：导入实验结果并预览科研图"><span class="novice-step">研</span><span>科研图</span></button>
       </div>
       <div id="simpleConnectionNote" class="simple-connection-note" title="简洁模式下的外部连接摘要；点状态片可跳转，完整模式可查看更多详情">
-        <button id="simpleConnectionZlk" type="button" class="simple-connection-chip idle" data-section-nav="charts" data-domain="zlk" title="定位科研绘图与 ZLK 自动绘图状态">
+        <button id="simpleConnectionZlk" type="button" class="simple-connection-chip idle" data-section-nav="charts" data-domain="zlk" title="定位科研绘图与 SimpleExperiment 自动绘图状态">
           <span class="connection-dot" aria-hidden="true"></span>
-          <span class="simple-connection-copy"><strong>科研绘图</strong><small data-simple-connection-zlk>等待外部连接</small></span>
+          <span class="simple-connection-copy"><strong>SimpleExperiment</strong><small data-simple-connection-zlk>等待连接</small></span>
         </button>
         <button id="simpleConnectionZotero" type="button" class="simple-connection-chip idle" data-section-nav="zoteroImages" data-domain="zotero" title="定位 Zotero 论文图像与配色库">
           <span class="connection-dot" aria-hidden="true"></span>
@@ -59,9 +59,9 @@
         <button type="button" id="simpleModeFullSwitch" title="切换到完整模式以显示全部专业面板">完整模式</button>
       </div>
       <div id="connectionHealthStrip" class="connection-health-strip" role="group" aria-label="外部连接状态" title="显示本机外部连接概况；点击可定位到对应功能区，不会执行危险操作">
-        <button id="connectionZlk" class="connection-chip idle" type="button" data-section-nav="charts" title="定位 ZLK 自动绘图和科研绘图导入状态">
+        <button id="connectionZlk" class="connection-chip idle" type="button" data-section-nav="charts" title="定位 SimpleExperiment 自动绘图和科研绘图导入状态">
           <span class="connection-dot" aria-hidden="true"></span>
-          <span class="connection-copy"><strong>集群绘图 ZLK</strong><small data-connection-zlk>等待外部请求</small></span>
+          <span class="connection-copy"><strong>SimpleExperiment</strong><small data-connection-zlk>等待绘图请求</small></span>
         </button>
         <button id="connectionZotero" class="connection-chip idle" type="button" data-section-nav="zoteroImages" title="定位 Zotero 论文图像与配色库读取状态">
           <span class="connection-dot" aria-hidden="true"></span>
@@ -108,7 +108,7 @@
         <button id="searchScopeShapes" type="button" data-search-scope="shape" aria-pressed="false" title="只搜索 PPT 原生形状手绘版">形状</button>
         <button id="searchScopeCommands" type="button" data-search-scope="command" aria-pressed="false" title="只搜索插件功能命令，例如重绘、转换、模板、素材">功能</button>
         <button id="searchScopePresets" type="button" data-search-scope="preset" aria-pressed="false" title="只搜索论文图结构预设卡片">预设</button>
-        <button id="searchScopeCharts" type="button" data-search-scope="chart" aria-pressed="false" title="只搜索已导入的科研绘图数据和 ZLK 实验结果">数据</button>
+        <button id="searchScopeCharts" type="button" data-search-scope="chart" aria-pressed="false" title="只搜索已导入的科研绘图数据和 SimpleExperiment 实验结果">数据</button>
         <button id="searchScopeAssets" type="button" data-search-scope="asset" aria-pressed="false" title="只搜索我的素材库">素材</button>
       </div>
       <select id="sortMode" aria-label="形状排序" title="选择形状结果的排序方式；功能和素材搜索不使用此排序">
@@ -342,8 +342,8 @@
               <li title="确认后插入 PPT 原生可编辑图表"><span aria-hidden="true">3</span><strong>插入 PPT</strong></li>
             </ol>
           </div>
-          <div class="chart-import-actions" role="group" aria-label="科研绘图导入操作" title="选择 ZLK 集群输出文件或目录，全部在本机浏览器内读取，不会上传网络">
-            <input id="zlkChartFiles" type="file" multiple accept=".json,.csv,.tex,.md" title="选择 ZLK 结果 JSON、CSV、Markdown 摘要或 LaTeX 表格文件；超大文件会被跳过" hidden>
+          <div class="chart-import-actions" role="group" aria-label="科研绘图导入操作" title="选择 SimpleExperiment 输出文件或目录，全部在本机浏览器内读取，不会上传网络">
+            <input id="zlkChartFiles" type="file" multiple accept=".json,.csv,.tex,.md" title="选择 SimpleExperiment 结果 JSON、CSV、Markdown 摘要或 LaTeX 表格文件；超大文件会被跳过" hidden>
             <input id="zlkChartFolder" type="file" multiple webkitdirectory directory title="选择包含 zlk_cluster、paper、experiments 或 work_dirs 的结果文件夹" hidden>
             <button id="zlkChartImport" class="primary-action" type="button" title="选择结果文件并自动识别图表数据"><span aria-hidden="true">&#9637;</span>导入文件</button>
             <button id="zlkChartFolderButton" type="button" title="选择整个实验结果文件夹，自动识别支持路径内的 JSON、CSV 和 LaTeX 表格"><span aria-hidden="true">&#9638;</span>导入文件夹</button>
@@ -351,7 +351,7 @@
           </div>
         </div>
         <div class="chart-support-grid" title="支持格式、字段识别和推荐图表类型概览">
-          <section title="支持 ZLK 集群实验插件输出的 results 目录">
+          <section title="支持 SimpleExperiment 输出的 results 目录">
             <strong>结果契约</strong>
             <span>聚合字段：结果摘要、结果注册表、统计摘要、质量门禁和病例数据</span>
           </section>
@@ -377,7 +377,7 @@
         <div id="chartPresetStrip" class="chart-preset-strip" role="listbox" aria-label="科研图预设" title="点击预设查看用途说明和示意预览；导入数据后可按同类图绘制"></div>
         <div id="chartPresetPreview" class="chart-preset-preview" title="根据当前预设和已导入数据生成的示意预览，不会写入幻灯片"></div>
       </details>
-      <div id="zlkAutomationStatus" class="zlk-automation-status" title="显示 ZLK 集群插件通过 127.0.0.1 自动调用 PowerPoint 绘图的最近状态">等待外部自动绘图请求。</div>
+      <div id="zlkAutomationStatus" class="zlk-automation-status" title="显示 SimpleExperiment 通过 127.0.0.1 自动调用 PowerPoint 绘图的最近状态">等待 SimpleExperiment 自动绘图请求。</div>
       <div id="zlkChartResults" class="chart-import-results" tabindex="0" title="导入后显示每个数据集的识别格式、点数、字段、错误提示和推荐图表"></div>
     </section>
 

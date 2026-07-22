@@ -1094,12 +1094,12 @@ namespace RoughPptAddin.Services
     		{
     			automationServer = new AutomationServer(PlotZlkClusterAsync);
     			automationServer.Start();
-    			taskPaneControl?.ShowZlkAutomationStatus("ZLK 自动绘图服务已启动：" + automationServer.Endpoint);
+			taskPaneControl?.ShowZlkAutomationStatus("SimpleExperiment 自动绘图服务已启动：" + automationServer.Endpoint);
     		}
     		catch (Exception ex)
     		{
-    			AddInLogger.Error("启动 ZLK 自动绘图服务失败。", ex);
-    			taskPaneControl?.ShowZlkAutomationStatus("ZLK 自动绘图服务启动失败：" + ex.Message, isError: true);
+			AddInLogger.Error("启动 SimpleExperiment 自动绘图服务失败。", ex);
+			taskPaneControl?.ShowZlkAutomationStatus("SimpleExperiment 自动绘图服务启动失败：" + ex.Message, isError: true);
     		}
     	}
     
@@ -1121,7 +1121,7 @@ namespace RoughPptAddin.Services
     		IList<ZlkPlotSourceFile> files = CollectZlkSourceFiles(request);
     		if (files.Count == 0)
     		{
-    			throw new InvalidOperationException("未找到可导入的 ZLK 结果文件。请检查 projectRoot、sourcePaths 或输出契约路径。");
+			throw new InvalidOperationException("未找到可导入的 SimpleExperiment 结果文件。请检查 projectRoot、sourcePaths 或输出契约路径。");
     		}
     		return EnsureTaskPane(visible: false).NormalizeAndInsertZlkChartAsync(request, files);
     	}
