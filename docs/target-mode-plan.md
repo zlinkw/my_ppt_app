@@ -89,7 +89,7 @@
 3. SE003（统一验证通过）：automation server 已缓存最近 32 个成功 `requestId`，相同内容重试返回 `replayed=true` 且不重复建页，不同内容复用 ID 与并发请求均快速返回中文 `409`；`npm test` 已覆盖幂等合同。
 4. SE004（统一验证通过）：任务窗格连接片、导入提示、自动绘图状态、错误反馈和默认图表标题已统一使用 SimpleExperiment 品牌；保留 ZLK 仅作为协议 ID、内部标记和兼容搜索词。
 5. SE005（统一验证通过）：连接合同验证、恢复源码等价实现兼容、部署与完整卸载入口、Office 版本兼容和批量重绘合同均已通过；完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过。本批不打包、不安装。
-6. PKG001（验证通过，待提交后重打最终产物）：用户明确要求生成最新版 ZIP、MSI、EXE。非破坏性发布脚本已补齐独立输出 NuGet restore、C# 新语法版本、ClickOnce 签名、Material Symbols TTF 嵌入和 per-user WiX 组件合同；`npm.cmd test`、`npm.cmd run build:ui`、Release 编译、Ribbon 图标验证及三种产物校验均通过。先提交并同步打包实现，再由该提交生成最终三种产物，不自动安装。
+6. PKG001（已完成，实现提交 `ab02a49`）：用户明确要求生成最新版 ZIP、MSI、EXE。非破坏性发布脚本已补齐独立输出 NuGet restore、C# 新语法版本、ClickOnce 签名、Material Symbols TTF 嵌入和 per-user WiX 组件合同；`npm.cmd test`、`npm.cmd run build:ui`、Release 编译、Ribbon 图标验证及三种产物 SHA256 校验均通过。最终产物位于 `releases/RoughPptAddin-0.1.22-ab02a492/`，未自动安装。
 
 ### 当前 SimpleExperiment 连接批次
 
