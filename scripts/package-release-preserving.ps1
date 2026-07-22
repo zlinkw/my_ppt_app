@@ -109,6 +109,22 @@ if ($LASTEXITCODE -ne 0 -or $commitCountText -notmatch "^\d+$") {
 }
 $commitCount = [Math]::Max(1, [int]$commitCountText)
 $installerProductVersion = Resolve-InstallerProductVersion -PackageJsonPath (Join-Path $root "package.json") -CommitCount $commitCount
+$buildInfoSourcePath = Join-Path $root "src\RoughPptAddin\ui\build-info.json"
+$originalBuildInfoBytes = [IO.File]::ReadAllBytes($buildInfoSourcePath)
+$packageInfo = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $root "package.json") | ConvertFrom-Json
+$statusText = (& git status --porcelain | Out-String).Trim()
+$buildInfo = [ordered]@{
+    name = $packageInfo.name
+    version = $installerProductVersion
+    commit = (& git rev-parse --short=12 HEAD).Trim()
+    branch = (& git rev-parse --abbrev-ref HEAD).Trim()
+    dirty = -not [string]::IsNullOrWhiteSpace($statusText)
+    builtAtUtc = [DateTime]::UtcNow.ToString("o")
+    source = "release-package"
+}
+[IO.File]::WriteAllText($buildInfoSourcePath, ($buildInfo | ConvertTo-Json -Depth 3), [Text.UTF8Encoding]::new($false))
+
+try {
 $releaseRootProvided = -not [string]::IsNullOrWhiteSpace($ReleaseRoot)
 if ([string]::IsNullOrWhiteSpace($ReleaseRoot)) {
     $ReleaseRoot = Join-Path $root ("releases\RoughPptAddin-{0}-{1}" -f $installerProductVersion, $shortCommit)
@@ -335,3 +351,7 @@ Write-Host "ZIP=$zipPath"
 Write-Host "MSI=$msiPath"
 Write-Host "EXE=$exePath"
 Write-Host "Manifest=$manifestPath"
+}
+finally {
+    [IO.File]::WriteAllBytes($buildInfoSourcePath, $originalBuildInfoBytes)
+}

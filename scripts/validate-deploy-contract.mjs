@@ -4,6 +4,7 @@ const deploy = read("scripts/deploy.ps1");
 const build = read("scripts/build.ps1");
 const verify = read("scripts/verify-deploy-package.ps1");
 const installers = read("scripts/package-installers.ps1");
+const preservingPackage = read("scripts/package-release-preserving.ps1");
 const packageJson = JSON.parse(read("package.json"));
 const readme = read("README.md");
 const deployment = read("docs/DEPLOYMENT.md");
@@ -33,6 +34,10 @@ requireIncludes(installers, "dist\\installer-manifest.json", "package-installers
 requireIncludes(installers, "New-FileManifest $exePath", "package-installers.ps1: installer manifest must include EXE hash");
 requireIncludes(installers, "function Wait-ForFileReady", "package-installers.ps1: EXE packaging must wait for asynchronous IExpress output");
 requireIncludes(installers, "Wait-ForFileReady $exePath", "package-installers.ps1: IExpress EXE output must be ready before hashing");
+requireIncludes(preservingPackage, '$buildInfoSourcePath = Join-Path $root "src\\RoughPptAddin\\ui\\build-info.json"', "package-release-preserving.ps1: release must stage current build metadata");
+requireIncludes(preservingPackage, "version = $installerProductVersion", "package-release-preserving.ps1: build metadata must expose installer version");
+requireIncludes(preservingPackage, 'source = "release-package"', "package-release-preserving.ps1: build metadata must identify release source");
+requireIncludes(preservingPackage, "[IO.File]::WriteAllBytes($buildInfoSourcePath, $originalBuildInfoBytes)", "package-release-preserving.ps1: packaging must restore tracked build metadata");
 requireIncludes(deployment, "Rerunning the same MSI repairs and overwrites the local payload", "docs/DEPLOYMENT.md: same-MSI overwrite behavior must be documented");
 
 const testScript = packageJson.scripts?.test ?? "";
