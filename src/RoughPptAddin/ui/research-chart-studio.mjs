@@ -26,6 +26,9 @@ const CHART_LABELS = {
   roc: "ROC 曲线",
   precisionRecall: "精确率召回曲线",
   calibration: "校准曲线",
+  blandAltman: "Bland–Altman 图",
+  volcano: "火山图",
+  funnel: "漏斗图",
   heatmap: "热力图",
   donut: "环形图",
   polar: "极坐标图"
@@ -370,6 +373,17 @@ function requireUnitIntervalField(field, label) {
   }
 }
 
+function requirePValueField(field) {
+  requireQuantitativeField(field, "P 值");
+  if (state.rows.some(row => !Number.isFinite(Number(row[field])) || Number(row[field]) <= 0 || Number(row[field]) > 1)) {
+    throw new Error("P 值必须大于 0 且不超过 1。");
+  }
+}
+
+function datumFieldExpression(field) {
+  return `datum[${JSON.stringify(field)}]`;
+}
+
 function probabilityScale(axisKey) {
   const scale = scaleSpec(axisKey, true);
   if (scale.type === "log") throw new Error("概率曲线包含 0，不能使用对数坐标。");
@@ -695,6 +709,74 @@ function buildSpec() {
         encoding: { x: { datum: 0 }, x2: { datum: 1 }, y: { datum: 0 }, y2: { datum: 1 } }
       });
     }
+  } else if (state.chartType === "blandAltman") {
+    requireQuantitativeField(xField, "Bland–Altman 的第一次测量");
+    requireQuantitativeField(yField, "Bland–Altman 的第二次测量");
+    if (state.rows.length < 2) throw new Error("Bland–Altman 至少需要两行成对测量数据。");
+    const meanField = "__baMean";
+    const differenceField = "__baDifference";
+    const biasField = "__baBias";
+    const sdField = "__baSd";
+    const upperField = "__baUpper";
+    const lowerField = "__baLower";
+    const transform = [
+      { calculate: `(${datumFieldExpression(xField)} + ${datumFieldExpression(yField)}) / 2`, as: meanField },
+      { calculate: `${datumFieldExpression(yField)} - ${datumFieldExpression(xField)}`, as: differenceField },
+      { joinaggregate: [{ op: "mean", field: differenceField, as: biasField }, { op: "stdev", field: differenceField, as: sdField }] },
+      { calculate: `datum[${JSON.stringify(biasField)}] + 1.96 * datum[${JSON.stringify(sdField)}]`, as: upperField },
+      { calculate: `datum[${JSON.stringify(biasField)}] - 1.96 * datum[${JSON.stringify(sdField)}]`, as: lowerField }
+    ];
+    const pointEncoding = addColor({
+      x: { field: meanField, type: "quantitative", title: els.xAxisTitle.value || "两次测量均值", axis: axis(els.xAxisTitle.value || "两次测量均值", true, "x"), scale: scaleSpec("x", false) },
+      y: { field: differenceField, type: "quantitative", title: els.yAxisTitle.value || "测量差值", axis: axis(els.yAxisTitle.value || "测量差值", true, "y"), scale: scaleSpec("y", false) },
+      tooltip: [{ field: xField, type: "quantitative", title: "测量一" }, { field: yField, type: "quantitative", title: "测量二" }, { field: meanField, type: "quantitative", title: "均值" }, { field: differenceField, type: "quantitative", title: "差值" }]
+    }, colorField);
+    layers = [
+      { transform, mark: mark("point", { filled: true, size: pointSize, stroke: "#ffffff", strokeWidth: 0.7 }), encoding: pointEncoding },
+      { transform, mark: { type: "rule", color: els.annotationColor.value, strokeWidth: 1.5 }, encoding: { y: { field: biasField, type: "quantitative" } } },
+      { transform, mark: { type: "rule", color: els.axisColor.value, strokeWidth: 1.1, strokeDash: [6, 4] }, encoding: { y: { field: upperField, type: "quantitative" } } },
+      { transform, mark: { type: "rule", color: els.axisColor.value, strokeWidth: 1.1, strokeDash: [6, 4] }, encoding: { y: { field: lowerField, type: "quantitative" } } },
+      { data: { values: [{}] }, mark: { type: "rule", color: els.axisColor.value, strokeWidth: 1, strokeDash: [3, 3] }, encoding: { y: { datum: 0 } } }
+    ];
+  } else if (state.chartType === "volcano") {
+    requireQuantitativeField(xField, "火山图的效应值");
+    requirePValueField(yField);
+    const pValueField = "__volcanoPValue";
+    const transform = [{ calculate: `-log(${datumFieldExpression(yField)}) / log(10)`, as: pValueField }];
+    const encoding = addColor({
+      x: { field: xField, type: "quantitative", title: els.xAxisTitle.value || "效应值", axis: axis(els.xAxisTitle.value || "效应值", true, "x"), scale: scaleSpec("x", false) },
+      y: { field: pValueField, type: "quantitative", title: els.yAxisTitle.value || "−log₁₀(P)", axis: axis(els.yAxisTitle.value || "−log₁₀(P)", true, "y"), scale: scaleSpec("y", true) },
+      tooltip: [{ field: xField, type: "quantitative", title: "效应值" }, { field: yField, type: "quantitative", title: "P 值", format: ".3g" }, { field: pValueField, type: "quantitative", title: "−log₁₀(P)", format: ".3f" }]
+    }, colorField);
+    layers = [{ transform, mark: mark("point", { filled: true, size: pointSize, stroke: "#ffffff", strokeWidth: 0.6 }), encoding }];
+    const xReference = optionalNumber(els.referenceX);
+    const pReference = optionalNumber(els.referenceY);
+    if (xReference !== null) layers.push({ data: { values: [{}] }, mark: { type: "rule", color: els.annotationColor.value, strokeWidth: 1.2, strokeDash: [6, 4] }, encoding: { x: { datum: xReference } } });
+    if (pReference !== null && pReference > 0 && pReference <= 1) layers.push({ data: { values: [{}] }, mark: { type: "rule", color: els.annotationColor.value, strokeWidth: 1.2, strokeDash: [6, 4] }, encoding: { y: { datum: -Math.log10(pReference) } } });
+  } else if (state.chartType === "funnel") {
+    requireQuantitativeField(xField, "漏斗图的效应值");
+    requireQuantitativeField(yField, "漏斗图的标准误");
+    if (state.rows.some(row => !Number.isFinite(Number(row[yField])) || Number(row[yField]) <= 0)) throw new Error("漏斗图的标准误必须全部大于 0。");
+    const centerField = "__funnelCenter";
+    const upperField = "__funnelUpper";
+    const lowerField = "__funnelLower";
+    const centerValue = optionalNumber(els.referenceX);
+    const transform = [
+      ...(centerValue === null ? [{ joinaggregate: [{ op: "mean", field: xField, as: centerField }] }, { calculate: `datum[${JSON.stringify(centerField)}] + 1.96 * ${datumFieldExpression(yField)}`, as: upperField }, { calculate: `datum[${JSON.stringify(centerField)}] - 1.96 * ${datumFieldExpression(yField)}`, as: lowerField }] : [{ calculate: String(centerValue), as: centerField }, { calculate: `${centerValue} + 1.96 * ${datumFieldExpression(yField)}`, as: upperField }, { calculate: `${centerValue} - 1.96 * ${datumFieldExpression(yField)}`, as: lowerField }])
+    ];
+    const seScale = scaleSpec("y", false);
+    seScale.reverse = !seScale.reverse;
+    const points = addColor({
+      x: { field: xField, type: "quantitative", title: els.xAxisTitle.value || "效应值", axis: axis(els.xAxisTitle.value || "效应值", true, "x"), scale: scaleSpec("x", false) },
+      y: { field: yField, type: "quantitative", title: els.yAxisTitle.value || "标准误", axis: axis(els.yAxisTitle.value || "标准误", true, "y"), scale: seScale },
+      tooltip: [{ field: xField, type: "quantitative", title: "效应值" }, { field: yField, type: "quantitative", title: "标准误" }]
+    }, colorField);
+    layers = [
+      { transform, mark: mark("point", { filled: true, size: pointSize, stroke: "#ffffff", strokeWidth: 0.6 }), encoding: points },
+      { transform, mark: { type: "line", color: els.axisColor.value, strokeWidth: 1, strokeDash: [6, 4] }, encoding: { x: { field: upperField, type: "quantitative" }, y: { field: yField, type: "quantitative", scale: seScale }, order: { field: yField, sort: "ascending" } } },
+      { transform, mark: { type: "line", color: els.axisColor.value, strokeWidth: 1, strokeDash: [6, 4] }, encoding: { x: { field: lowerField, type: "quantitative" }, y: { field: yField, type: "quantitative", scale: seScale }, order: { field: yField, sort: "ascending" } } },
+      { transform, mark: { type: "rule", color: els.annotationColor.value, strokeWidth: 1.2 }, encoding: { x: { field: centerField, type: "quantitative" } } }
+    ];
   } else if (state.chartType === "heatmap") {
     const yCategory = colorField || xField;
     layers = [{
@@ -727,7 +809,7 @@ function buildSpec() {
     throw new Error("当前图表类型不受支持。");
   }
 
-  if (!["density", "violin", "forest", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
+  if (!["density", "violin", "forest", "blandAltman", "volcano", "funnel", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
 
   const chartWidth = numericValue(els.chartWidth, 760, 360, 1600);
   const chartHeight = numericValue(els.chartHeight, 480, 260, 1200);
