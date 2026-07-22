@@ -69,7 +69,7 @@ for (const snippet of [
 ]) {
   if (!html.includes(snippet)) throw new Error(`科研绘图工作区 HTML 合同缺少：${snippet}`);
 }
-if ((html.match(/data-chart-type=/g) || []).length !== 34) throw new Error("科研绘图工作区必须保留 34 种图表入口。");
+if ((html.match(/data-chart-type=/g) || []).length !== 36) throw new Error("科研绘图工作区必须保留 36 种图表入口。");
 if (/\b(?:src|href)\s*=\s*["']https?:\/\//i.test(html)) throw new Error("科研绘图工作区运行时不得依赖外部 CDN。");
 if (/gradient\s*\(/i.test(css)) throw new Error("科研绘图工作区不得使用渐变。");
 if (/position\s*:\s*(?:fixed|sticky)/i.test(css)) throw new Error("科研绘图工作区不得用 fixed/sticky 遮挡滚动内容。");
@@ -108,7 +108,7 @@ for (const snippet of ["scaleSpec", "axisKeyElements", "domainMin", "domainMax",
 for (const snippet of ["errorBandLayer", "annotationLayers", "annotationDatum", 'type: "rule"', 'type: "rect"', 'type: "text"', "strokeDash", "showErrorBand"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图论文标注合同缺少：${snippet}`);
 }
-for (const chartType of ["bar", "groupedBar", "stackedBar", "horizontalBar", "line", "step", "area", "scatter", "bubble", "histogram", "boxplot", "density", "violin", "ecdf", "strip", "regression", "qqPlot", "ppPlot", "forest", "roc", "precisionRecall", "calibration", "blandAltman", "volcano", "funnel", "survival", "cumulativeHazard", "heatmap", "correlationMatrix", "parallelCoordinates", "ternary", "radar", "donut", "polar"]) {
+for (const chartType of ["bar", "groupedBar", "stackedBar", "horizontalBar", "line", "step", "area", "scatter", "bubble", "histogram", "boxplot", "density", "violin", "raincloud", "ridgeline", "ecdf", "strip", "regression", "qqPlot", "ppPlot", "forest", "roc", "precisionRecall", "calibration", "blandAltman", "volcano", "funnel", "survival", "cumulativeHazard", "heatmap", "correlationMatrix", "parallelCoordinates", "ternary", "radar", "donut", "polar"]) {
   if (!app.includes(`${chartType}:`)) throw new Error(`科研绘图脚本缺少图表类型：${chartType}`);
 }
 for (const snippet of ['id="facetField"', 'id="facetColumns"']) {
@@ -137,6 +137,9 @@ for (const snippet of ['state.chartType === "qqPlot"', 'state.chartType === "ppP
 }
 for (const snippet of ['state.chartType === "ternary"', 'state.chartType === "radar"', "buildTernaryRows", "buildTernaryGridRows", "buildRadarRows", "buildRadarGuideRows", "__ternaryA", "__radarNormalized", "equalAspect"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图组成数据合同缺少：${snippet}`);
+}
+for (const snippet of ['state.chartType === "raincloud"', 'state.chartType === "ridgeline"', "kernelDensityRows", "buildRaincloudRows", "buildRidgelineRows", "__distJitter", "__distMedian", "__ridgeDensity", 'spacing: -8', 'bounds: "flush"']) {
+  if (!app.includes(snippet)) throw new Error(`科研绘图高密度分布合同缺少：${snippet}`);
 }
 for (const snippet of ["CONFIG_STORAGE_KEY", "PERSISTED_CONTROL_IDS", "applyFilter", "state.rawRows", "localStorage.setItem", "localStorage.getItem", "captureConfig", "restoreConfig", "downloadCurrentSvg", "state.latestSvgText", 'link.download =', "resetSvgOutput"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图筛选、配置或 SVG 下载合同缺少：${snippet}`);
@@ -175,7 +178,7 @@ for (const file of ["research-chart-studio.html", "research-chart-studio.css", "
   if (!bridge.includes(file.split("/").at(-1)) || !project.includes(windowsPath)) throw new Error(`启动与构建资源清单缺少：${file}`);
 }
 if (!project.includes("Services\\ResearchChartStudioService.cs")) throw new Error("项目文件缺少科研 SVG 服务。");
-for (const snippet of ["Vega Lite", "34 种图表", "相关矩阵", "并行坐标", "Q-Q", "P-P", "三元图", "雷达图", "小提琴", "经验累积分布", "森林图", "ROC", "精确率召回", "校准曲线", "Bland", "火山图", "漏斗图", "Kaplan", "累计风险", "数据筛选", "保存配置", "下载 SVG", "实时预览", "同一份 SVG", "PowerPoint 2016", "插入 PPT", "不会自动打开浏览器"]) {
+for (const snippet of ["Vega Lite", "36 种图表", "相关矩阵", "并行坐标", "Q-Q", "P-P", "三元图", "雷达图", "雨云图", "山脊图", "小提琴", "经验累积分布", "森林图", "ROC", "精确率召回", "校准曲线", "Bland", "火山图", "漏斗图", "Kaplan", "累计风险", "数据筛选", "保存配置", "下载 SVG", "实时预览", "同一份 SVG", "PowerPoint 2016", "插入 PPT", "不会自动打开浏览器"]) {
   if (!help.includes(snippet)) throw new Error(`使用说明缺少本地科研绘图内容：${snippet}`);
 }
 

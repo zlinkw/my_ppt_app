@@ -19,6 +19,8 @@ const CHART_LABELS = {
   boxplot: "箱线图",
   density: "密度图",
   violin: "小提琴图",
+  raincloud: "雨云图",
+  ridgeline: "山脊图",
   ecdf: "经验累积分布图",
   strip: "条带图",
   regression: "回归图",
@@ -45,7 +47,7 @@ const CHART_LABELS = {
 const CHART_CATEGORIES = {
   bar: "comparison", groupedBar: "comparison", stackedBar: "comparison", horizontalBar: "comparison", donut: "comparison", polar: "comparison", ternary: "comparison",
   line: "trend", step: "trend", area: "trend", regression: "trend",
-  histogram: "distribution", boxplot: "distribution", density: "distribution", violin: "distribution", ecdf: "distribution", strip: "distribution", qqPlot: "distribution", ppPlot: "distribution",
+  histogram: "distribution", boxplot: "distribution", density: "distribution", violin: "distribution", raincloud: "distribution", ridgeline: "distribution", ecdf: "distribution", strip: "distribution", qqPlot: "distribution", ppPlot: "distribution",
   scatter: "multivariate", bubble: "multivariate", heatmap: "multivariate", correlationMatrix: "multivariate", parallelCoordinates: "multivariate", radar: "multivariate",
   roc: "evaluation", precisionRecall: "evaluation", calibration: "evaluation",
   blandAltman: "agreement", forest: "agreement", volcano: "agreement", funnel: "agreement",
@@ -721,6 +723,81 @@ function buildRadarGuideRows(fields) {
   return { axes, rings };
 }
 
+function sampleQuantile(sortedValues, probability) {
+  if (!sortedValues.length) return null;
+  const index = (sortedValues.length - 1) * probability;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  const fraction = index - lower;
+  return sortedValues[lower] * (1 - fraction) + sortedValues[upper] * fraction;
+}
+
+function kernelDensityRows(values, pointCount = 49) {
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mean = sorted.reduce((sum, value) => sum + value, 0) / sorted.length;
+  const variance = sorted.length > 1 ? sorted.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (sorted.length - 1) : 0;
+  const deviation = Math.sqrt(variance);
+  const range = sorted.at(-1) - sorted[0];
+  const bandwidth = Math.max(1e-9, 1.06 * (deviation || range / 4 || Math.max(1, Math.abs(mean)) * 0.05) * sorted.length ** -0.2);
+  const start = sorted[0] - bandwidth * 2;
+  const end = sorted.at(-1) + bandwidth * 2;
+  const denominator = sorted.length * bandwidth * Math.sqrt(2 * Math.PI);
+  const rows = [];
+  let maximum = 0;
+  for (let index = 0; index < pointCount; index += 1) {
+    const value = start + (end - start) * index / (pointCount - 1);
+    const density = sorted.reduce((sum, sample) => sum + Math.exp(-0.5 * ((value - sample) / bandwidth) ** 2), 0) / denominator;
+    maximum = Math.max(maximum, density);
+    rows.push({ value, density });
+  }
+  return rows.map(row => ({ ...row, normalizedDensity: maximum > 0 ? row.density / maximum : 0 }));
+}
+
+function groupedDistributionValues(valueField, categoryField, colorField, facetField) {
+  requireQuantitativeField(valueField, "分布图数值字段");
+  const groups = new Map();
+  for (const row of state.rows) {
+    const value = Number(row[valueField]);
+    if (!Number.isFinite(value)) continue;
+    const category = categoryField ? row[categoryField] : "全部";
+    const color = colorField ? row[colorField] : "全部";
+    const facet = facetField ? row[facetField] : "";
+    const key = JSON.stringify([facet, category, color]);
+    if (!groups.has(key)) groups.set(key, { facet, category, color, values: [] });
+    groups.get(key).values.push(value);
+  }
+  if (!groups.size) throw new Error("当前筛选结果没有可用于分布图的有效数值。");
+  return [...groups.values()];
+}
+
+function buildRaincloudRows(categoryField, valueField, colorField, facetField) {
+  const rows = [];
+  for (const group of groupedDistributionValues(valueField, categoryField, colorField, facetField)) {
+    const base = {
+      ...(facetField ? { [facetField]: group.facet } : {}),
+      __distCategory: group.category,
+      __distGroup: group.color
+    };
+    kernelDensityRows(group.values).forEach(point => rows.push({ ...base, __distKind: "density", __distValue: point.value, __distDensity: point.normalizedDensity }));
+    const sorted = group.values.slice().sort((a, b) => a - b);
+    sorted.forEach((value, index) => rows.push({ ...base, __distKind: "raw", __distValue: value, __distJitter: -0.12 - ((index * 17) % 11) / 11 * 0.28 }));
+    rows.push({ ...base, __distKind: "stats", __distMin: sorted[0], __distQ1: sampleQuantile(sorted, 0.25), __distMedian: sampleQuantile(sorted, 0.5), __distQ3: sampleQuantile(sorted, 0.75), __distMax: sorted.at(-1) });
+  }
+  return rows;
+}
+
+function buildRidgelineRows(valueField, groupField, facetField) {
+  const groups = groupedDistributionValues(valueField, groupField || "", "", facetField);
+  const rows = [];
+  const labels = [];
+  for (const group of groups) {
+    const label = facetField ? `${String(group.facet)} · ${String(group.category)}` : String(group.category);
+    if (!labels.includes(label)) labels.push(label);
+    kernelDensityRows(group.values).forEach(point => rows.push({ __ridgeGroup: label, __ridgeValue: point.value, __ridgeDensity: point.normalizedDensity }));
+  }
+  return { rows, labels };
+}
+
 function probabilityScale(axisKey) {
   const scale = scaleSpec(axisKey, true);
   if (scale.type === "log") throw new Error("概率曲线包含 0，不能使用对数坐标。");
@@ -911,6 +988,10 @@ function buildSpec() {
   const pointSize = numericValue(els.markSize, 90, 10, 500);
   let layers;
   let violinSpec = null;
+  let raincloudSpec = null;
+  let raincloudFacet = null;
+  let ridgelineSpec = null;
+  let ridgelineGroups = [];
   let annotationXField = xField;
   let chartData = state.rows;
 
@@ -979,6 +1060,37 @@ function buildSpec() {
         tooltip: [{ field: xField, type: fieldType(xField) }, { field: yField, type: "quantitative", title: yField }]
       }, colorField || xField)
     };
+  } else if (state.chartType === "raincloud") {
+    requireQuantitativeField(yField, "雨云图的 Y 轴");
+    chartData = buildRaincloudRows(xField, yField, colorField, els.facetField.value);
+    const distributionScale = { domain: [-0.48, 1.05], zero: false };
+    const distributionColor = colorField ? { field: "__distGroup", type: fieldType(colorField), scale: { range: PALETTES[state.palette] }, legend: els.showLegend.checked ? { title: colorField } : null } : null;
+    const withDistributionColor = encoding => distributionColor ? { ...encoding, color: distributionColor } : encoding;
+    const valueEncoding = { field: "__distValue", type: "quantitative", title: els.yAxisTitle.value || yField, axis: axis(els.yAxisTitle.value || yField, true, "y"), scale: scaleSpec("y", false) };
+    raincloudSpec = {
+      layer: [
+        { transform: [{ filter: "datum.__distKind === 'density'" }], mark: mark("area", { orient: "horizontal", opacity: 0.38, line: { strokeWidth: lineWidth } }), encoding: withDistributionColor({ x: { field: "__distDensity", type: "quantitative", axis: null, scale: distributionScale }, y: valueEncoding, detail: { field: "__distGroup", type: "nominal" } }) },
+        { transform: [{ filter: "datum.__distKind === 'raw'" }], mark: mark("point", { filled: true, size: Math.max(16, pointSize * 0.32), opacity: 0.58, stroke: "#ffffff", strokeWidth: 0.4 }), encoding: withDistributionColor({ x: { field: "__distJitter", type: "quantitative", axis: null, scale: distributionScale }, y: valueEncoding, tooltip: [{ field: "__distCategory", type: fieldType(xField), title: xField }, { field: "__distValue", type: "quantitative", title: yField }] }) },
+        { transform: [{ filter: "datum.__distKind === 'stats'" }], mark: { type: "rule", color: els.axisColor.value, strokeWidth: 1.2 }, encoding: withDistributionColor({ x: { datum: -0.055, type: "quantitative", scale: distributionScale }, y: { field: "__distMin", type: "quantitative", scale: scaleSpec("y", false) }, y2: { field: "__distMax" } }) },
+        { transform: [{ filter: "datum.__distKind === 'stats'" }], mark: { type: "rule", color: PALETTES[state.palette][0], strokeWidth: Math.max(5, lineWidth * 3) }, encoding: withDistributionColor({ x: { datum: -0.055, type: "quantitative", scale: distributionScale }, y: { field: "__distQ1", type: "quantitative", scale: scaleSpec("y", false) }, y2: { field: "__distQ3" } }) },
+        { transform: [{ filter: "datum.__distKind === 'stats'" }], mark: { type: "tick", color: els.textColor.value, orient: "horizontal", size: 14, thickness: 2 }, encoding: withDistributionColor({ x: { datum: -0.055, type: "quantitative", scale: distributionScale }, y: { field: "__distMedian", type: "quantitative", scale: scaleSpec("y", false) } }) }
+      ]
+    };
+    raincloudFacet = els.facetField.value
+      ? { row: { field: els.facetField.value, type: fieldType(els.facetField.value), header: { title: null, labelColor: els.textColor.value } }, column: { field: "__distCategory", type: fieldType(xField), header: { title: els.xAxisTitle.value || xField, labelColor: els.textColor.value } } }
+      : { field: "__distCategory", type: fieldType(xField), header: { title: els.xAxisTitle.value || xField, labelColor: els.textColor.value } };
+  } else if (state.chartType === "ridgeline") {
+    const numericField = fieldType(xField) === "quantitative" ? xField : yField;
+    const groupField = colorField || (numericField === xField ? yField : xField);
+    if (!groupField || groupField === numericField) throw new Error("山脊图需要一个数值字段和一个不同的分组字段。");
+    const ridgeline = buildRidgelineRows(numericField, groupField, els.facetField.value);
+    chartData = ridgeline.rows;
+    ridgelineGroups = ridgeline.labels;
+    const ridgeEncoding = {
+      x: { field: "__ridgeValue", type: "quantitative", title: els.xAxisTitle.value || numericField, axis: axis(els.xAxisTitle.value || numericField, true, "x"), scale: scaleSpec("x", false) },
+      y: { field: "__ridgeDensity", type: "quantitative", title: null, axis: null, scale: { domain: [0, 1], range: [56, -8] } }
+    };
+    ridgelineSpec = { layer: [{ mark: mark("area", { opacity: 0.42, line: { strokeWidth: lineWidth } }), encoding: ridgeEncoding }, { mark: mark("line", { strokeWidth: lineWidth, opacity: 1 }), encoding: ridgeEncoding }] };
   } else if (state.chartType === "ecdf") {
     const numericField = fieldType(xField) === "quantitative" ? xField : yField;
     requireQuantitativeField(numericField, "经验累积分布图的数值轴");
@@ -1276,7 +1388,7 @@ function buildSpec() {
     throw new Error("当前图表类型不受支持。");
   }
 
-  if (!["density", "violin", "qqPlot", "ppPlot", "forest", "blandAltman", "volcano", "funnel", "correlationMatrix", "parallelCoordinates", "ternary", "radar", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
+  if (!["density", "violin", "raincloud", "ridgeline", "qqPlot", "ppPlot", "forest", "blandAltman", "volcano", "funnel", "correlationMatrix", "parallelCoordinates", "ternary", "radar", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
 
   const chartWidth = numericValue(els.chartWidth, 760, 360, 1600);
   const chartHeight = numericValue(els.chartHeight, 480, 260, 1200);
@@ -1312,6 +1424,27 @@ function buildSpec() {
       ...(facetField ? {} : { columns: facetColumns }),
       spec: { width: Math.max(150, Math.floor(chartWidth / facetColumns) - 46), height: chartHeight, ...violinSpec },
       resolve: { scale: { x: "independent", y: "shared" } }
+    };
+  }
+
+  if (raincloudSpec) {
+    return {
+      ...common,
+      facet: raincloudFacet,
+      ...(els.facetField.value ? {} : { columns: facetColumns }),
+      spec: { width: Math.max(150, Math.floor(chartWidth / facetColumns) - 46), height: chartHeight, ...raincloudSpec },
+      resolve: { scale: { x: "shared", y: "shared" } }
+    };
+  }
+
+  if (ridgelineSpec) {
+    return {
+      ...common,
+      facet: { row: { field: "__ridgeGroup", type: "nominal", sort: ridgelineGroups, header: { title: null, labelColor: els.textColor.value, labelAngle: 0, labelAlign: "left" } } },
+      spacing: -8,
+      bounds: "flush",
+      spec: { width: chartWidth, height: 58, ...ridgelineSpec },
+      resolve: { scale: { x: "shared", y: "independent" } }
     };
   }
 
