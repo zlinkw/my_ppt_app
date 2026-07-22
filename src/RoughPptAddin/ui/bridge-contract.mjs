@@ -1,6 +1,8 @@
 export const HOST_MESSAGE_TYPES = {
   openUsageGuide: "openUsageGuide",
   openResearchChartStudio: "openResearchChartStudio",
+  researchChartStudioReady: "researchChartStudioReady",
+  toggleResearchChartStudioFullscreen: "toggleResearchChartStudioFullscreen",
   openResearchChartWebsite: "openResearchChartWebsite",
   stageResearchSvg: "stageResearchSvg",
   selectResearchSvg: "selectResearchSvg",

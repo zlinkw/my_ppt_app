@@ -60,6 +60,7 @@ h1 { margin: 0; font-size: 19px; line-height: 1.2; }
   white-space: nowrap;
 }
 .button.primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+#fullscreenButton[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: #3249c9; }
 .button:hover, .button:focus-visible, .compact-button:hover, .compact-button:focus-visible { border-color: var(--accent-strong); outline: 2px solid var(--accent-soft); outline-offset: 0; }
 .button.primary:hover, .button.primary:focus-visible { background: var(--accent-strong); }
 

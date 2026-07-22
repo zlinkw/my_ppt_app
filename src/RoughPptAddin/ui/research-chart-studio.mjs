@@ -55,6 +55,7 @@ const STYLE_DEFAULTS = {
 
 const byId = id => document.getElementById(id);
 const els = {
+  fullscreenButton: byId("fullscreenButton"),
   dataFileInput: byId("dataFileInput"),
   loadDataButton: byId("loadDataButton"),
   loadSampleButton: byId("loadSampleButton"),
@@ -118,7 +119,8 @@ const state = {
   renderTimer: 0,
   dataTimer: 0,
   fieldsInitialized: false,
-  sourceLabel: "内置示例"
+  sourceLabel: "内置示例",
+  fullscreen: false
 };
 
 function setStatus(text, isError = false) {
@@ -143,6 +145,21 @@ function postHost(message) {
   }
   window.chrome.webview.postMessage(message);
   return true;
+}
+
+function setFullscreenState(fullscreen) {
+  state.fullscreen = Boolean(fullscreen);
+  document.body.classList.toggle("is-fullscreen", state.fullscreen);
+  els.fullscreenButton?.setAttribute("aria-pressed", state.fullscreen ? "true" : "false");
+  const label = els.fullscreenButton?.querySelector("span:last-child");
+  if (label) label.textContent = state.fullscreen ? "退出全屏" : "全屏";
+  if (els.fullscreenButton) {
+    els.fullscreenButton.title = state.fullscreen ? "退出全屏并恢复窗口大小；也可按 Esc" : "让科研绘图工作区占满屏幕；再次点击或按 Esc 恢复窗口";
+  }
+}
+
+function toggleFullscreen() {
+  postHost({ type: "toggleResearchChartStudioFullscreen" });
 }
 
 function openWebsite(siteId) {
@@ -535,6 +552,7 @@ function showImportedSvg(message) {
 }
 
 function bindEvents() {
+  els.fullscreenButton?.addEventListener("click", toggleFullscreen);
   els.loadDataButton.addEventListener("click", () => els.dataFileInput.click());
   els.loadSampleButton.addEventListener("click", () => {
     els.dataEditor.value = SAMPLE_DATA;
@@ -582,6 +600,15 @@ function bindEvents() {
     els.insertButton.disabled = true;
     if (postHost({ type: "insertResearchSvg", requestId })) setStatus("正在插入当前预览 SVG。");
   });
+  document.addEventListener("keydown", event => {
+    if (event.key === "F11") {
+      event.preventDefault();
+      toggleFullscreen();
+    } else if (event.key === "Escape" && state.fullscreen) {
+      event.preventDefault();
+      toggleFullscreen();
+    }
+  });
 }
 
 window.chrome?.webview?.addEventListener?.("message", event => {
@@ -608,9 +635,12 @@ window.chrome?.webview?.addEventListener?.("message", event => {
     setStatus(message.ok ? "已将当前预览 SVG 插入 PowerPoint。" : `插入失败：${message.error || "未知错误"}`, !message.ok);
   }
   if (message.type === "researchWebsiteOpenResult" && !message.ok) setStatus(`网站打开失败：${message.error || "未知错误"}`, true);
+  if (message.type === "researchChartFullscreenResult") setFullscreenState(message.fullscreen);
 });
 
 window.addEventListener("beforeunload", clearPreviewUrl);
 renderWebsites();
 bindEvents();
+setFullscreenState(false);
+postHost({ type: "researchChartStudioReady" });
 applyData("内置示例");

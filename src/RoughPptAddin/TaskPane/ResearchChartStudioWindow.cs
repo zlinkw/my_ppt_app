@@ -41,6 +41,14 @@ public sealed class ResearchChartStudioWindow : Form
 
 	private bool initializationStarted;
 
+	private bool isFullscreen;
+
+	private FormBorderStyle normalBorderStyle;
+
+	private FormWindowState normalWindowState;
+
+	private Rectangle normalBounds;
+
 	private ResearchSvgDocument selectedSvg;
 
 	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart, Func<ResearchSvgDocument, string> insertSvg)
@@ -140,6 +148,16 @@ public sealed class ResearchChartStudioWindow : Form
 		{
 			var message = serializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(e.WebMessageAsJson);
 			string messageType = ReadString(message, "type", string.Empty);
+			if (string.Equals(messageType, "researchChartStudioReady", StringComparison.OrdinalIgnoreCase))
+			{
+				PostFullscreenResult();
+				return;
+			}
+			if (string.Equals(messageType, "toggleResearchChartStudioFullscreen", StringComparison.OrdinalIgnoreCase))
+			{
+				ToggleFullscreen();
+				return;
+			}
 			if (string.Equals(messageType, "openResearchChartWebsite", StringComparison.OrdinalIgnoreCase))
 			{
 				OpenResearchChartWebsite(ReadString(message, "siteId", string.Empty));
@@ -187,6 +205,44 @@ public sealed class ResearchChartStudioWindow : Form
 			PostResult(string.Empty, false, string.Empty, ex.Message);
 			reportStatus?.Invoke("科研绘图工作区插入失败：" + ex.Message, true);
 		}
+	}
+
+	private void ToggleFullscreen()
+	{
+		if (!isFullscreen)
+		{
+			normalBorderStyle = FormBorderStyle;
+			normalWindowState = WindowState;
+			normalBounds = Bounds;
+			Rectangle fullscreenBounds = Screen.FromControl(this).Bounds;
+			WindowState = FormWindowState.Normal;
+			FormBorderStyle = FormBorderStyle.None;
+			Bounds = fullscreenBounds;
+			isFullscreen = true;
+		}
+		else
+		{
+			WindowState = FormWindowState.Normal;
+			Bounds = normalBounds;
+			FormBorderStyle = normalBorderStyle;
+			WindowState = normalWindowState;
+			isFullscreen = false;
+		}
+		Activate();
+		PostFullscreenResult();
+	}
+
+	private void PostFullscreenResult()
+	{
+		if (webView.CoreWebView2 == null)
+		{
+			return;
+		}
+		webView.CoreWebView2.PostWebMessageAsJson(serializer.Serialize(new
+		{
+			type = "researchChartFullscreenResult",
+			fullscreen = isFullscreen
+		}));
 	}
 
 	private void StageResearchSvg(string requestId, string svgText, string fileName)
@@ -385,6 +441,16 @@ public sealed class ResearchChartStudioWindow : Form
 		{
 			base.OnFormClosing(e);
 		}
+	}
+
+	protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+	{
+		if (keyData == Keys.F11 || (keyData == Keys.Escape && isFullscreen))
+		{
+			ToggleFullscreen();
+			return true;
+		}
+		return base.ProcessCmdKey(ref msg, keyData);
 	}
 
 	protected override void Dispose(bool disposing)
