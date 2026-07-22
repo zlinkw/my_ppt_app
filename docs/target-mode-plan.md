@@ -5,8 +5,8 @@
 ## 目标与边界
 
 - PPT 插件作为科研绘图中枢：Rough 原生图形、ZLK 自动绘图、Zotero 论文图像与配色库。
-- Rough 原生图形和 ZLK 图表最终必须是 PPT 原生可编辑对象；禁止 PNG、SVG、Canvas 截图作为最终对象。
-- Zotero 论文参考图像是唯一 `msoPicture` 例外；该例外不得扩展到 Rough 图形或 ZLK 图表。
+- Rough 原生图形和 ZLK 自动绘图最终必须是 PPT 原生可编辑对象；禁止 PNG、SVG、Canvas 截图作为这些链路的最终对象。
+- Zotero 论文参考图像与白名单科研绘图网站导出的受校验 SVG 是相互隔离的外部图像例外；科研 SVG 例外不得扩展到 Rough 或 ZLK 自动绘图。
 - 所有界面使用中文母语表达；必要英文只保留官方名称或缩写，并与中文语义组合。意义不明确的按钮、标题、徽标和命令必须有中文悬浮说明。
 - Ribbon 放高频入口；右侧任务窗格保留完整参数、素材与配色管理和兜底操作。
 - 优先优化 UI 外观、布局、发现性、首屏密度、图标一致性和状态可读性；阻塞、危险操作或兼容断裂可插队。
@@ -131,6 +131,21 @@
 - B512（已纠正）：独立工作区回传消息的 `requestId` 仅用于页面应答，不再传给 `InsertZlkChart` 作为自动化请求标识；插入保持在当前 PPT 幻灯片目标，定向合同和完整验证通过。
 - 统一验证：`npm.cmd test`、`npm.cmd run build:ui`、`node --check` 和签名 Release 编译均通过；直接运行旧 `scripts/build.ps1` 因未传入 Restore/LangVersion 参数失败，不作为发布链路，`npm.cmd run package` 使用独立 Restore 与最新 C# 语言版本成功。
 - 发布产物：`releases/RoughPptAddin-0.1.736-ed524841/`，发布提交 `ed524841`；ZIP、MSI、EXE 清单、内置 `dirty=false` 构建信息和 SHA256 已复核；未自动安装、未关闭或重启 PowerPoint/VS Code。
+
+### 当前网页科研绘图与 SVG 所见即所得批次
+
+- 批次队列：B513、B514、B515、B516、B517。
+- 目标：让简洁模式三个状态按钮直接复用快捷工作台按钮样式；科研绘图主入口打开系统浏览器中的成熟绘图网站；网站导出的 SVG 以同一份内容完成预览和 PPT 插入，消除颜色、坐标与排版差异。
+- 范围：简洁模式连接按钮、独立科研绘图工作区、系统浏览器白名单、SVG 选择/校验/插入、使用说明与静态合同。
+- 排除：不移除旧任务窗格 JSON/CSV/SimpleExperiment 原生绘图入口；不改变 ZLK `schemaVersion=1`、loopback/token 协议、结果 importer 或原生 renderer；不允许任意 URL、脚本化 SVG、外部资源或 Canvas 截图插入。
+- 保护区：PowerPoint 不自动关闭或重启；Rough 与 ZLK 自动绘图继续只生成原生对象；科研 SVG 仅接受 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 工作流中由用户显式导出的本地文件，并在插入前再次校验内容一致性。
+- 回归检查：连接按钮共享布局、系统浏览器白名单、SVG 安全校验、预览/插入同源、旧 ZLK 原生链路、Office 兼容提示、无渐变 UI、中文 tooltip。
+- 批次边界：单个小批次不运行测试、构建或打包；B513-B517 完成后统一运行完整 `npm.cmd test`、`npm.cmd run build:ui`、Release 编译并打包 ZIP/MSI/EXE。
+- B513（待统一验证）：三个简洁模式状态按钮改用 `workflow-actions` 容器与同一按钮尺寸、边框、间距和响应式网格；记录科研 SVG 窄范围例外。
+- B514（待开始）：科研绘图工作区改为网站选择与 SVG 回传工作台。
+- B515（待开始）：系统浏览器 URL 白名单与主入口默认打开 RAWGraphs。
+- B516（待开始）：SVG 文件选择、内容校验、同源预览和当前幻灯片插入。
+- B517（待开始）：使用说明、架构、验证合同与兼容说明同步。
 
 ## 近期锚点
 

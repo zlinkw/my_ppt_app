@@ -15,15 +15,16 @@
 
 ## 1. 产品边界
 
-- 本项目是 Windows PowerPoint VSTO 插件，不是 Web 演示、不是 SVG 编辑器、不是图片导出工具。
+- 本项目是 Windows PowerPoint VSTO 插件，不是 Web 演示、不是 SVG 编辑器、不是通用图片导出工具。
 - 核心能力：
   - Rough 手绘风格原生图形
   - ZLK 集群实验结果自动绘图
   - Zotero 论文图像/配色库
   - 用户素材库、配色库、论文图预设、特征块
 - Rough 原生图形和 ZLK 图表最终对象必须是 PowerPoint 原生可编辑对象：`Shape` / `Freeform` / `Group` / `Line` / `Textbox` / `Table`。
-- 禁止把 PNG、SVG、Canvas 截图、外部图片作为 Rough 图形或 ZLK 图表的最终对象。
-- 唯一允许的 `msoPicture` 例外：Zotero 论文参考图像。该例外不得扩展到 Rough 或 ZLK 绘图链路。
+- 禁止把 PNG、SVG、Canvas 截图、外部图片作为 Rough 图形或 ZLK 自动绘图链路的最终对象。
+- 允许两个相互隔离的外部图像例外：Zotero 论文参考图像；用户从白名单科研绘图网站导出并由独立科研 SVG 导入链路校验的 SVG。例外不得扩展到 Rough 或 ZLK 自动绘图。
+- 科研 SVG 必须限制文件体积，拒绝脚本、事件处理器、外部 URL、外部资源和危险 XML；网页预览与 PPT 插入必须使用同一份校验后 SVG 内容。
 
 ## 2. 视觉与交互硬约束
 
@@ -189,13 +190,13 @@
 
 ## 7. 禁止事项
 
-- 禁止把图片/SVG 当作 Rough 或 ZLK 最终对象。
+- 禁止把图片/SVG 当作 Rough 或 ZLK 自动绘图最终对象；仅保留第 1 节定义的独立科研 SVG 导入例外。
 - 禁止读取 Zotero 内部 `zotero.sqlite`。
 - 禁止修改外部仓来“顺便修兼容”。
 - 禁止关闭或重启用户的 PowerPoint / VS Code，除非用户明确要求。
 - 禁止引入新的多角色后台智能体编排、角色扮演式实现流程、无人值守互相评审环。
 - 禁止为了提速跳过与改动面相关的验证。
-- 禁止扩大 `msoPicture` 例外范围。
+- 禁止扩大 Zotero 参考图像与独立科研 SVG 导入的例外范围。
 
 ## 8. 最小验收清单
 
