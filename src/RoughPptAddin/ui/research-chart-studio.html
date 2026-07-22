@@ -16,6 +16,7 @@
     <div class="header-actions" role="group" aria-label="科研绘图主要操作">
       <input id="dataFileInput" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" hidden>
       <button id="fullscreenButton" class="button secondary" type="button" aria-pressed="false" title="让科研绘图工作区占满屏幕；再次点击或按 Esc 恢复窗口"><span aria-hidden="true">&#8599;</span><span>全屏</span></button>
+      <button id="downloadSvgButton" class="button secondary" type="button" disabled title="下载当前预览使用的同一份 SVG 文件"><span aria-hidden="true">&#8595;</span><span>下载 SVG</span></button>
       <button id="loadDataButton" class="button secondary" type="button" title="导入本地 CSV、TSV 或 TXT 表格数据">导入数据</button>
       <button id="loadSampleButton" class="button secondary" type="button" title="载入内置科研示例数据">示例数据</button>
       <button id="selectSvgButton" class="button secondary" type="button" title="选择已有 SVG 文件并通过宿主安全校验">导入 SVG</button>
@@ -39,6 +40,15 @@ Ours,0.887,0.015,B</textarea>
           <button id="applyDataButton" class="compact-button" type="button" title="重新解析编辑器中的数据">更新数据</button>
           <button id="resetDataButton" class="compact-button quiet" type="button" title="恢复内置示例数据">恢复示例</button>
           <span id="dataSource" class="source-label">内置示例</span>
+        </div>
+        <div class="field-grid data-filter-grid">
+          <label><span>筛选字段</span><select id="filterField" title="只绘制满足条件的数据行"><option value="">全部数据</option></select></label>
+          <label><span>筛选方式</span><select id="filterMode" title="选择文本或数值筛选方式"><option value="contains">包含</option><option value="equals">等于</option><option value="notEquals">不等于</option><option value="greater">大于</option><option value="less">小于</option></select></label>
+        </div>
+        <input id="filterValue" type="text" placeholder="筛选值（留空显示全部）" title="输入筛选值，图表会实时更新">
+        <div class="data-actions config-actions">
+          <button id="saveConfigButton" class="compact-button" type="button" title="保存当前图表和样式配置到本机">保存配置</button>
+          <button id="loadConfigButton" class="compact-button quiet" type="button" title="恢复本机保存的图表和样式配置">恢复配置</button>
         </div>
       </section>
 

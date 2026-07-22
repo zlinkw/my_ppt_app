@@ -80,9 +80,19 @@ const STYLE_DEFAULTS = {
   smoothLine: false
 };
 
+const CONFIG_STORAGE_KEY = "simpleexperiment.researchChartStudio.v1";
+const PERSISTED_CONTROL_IDS = [
+  "xField", "yField", "colorField", "sizeField", "errorLowField", "errorHighField", "aggregateMode", "sortMode", "facetField", "facetColumns",
+  "filterField", "filterMode", "filterValue", "chartTitle", "xAxisTitle", "yAxisTitle", "xScaleType", "yScaleType", "xTickFormat", "yTickFormat",
+  "xDomainMin", "xDomainMax", "yDomainMin", "yDomainMax", "xReverse", "yReverse", "referenceX", "referenceY", "referenceXMin", "referenceXMax",
+  "referenceYMin", "referenceYMax", "annotationText", "annotationX", "annotationY", "annotationColor", "showErrorBand", "chartWidth", "chartHeight",
+  "fontSize", "lineWidth", "markSize", "markOpacity", "backgroundColor", "textColor", "axisColor", "showLegend", "showGrid", "includeZero", "showLabels", "smoothLine"
+];
+
 const byId = id => document.getElementById(id);
 const els = {
   fullscreenButton: byId("fullscreenButton"),
+  downloadSvgButton: byId("downloadSvgButton"),
   dataFileInput: byId("dataFileInput"),
   loadDataButton: byId("loadDataButton"),
   loadSampleButton: byId("loadSampleButton"),
@@ -93,6 +103,11 @@ const els = {
   resetDataButton: byId("resetDataButton"),
   dataSummary: byId("dataSummary"),
   dataSource: byId("dataSource"),
+  filterField: byId("filterField"),
+  filterMode: byId("filterMode"),
+  filterValue: byId("filterValue"),
+  saveConfigButton: byId("saveConfigButton"),
+  loadConfigButton: byId("loadConfigButton"),
   chartTypeGrid: byId("chartTypeGrid"),
   currentChartType: byId("currentChartType"),
   xField: byId("xField"),
@@ -158,6 +173,7 @@ const els = {
 };
 
 const state = {
+  rawRows: [],
   rows: [],
   fields: [],
   fieldTypes: {},
@@ -168,9 +184,11 @@ const state = {
   previewUrl: "",
   renderTimer: 0,
   dataTimer: 0,
+  filterTimer: 0,
   fieldsInitialized: false,
   sourceLabel: "内置示例",
-  fullscreen: false
+  fullscreen: false,
+  latestSvgText: ""
 };
 
 function setStatus(text, isError = false) {
@@ -223,8 +241,8 @@ function renderWebsites() {
   els.websiteList.querySelectorAll("[data-site-id]").forEach(button => button.addEventListener("click", () => openWebsite(button.dataset.siteId)));
 }
 
-function inferFieldType(field) {
-  const values = state.rows.map(row => row[field]).filter(value => value !== null && value !== undefined && value !== "");
+function inferFieldType(field, rows = state.rawRows) {
+  const values = rows.map(row => row[field]).filter(value => value !== null && value !== undefined && value !== "");
   if (values.length && values.every(value => typeof value === "number" && Number.isFinite(value))) return "quantitative";
   if (values.length && values.every(value => typeof value === "string" && /^\d{4}[-/]\d{1,2}(?:[-/]\d{1,2})?/.test(value) && Number.isFinite(Date.parse(value)))) return "temporal";
   return "nominal";
@@ -244,11 +262,13 @@ function parseEditorData(sourceLabel = state.sourceLabel) {
   if (!fields.length) throw new Error("未识别到表头，请使用 CSV 或 TSV 首行字段名。");
   const rows = (parsed.data || []).map(row => Object.fromEntries(fields.map(field => [field, row[field] ?? null])));
   if (!rows.length) throw new Error("表格没有可绘制的数据行。");
+  state.rawRows = rows;
   state.rows = rows;
   state.fields = fields;
-  state.fieldTypes = Object.fromEntries(fields.map(field => [field, inferFieldType(field)]));
+  state.fieldTypes = Object.fromEntries(fields.map(field => [field, inferFieldType(field, rows)]));
   state.sourceLabel = sourceLabel;
   updateFieldOptions();
+  applyFilter();
   updateDataSummary();
 }
 
@@ -281,7 +301,38 @@ function updateFieldOptions() {
   fillFieldSelect(els.errorLowField, state.fields, "", true, preserveCurrent);
   fillFieldSelect(els.errorHighField, state.fields, "", true, preserveCurrent);
   fillFieldSelect(els.facetField, state.fields, "", true, preserveCurrent);
+  const currentFilter = els.filterField.value;
+  els.filterField.innerHTML = `<option value="">全部数据</option>${state.fields.map(field => `<option value="${escapeHtml(field)}">${escapeHtml(field)}</option>`).join("")}`;
+  els.filterField.value = state.fields.includes(currentFilter) ? currentFilter : "";
   state.fieldsInitialized = true;
+}
+
+function applyFilter() {
+  const field = els.filterField.value;
+  const rawQuery = els.filterValue.value.trim();
+  if (!field || !rawQuery) {
+    state.rows = state.rawRows.slice();
+    return;
+  }
+  const mode = els.filterMode.value;
+  const query = rawQuery.toLocaleLowerCase("zh-CN");
+  const numericQuery = Number(rawQuery);
+  state.rows = state.rawRows.filter(row => {
+    const value = row[field];
+    const text = String(value ?? "").trim().toLocaleLowerCase("zh-CN");
+    if (mode === "contains") return text.includes(query);
+    if (mode === "equals") return text === query;
+    if (mode === "notEquals") return text !== query;
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || !Number.isFinite(numericQuery)) return false;
+    return mode === "greater" ? numericValue > numericQuery : numericValue < numericQuery;
+  });
+}
+
+function applyFilterAndRender() {
+  applyFilter();
+  updateDataSummary();
+  scheduleRender(0);
 }
 
 function updateDataSummary() {
@@ -617,8 +668,15 @@ function clearPreviewUrl() {
   state.previewUrl = "";
 }
 
+function resetSvgOutput() {
+  state.latestSvgText = "";
+  els.downloadSvgButton.disabled = true;
+}
+
 function showSvgText(svgText, label) {
   clearPreviewUrl();
+  state.latestSvgText = svgText;
+  els.downloadSvgButton.disabled = !svgText;
   state.previewUrl = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml" }));
   els.svgPreview.src = state.previewUrl;
   els.svgPreview.alt = `${label} SVG 预览`;
@@ -643,6 +701,7 @@ async function renderChart() {
   const token = ++state.renderToken;
   state.pendingStageRequestId = "";
   els.insertButton.disabled = true;
+  resetSvgOutput();
   setRenderState("渲染中");
   els.emptyState.hidden = true;
   try {
@@ -660,6 +719,7 @@ async function renderChart() {
     stageGeneratedSvg(svgText, token);
   } catch (error) {
     if (token !== state.renderToken) return;
+    resetSvgOutput();
     els.chartPreview.replaceChildren();
     els.chartPreview.hidden = true;
     els.svgPreview.hidden = true;
@@ -675,14 +735,16 @@ function scheduleRender(delay = 120) {
   state.renderTimer = window.setTimeout(renderChart, delay);
 }
 
-function applyData(sourceLabel = state.sourceLabel) {
+function applyData(sourceLabel = state.sourceLabel, { render = true } = {}) {
   try {
     parseEditorData(sourceLabel);
-    scheduleRender(0);
+    if (render) scheduleRender(0);
   } catch (error) {
+    state.rawRows = [];
     state.rows = [];
     state.fields = [];
     state.fieldTypes = {};
+    resetSvgOutput();
     updateDataSummary();
     els.insertButton.disabled = true;
     setRenderState("数据错误", "error");
@@ -690,7 +752,74 @@ function applyData(sourceLabel = state.sourceLabel) {
   }
 }
 
-function setChartType(chartType) {
+function captureConfig() {
+  const controls = {};
+  for (const id of PERSISTED_CONTROL_IDS) {
+    const element = els[id];
+    if (!element) continue;
+    controls[id] = element.type === "checkbox" ? element.checked : element.value;
+  }
+  return { version: 1, chartType: state.chartType, palette: state.palette, controls };
+}
+
+function saveConfig() {
+  try {
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(captureConfig()));
+    setStatus("当前图表、字段、筛选和样式配置已保存到本机。" );
+  } catch (error) {
+    setStatus(`保存配置失败：${error?.message || "本机存储不可用"}`, true);
+  }
+}
+
+function restoreControlValue(id, value) {
+  const element = els[id];
+  if (!element) return;
+  if (element.type === "checkbox") {
+    element.checked = Boolean(value);
+    return;
+  }
+  const next = String(value ?? "");
+  if (element instanceof HTMLSelectElement && !Array.from(element.options).some(option => option.value === next)) return;
+  element.value = next;
+}
+
+function restoreConfig({ silent = false, render = true } = {}) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) || "null");
+    if (!saved || saved.version !== 1 || !saved.controls || typeof saved.controls !== "object") {
+      if (!silent) setStatus("本机尚未保存科研绘图配置。", true);
+      return false;
+    }
+    for (const id of PERSISTED_CONTROL_IDS) {
+      if (Object.prototype.hasOwnProperty.call(saved.controls, id)) restoreControlValue(id, saved.controls[id]);
+    }
+    setChartType(saved.chartType, false);
+    setPalette(saved.palette, false);
+    applyFilter();
+    updateDataSummary();
+    if (render) scheduleRender(0);
+    if (!silent) setStatus("已恢复本机保存的图表和样式配置。" );
+    return true;
+  } catch (error) {
+    if (!silent) setStatus(`恢复配置失败：${error?.message || "配置内容无效"}`, true);
+    return false;
+  }
+}
+
+function downloadCurrentSvg() {
+  if (!state.latestSvgText) return;
+  const url = URL.createObjectURL(new Blob([state.latestSvgText], { type: "image/svg+xml;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${CHART_LABELS[state.chartType] || "科研绘图"}.svg`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  setStatus("已下载当前预览使用的同一份 SVG。" );
+}
+
+function setChartType(chartType, render = true) {
   if (!CHART_LABELS[chartType]) return;
   state.chartType = chartType;
   els.chartTypeGrid.querySelectorAll("[data-chart-type]").forEach(button => {
@@ -699,10 +828,10 @@ function setChartType(chartType) {
     button.setAttribute("aria-checked", active ? "true" : "false");
   });
   els.currentChartType.textContent = CHART_LABELS[chartType];
-  scheduleRender(0);
+  if (render) scheduleRender(0);
 }
 
-function setPalette(palette) {
+function setPalette(palette, render = true) {
   if (!PALETTES[palette]) return;
   state.palette = palette;
   els.paletteList.querySelectorAll("[data-palette]").forEach(button => {
@@ -710,7 +839,7 @@ function setPalette(palette) {
     button.classList.toggle("active", active);
     button.setAttribute("aria-checked", active ? "true" : "false");
   });
-  scheduleRender();
+  if (render) scheduleRender();
 }
 
 function resetStyles() {
@@ -745,6 +874,7 @@ function showImportedSvg(message) {
 
 function bindEvents() {
   els.fullscreenButton?.addEventListener("click", toggleFullscreen);
+  els.downloadSvgButton.addEventListener("click", downloadCurrentSvg);
   els.loadDataButton.addEventListener("click", () => els.dataFileInput.click());
   els.loadSampleButton.addEventListener("click", () => {
     els.dataEditor.value = SAMPLE_DATA;
@@ -774,6 +904,15 @@ function bindEvents() {
   els.chartTypeGrid.querySelectorAll("[data-chart-type]").forEach(button => button.addEventListener("click", () => setChartType(button.dataset.chartType)));
   els.paletteList.querySelectorAll("[data-palette]").forEach(button => button.addEventListener("click", () => setPalette(button.dataset.palette)));
 
+  els.filterField.addEventListener("change", applyFilterAndRender);
+  els.filterMode.addEventListener("change", applyFilterAndRender);
+  els.filterValue.addEventListener("input", () => {
+    window.clearTimeout(state.filterTimer);
+    state.filterTimer = window.setTimeout(applyFilterAndRender, 180);
+  });
+  els.saveConfigButton.addEventListener("click", saveConfig);
+  els.loadConfigButton.addEventListener("click", () => restoreConfig());
+
   for (const element of [els.xField, els.yField, els.colorField, els.sizeField, els.errorLowField, els.errorHighField, els.aggregateMode, els.sortMode, els.facetField, els.xScaleType, els.yScaleType, els.xTickFormat, els.yTickFormat, els.xReverse, els.yReverse, els.showErrorBand, els.showLegend, els.showGrid, els.includeZero, els.showLabels, els.smoothLine]) {
     element.addEventListener("change", () => scheduleRender(0));
   }
@@ -785,6 +924,7 @@ function bindEvents() {
     ++state.renderToken;
     state.pendingStageRequestId = "";
     els.insertButton.disabled = true;
+    resetSvgOutput();
     if (postHost({ type: "selectResearchSvg" })) setStatus("正在选择 SVG 文件。");
   });
   els.insertButton.addEventListener("click", () => {
@@ -835,4 +975,6 @@ renderWebsites();
 bindEvents();
 setFullscreenState(false);
 postHost({ type: "researchChartStudioReady" });
-applyData("内置示例");
+applyData("内置示例", { render: false });
+restoreConfig({ silent: true, render: false });
+scheduleRender(0);

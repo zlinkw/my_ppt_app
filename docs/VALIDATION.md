@@ -76,17 +76,18 @@ The `validate-rough-realtime.mjs` check regenerates representative Rough.js shap
 The `validate-ui-contract.mjs` check enforces Chinese-first visible UI copy, static and dynamic hover tooltips, Ribbon screentips, and Chinese-first catalog display names.
 The `validate-installer-runtime-prereqs.mjs` check enforces that portable, MSI, and EXE installers only install WebView2 Runtime and VSTO Runtime for end users. Build Tools remain development and packaging prerequisites only.
 The `validate-external-plugin-compat.mjs` check compares the PPT add-in against local ZLK cluster and Zotero image saver contracts when those repos are present, and also enforces ZLK source-file resource guards.
-The `validate-research-chart-studio.mjs` check enforces offline Papa Parse and Vega resources, 12 local chart types, direct SVG rendering, same-content staging and insertion, the PowerPoint version guard, and the retained native ZLK entry. It also rejects any browser launch from the task-pane quick entry; the four-site HTTPS whitelist remains available only through explicit buttons inside the workbench.
+The `validate-research-chart-studio.mjs` check enforces offline Papa Parse and Vega resources, 17 local chart types, data filtering, configuration persistence without raw data, same-content SVG preview and download, direct SVG rendering, same-content staging and insertion, the PowerPoint version guard, and the retained native ZLK entry. It also rejects any browser launch from the task-pane quick entry; the four-site HTTPS whitelist remains available only through explicit buttons inside the workbench.
 
 ## Research SVG Manual Smoke Test
 
 1. Open the research chart entry and confirm only the modeless local workbench opens; no browser tab or window may open automatically.
-2. Paste or import CSV/TSV, switch all 12 chart types, and verify field mappings and style controls update the SVG preview without page navigation.
+2. Paste or import CSV/TSV, exercise all five filter modes, switch all 17 chart types, and verify field mappings, facets, axis controls, annotations, error bands, and style controls update the SVG preview without page navigation.
 3. Confirm the preview uses SIMPLEEXPERIMENT colors by default, then compare colors, axes, labels, aspect ratio, and spacing after insertion into the current slide.
 4. Change a setting immediately before insertion and confirm the insert button remains disabled until the matching staged SVG is accepted by the host.
-5. Expand external tools and explicitly open one site; confirm only the clicked whitelist site opens. Import an exported SVG and compare its preview with the inserted result.
-6. Confirm a file over 4 MB, a scripted SVG, an SVG with an external URL, and a modified cached file are rejected with Chinese errors.
-7. On PowerPoint 2013, confirm the SVG action reports the version requirement and the native JSON/CSV research chart path remains available.
+5. Save a configuration, change the current controls, restore it, and confirm valid fields and styles return without persisting the CSV/TSV data. Download SVG and confirm it matches the current preview source.
+6. Expand external tools and explicitly open one site; confirm only the clicked whitelist site opens. Import an exported SVG and compare its preview with the inserted result.
+7. Confirm a file over 4 MB, a scripted SVG, an SVG with an external URL, and a modified cached file are rejected with Chinese errors.
+8. On PowerPoint 2013, confirm the SVG action reports the version requirement and the native JSON/CSV research chart path remains available.
 
 ## Native Resize Smoke Test
 

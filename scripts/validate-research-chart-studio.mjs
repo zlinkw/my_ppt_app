@@ -39,6 +39,12 @@ for (const snippet of [
   "vendor/vega-lite.min.js",
   "vendor/vega-embed.min.js",
   'id="dataEditor"',
+  'id="downloadSvgButton"',
+  'id="filterField"',
+  'id="filterMode"',
+  'id="filterValue"',
+  'id="saveConfigButton"',
+  'id="loadConfigButton"',
   'id="fullscreenButton"',
   'id="xScaleType"',
   'id="yScaleType"',
@@ -105,6 +111,10 @@ for (const snippet of ['id="facetField"', 'id="facetColumns"']) {
 for (const snippet of ["density:", "regression:", 'state.chartType === "step" ? "step-after"', "facet:", "columns: facetColumns", "resolve:"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图扩展图形合同缺少：${snippet}`);
 }
+for (const snippet of ["CONFIG_STORAGE_KEY", "PERSISTED_CONTROL_IDS", "applyFilter", "state.rawRows", "localStorage.setItem", "localStorage.getItem", "captureConfig", "restoreConfig", "downloadCurrentSvg", "state.latestSvgText", 'link.download =', "resetSvgOutput"]) {
+  if (!app.includes(snippet)) throw new Error(`科研绘图筛选、配置或 SVG 下载合同缺少：${snippet}`);
+}
+if (app.includes('controls.dataEditor') || app.includes('"dataEditor", "xField"')) throw new Error("科研绘图配置不得持久化原始数据。");
 if (/toDataURL|toBlob\(|getImageData|drawImage|renderer\s*:\s*["']canvas/i.test(app)) throw new Error("科研绘图工作区不得捕获 Canvas 或生成位图。");
 if ((app.match(/openWebsite\(/g) || []).length !== 2 || !app.includes('button.addEventListener("click", () => openWebsite(button.dataset.siteId))')) {
   throw new Error("外部绘图网站必须只由工作台内的显式按钮点击打开。");
@@ -138,7 +148,7 @@ for (const file of ["research-chart-studio.html", "research-chart-studio.css", "
   if (!bridge.includes(file.split("/").at(-1)) || !project.includes(windowsPath)) throw new Error(`启动与构建资源清单缺少：${file}`);
 }
 if (!project.includes("Services\\ResearchChartStudioService.cs")) throw new Error("项目文件缺少科研 SVG 服务。");
-for (const snippet of ["Vega Lite", "12 种图表", "实时预览", "同一份 SVG", "PowerPoint 2016", "插入 PPT", "不会自动打开浏览器"]) {
+for (const snippet of ["Vega Lite", "17 种图表", "数据筛选", "保存配置", "下载 SVG", "实时预览", "同一份 SVG", "PowerPoint 2016", "插入 PPT", "不会自动打开浏览器"]) {
   if (!help.includes(snippet)) throw new Error(`使用说明缺少本地科研绘图内容：${snippet}`);
 }
 

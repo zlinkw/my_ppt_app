@@ -48,7 +48,7 @@ ZLK 结果区前端可缓存 trace view model 的统计摘要以降低重复渲�
 
 ## 本地科研绘图与 SVG
 
-任务窗格的科研绘图快捷入口只向宿主发送 `openResearchChartStudio`，主任务窗格不接受网站跳转消息。独立 WebView2 工作台离线加载 Papa Parse、Vega、Vega Lite 和 Vega Embed。CSV/TSV 在本机解析为结构化数据，字段、图表和样式变更经过防抖后生成 Vega Lite 规范，并用 SVG renderer 与 `view.toSVG()` 得到最终 SVG 字符串。预览直接显示该字符串创建的 Blob，不通过 Canvas 或另一套图表重建。
+任务窗格的科研绘图快捷入口只向宿主发送 `openResearchChartStudio`，主任务窗格不接受网站跳转消息。独立 WebView2 工作台离线加载 Papa Parse、Vega、Vega Lite 和 Vega Embed。CSV/TSV 在本机解析为结构化数据，筛选、字段、图表、坐标、标注、分面和样式变更经过防抖后生成 Vega Lite 规范，并用 SVG renderer 与 `view.toSVG()` 得到最终 SVG 字符串。预览与下载直接复用该字符串创建的 Blob，不通过 Canvas 或另一套图表重建。工作台只在 WebView2 `localStorage` 保存图表与样式配置，不保存原始数据；恢复配置时忽略当前数据中已不存在的字段。
 
 工作台把同一 SVG 字符串和关联 `requestId` 发送给宿主。`ResearchChartStudioService.StageSvg` 将文本按严格 UTF-8 编码并限制为 4 MB，使用禁止 DTD 和外部解析器的 XML 设置，拒绝脚本、事件处理器、动画、嵌入图像、处理指令、外部 URL 和外部样式资源。通过校验的字节固定到 `%LOCALAPPDATA%\RoughPptAddin\ResearchSvg\current.svg`；只有匹配当前渲染请求的宿主确认返回后，网页才启用插入。插入前宿主再次校验 SHA256 和 SVG 结构，确保预览与 PPT 使用同一份内容。
 
