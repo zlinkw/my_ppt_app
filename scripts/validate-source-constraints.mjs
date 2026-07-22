@@ -8,7 +8,7 @@ const forbiddenPatterns = [
   { pattern: /AddPicture/i, reason: "AddPicture inserts raster images", allowFiles: [/ZoteroImageLibraryService\.cs$/] },
   { pattern: /msoPicture/i, reason: "msoPicture violates final object constraint", allowFiles: [/RoughAddInController\.cs$/, /ZoteroImageLibraryService\.cs$/] },
   { pattern: /Insert.*SVG|SVG.*Insert/i, reason: "SVG insert is not accepted as final object" },
-  { pattern: /canvas\.toDataURL|toBlob\(/i, reason: "Canvas capture is raster output" },
+  { pattern: /canvas\.toDataURL|toBlob\(/i, reason: "Canvas capture is raster output", allowFiles: [/ui[\\/]vendor[\\/]chart\.umd\.min\.js$/i] },
   { pattern: /<svg\b/i, reason: "Inline SVG is not accepted as final object" }
 ];
 
@@ -48,6 +48,11 @@ const requiredFiles = [
   "src/RoughPptAddin/ui/zlk-cluster-result-importer.mjs",
   "src/RoughPptAddin/ui/autoshape-catalog.json"
 ];
+
+const researchStudio = fs.readFileSync(path.join(root, "src/RoughPptAddin/ui/research-chart-studio.mjs"), "utf8");
+if (/toDataURL|toBlob\(|getImageData|drawImage/i.test(researchStudio)) {
+  violations.push("research chart studio may render previews on Canvas but must not capture or export them");
+}
 
 for (const file of requiredFiles) {
   if (!fs.existsSync(path.join(root, file))) {
