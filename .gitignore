@@ -21,6 +21,7 @@ diagnostics/
 .vs/
 
 # Installer outputs
+releases/
 *.msi
 *.wixpdb
 *.cab
@@ -36,4 +37,3 @@ package.json)
 scripts/*),
 src/**/*.Count
 src/**/*.bak[0-9]*
-

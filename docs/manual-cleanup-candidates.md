@@ -16,5 +16,11 @@
 | `diagnostics/` | 运行诊断输出目录 | 诊断 JSON 可重新生成，非运行源码 | 删除前确认不再需要历史故障证据 | 待人工审核 |
 | `node_modules/` | 本地依赖目录 | 可由 `npm install` 按 `package-lock.json` 重建 | 删除前确认没有 Node 进程使用；删除后需重新安装依赖 | 待人工审核 |
 | `node_modules/nwsapi/dist/lint.log` | 依赖生成的空日志 | 空的依赖工具日志，删除整个依赖目录后会自动重建 | 仅在保留 `node_modules/` 时单独确认；不影响项目源码 | 待人工审核 |
+| `releases/RoughPptAddin-0.1.21-97febadc/` | 失败的恢复打包目录 | 首次打包尝试的独立输出，未生成可交付三件套 | 确认不再需要失败构建日志或取证 | 待人工审核 |
+| `releases/RoughPptAddin-0.1.21-97febadc-r2/` | 失败的恢复打包目录 | 第二次打包尝试的独立输出，未生成可交付三件套 | 确认不再需要失败构建日志或取证 | 待人工审核 |
+| `releases/RoughPptAddin-0.1.21-97febadc-r3/` | 失败的恢复打包目录 | 第三次打包尝试的独立输出，未生成可交付三件套 | 确认不再需要失败构建日志或取证 | 待人工审核 |
+| `releases/RoughPptAddin-0.1.21-97febadc-r4/` | 失败的恢复打包目录 | 第四次打包尝试的独立输出，字体资源缺失 | 确认不再需要失败构建日志或取证 | 待人工审核 |
+| `releases/RoughPptAddin-0.1.21-97febadc-r5/` | 失败的恢复打包目录 | 第五次打包尝试的独立输出，WiX ICE 组件合同失败 | 确认不再需要失败构建日志或取证 | 待人工审核 |
+| `releases/RoughPptAddin-0.1.21-97febadc-r6/` | 失败的恢复打包目录 | 第六次打包尝试的独立输出，WiX 自动 GUID 合同失败 | 确认不再需要失败构建日志或取证 | 待人工审核 |
 
 人工处理后，请在提交前重新运行 `git status --short`，避免把用户手动删除以外的清理动作误纳入代码批次。

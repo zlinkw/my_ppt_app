@@ -101,6 +101,9 @@
     <Compile Include="TaskPane\UsageGuideWindow.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="ui\vendor\material-symbols-rounded.subset.ttf">
+      <LogicalName>RoughPptAddin.Resources.MaterialSymbolsRounded.subset.ttf</LogicalName>
+    </EmbeddedResource>
     <None Include="app.config" />
     <None Include="ui\app.mjs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
