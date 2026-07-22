@@ -1,5 +1,6 @@
 export const HOST_MESSAGE_TYPES = {
   openUsageGuide: "openUsageGuide",
+  openResearchChartStudio: "openResearchChartStudio",
   insertShape: "insertShape",
   insertFeatureBlock: "insertFeatureBlock",
   adjustFeatureBlockDirection: "adjustFeatureBlockDirection",
