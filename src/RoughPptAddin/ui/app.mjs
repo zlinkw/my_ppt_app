@@ -3847,38 +3847,38 @@ function buildMiniPlotDom(preset, points) {
   }
 
   wrap.classList.add("is-curve");
-  for (let i = 0; i < points.length; i++) {
-    const p = points[i];
-    const dot = document.createElement("span");
-    dot.className = "chart-mini-dot";
-    dot.style.left = ((i / Math.max(1, n - 1)) * 100) + "%";
-    dot.style.bottom = (((p.y - yMin) / span) * 100) + "%";
-    dot.title = p.label + ": " + p.y;
-    wrap.append(dot);
-    if (i > 0) {
-      const prev = points[i - 1];
-      const seg = document.createElement("span");
-      seg.className = "chart-mini-seg";
-      const x1 = ((i - 1) / Math.max(1, n - 1)) * 100;
-      const x2 = (i / Math.max(1, n - 1)) * 100;
-      const y1 = ((prev.y - yMin) / span) * 100;
-      const y2 = ((p.y - yMin) / span) * 100;
-      seg.style.left = x1 + "%";
-      seg.style.width = Math.max(1, x2 - x1) + "%";
-      seg.style.bottom = Math.min(y1, y2) + "%";
-      seg.style.setProperty("--y1", y1 + "%");
-      seg.style.setProperty("--y2", y2 + "%");
-      // approximate slope with transform
-      const dy = y2 - y1;
-      const dx = Math.max(1, x2 - x1);
-      const angle = Math.atan2(dy, dx * 1.2) * (180 / Math.PI);
-      seg.style.height = "2px";
-      seg.style.bottom = y1 + "%";
-      seg.style.transform = "rotate(" + (-angle) + "deg)";
-      seg.style.transformOrigin = "left center";
-      wrap.append(seg);
-    }
+  const svgNamespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNamespace, "svg");
+  svg.classList.add("chart-mini-curve");
+  svg.setAttribute("viewBox", "0 0 100 60");
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.setAttribute("aria-hidden", "true");
+  const left = 6;
+  const right = 94;
+  const top = 6;
+  const bottom = 54;
+  const curvePoints = points.map((point, index) => {
+    const value = Number.isFinite(point.y) ? point.y : yMin;
+    const x = left + (index / Math.max(1, n - 1)) * (right - left);
+    const y = bottom - ((value - yMin) / span) * (bottom - top);
+    return { point, x, y: Math.min(bottom, Math.max(top, y)) };
+  });
+  const line = document.createElementNS(svgNamespace, "polyline");
+  line.classList.add("chart-mini-curve-line");
+  line.setAttribute("points", curvePoints.map(({ x, y }) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" "));
+  svg.append(line);
+  for (const { point, x, y } of curvePoints) {
+    const dot = document.createElementNS(svgNamespace, "circle");
+    dot.classList.add("chart-mini-curve-dot");
+    dot.setAttribute("cx", x.toFixed(2));
+    dot.setAttribute("cy", y.toFixed(2));
+    dot.setAttribute("r", "2.2");
+    const title = document.createElementNS(svgNamespace, "title");
+    title.textContent = point.label + ": " + point.y;
+    dot.append(title);
+    svg.append(dot);
   }
+  wrap.append(svg);
   return wrap;
 }
 

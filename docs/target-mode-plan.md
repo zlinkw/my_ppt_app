@@ -92,6 +92,7 @@
 5. SE005（统一验证通过）：连接合同验证、恢复源码等价实现兼容、部署与完整卸载入口、Office 版本兼容和批量重绘合同均已通过；完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过。本批不打包、不安装。
 6. PKG001（已完成，实现提交 `ab02a49`）：用户明确要求生成最新版 ZIP、MSI、EXE。非破坏性发布脚本已补齐独立输出 NuGet restore、C# 新语法版本、ClickOnce 签名、Material Symbols TTF 嵌入和 per-user WiX 组件合同；`npm.cmd test`、`npm.cmd run build:ui`、Release 编译、Ribbon 图标验证及三种产物 SHA256 校验均通过。最终产物位于 `releases/RoughPptAddin-0.1.22-ab02a492/`，未自动安装。
 7. PKG002（已完成，实现提交 `1c1ac8b`）：用户安装 MSI 时出现 “A newer Rough PPT Add-in is already installed.”。根因是本机已安装 `0.1.695` 高于恢复仓按当前提交数生成的 `0.1.22`。本批使用持久化 `installerVersionBaseline=0.1.695` 加当前提交数恢复版本单调性，并由共享解析器覆盖两条打包链路；UpgradeCode、覆盖安装、per-user 范围、三种入口及现有插件数据保持不变。旧版到恢复后首个构建的回归合同、完整 `npm.cmd test`、`npm.cmd run build:ui`、Release、Ribbon、MSI ProductVersion `0.1.719` 和三种产物 SHA256 均通过；最终产物位于 `releases/RoughPptAddin-0.1.719-1c1ac8b2/`，未自动安装或关闭 PowerPoint。
+8. B504（已实现，待五批次统一验证）：简洁模式连接状态片恢复三列紧凑布局，窄窗改为两列加完整模式整行，文字固定横排并省略过长内容；敏感性曲线预览改为单条有边界留白的 SVG polyline，节点与折线共享坐标，避免断裂和越界。浏览器合同补充 320/420/720px 高度、横排文字、曲线连续性和坐标边界检查，并改用仓库内忽略的固定浏览器 profile，不再创建或删除临时目录。本批为新一轮第 1/5 小批次，未运行测试、构建或打包。
 
 ### 当前 SimpleExperiment 连接批次
 

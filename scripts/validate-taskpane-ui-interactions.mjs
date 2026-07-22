@@ -1,8 +1,7 @@
 import fs from "node:fs";
 import http from "node:http";
-import os from "node:os";
 import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 
 const root = process.cwd();
 const uiRoot = path.join(root, "src", "RoughPptAddin", "ui");
@@ -46,6 +45,12 @@ try {
     if (!readable.chartScrollable) violations.push(`${width}px: 科研图预设轨道未保留可读宽度或横向滚动`);
     if (!readable.dragReady) violations.push(`${width}px: 横向轨道未启用鼠标拖动滚动`);
     if (!readable.cardsReadable) violations.push(`${width}px: 科研图预设卡片文字被裁切或压缩`);
+    const simpleConnection = await evaluate(client, simpleConnectionProbe());
+    const maxSimpleHeight = width <= 420 ? 90 : 60;
+    if (!simpleConnection.bounded || simpleConnection.height > maxSimpleHeight) violations.push(`${width}px: 简洁模式连接状态区异常拉伸 ${JSON.stringify(simpleConnection)}`);
+    if (!simpleConnection.horizontalText) violations.push(`${width}px: 简洁模式连接状态文字未保持横排 ${JSON.stringify(simpleConnection)}`);
+    const curve = await evaluate(client, chartCurvePreviewProbe());
+    if (!curve.continuous || !curve.inBounds) violations.push(`${width}px: 科研图曲线预览断裂或越界 ${JSON.stringify(curve)}`);
   }
 
   for (const keyword of keywords) {
@@ -68,7 +73,6 @@ try {
   browser.process.kill();
   await waitForExit(browser.process).catch(() => {});
   await server.close();
-  removeDirWithRetry(browser.userDataDir);
 }
 
 if (violations.length) {
@@ -110,7 +114,8 @@ async function launchBrowser() {
   const executable = findBrowserExecutable();
   let lastError = null;
   for (let launchAttempt = 0; launchAttempt < 3; launchAttempt++) {
-    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "rough-ppt-ui-"));
+    const userDataDir = path.join(root, ".runtime", "taskpane-ui-browser");
+    fs.mkdirSync(userDataDir, { recursive: true });
     const port = await freeTcpPort();
     const args = [
       `--remote-debugging-port=${port}`,
@@ -132,7 +137,7 @@ async function launchBrowser() {
       if (exited) break;
       try {
         const version = await fetchJson(`http://127.0.0.1:${port}/json/version`);
-        if (version.webSocketDebuggerUrl) return { process: child, port, userDataDir };
+        if (version.webSocketDebuggerUrl) return { process: child, port };
       } catch (error) {
         lastError = error;
         await delay(100);
@@ -140,7 +145,6 @@ async function launchBrowser() {
     }
     child.kill();
     await waitForExit(child).catch(() => {});
-    removeDirWithRetry(userDataDir);
   }
   throw new Error(`无法启动本机 Chromium/Edge 进行任务窗格 UI 验证：${lastError?.message ?? "未知原因"}`);
 }
@@ -232,27 +236,6 @@ function delay(ms) {
 function waitForExit(child) {
   if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
   return new Promise(resolve => child.once("exit", resolve));
-}
-
-function removeDirWithRetry(dir) {
-  if (!dir || !fs.existsSync(dir)) return;
-  const tempRoot = path.resolve(os.tmpdir()) + path.sep;
-  const target = path.resolve(dir);
-  if (!target.startsWith(tempRoot) || !path.basename(target).startsWith("rough-ppt-ui-")) {
-    throw new Error(`拒绝清理非验证临时目录：${target}`);
-  }
-  const script = [
-    "Add-Type -AssemblyName Microsoft.VisualBasic",
-    "$target = [Environment]::GetEnvironmentVariable('ROUGH_RECYCLE_TARGET')",
-    "[Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($target, [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs, [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin)"
-  ].join("; ");
-  const result = spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], {
-    encoding: "utf8",
-    env: { ...process.env, ROUGH_RECYCLE_TARGET: target }
-  });
-  if (result.status !== 0) {
-    throw new Error(`验证临时目录无法移入回收站：${target} ${result.stderr || result.stdout}`.trim());
-  }
 }
 
 function layoutProbe() {
@@ -372,5 +355,45 @@ function horizontalControlProbe() {
         (!summary || (summary.scrollWidth <= summary.clientWidth + 1 && summary.scrollHeight <= summary.clientHeight + 1));
     });
     return { connectionScrollable, connectionDebug, chartScrollable, dragReady, cardsReadable };
+  })()`;
+}
+
+function simpleConnectionProbe() {
+  return `(() => {
+    document.querySelector('#uiModeSimple')?.click();
+    const note = document.querySelector('#simpleConnectionNote');
+    const chips = [...(note?.querySelectorAll('.simple-connection-chip') ?? [])];
+    const rect = note?.getBoundingClientRect();
+    const textNodes = chips.flatMap(chip => [...chip.querySelectorAll('strong, small')]);
+    return {
+      bounded: Boolean(rect && rect.width <= innerWidth && chips.length === 2 && chips.every(chip => chip.getBoundingClientRect().width >= 80)),
+      height: Math.round(rect?.height ?? 0),
+      horizontalText: textNodes.length === 4 && textNodes.every(node => {
+        const style = getComputedStyle(node);
+        const nodeRect = node.getBoundingClientRect();
+        return style.writingMode === 'horizontal-tb' && nodeRect.width >= 40 && nodeRect.height < 24;
+      }),
+      chipWidths: chips.map(chip => Math.round(chip.getBoundingClientRect().width))
+    };
+  })()`;
+}
+
+function chartCurvePreviewProbe() {
+  return `(() => {
+    const shell = document.querySelector('#chartPresetShell');
+    if (shell) shell.open = true;
+    const sensitivity = [...document.querySelectorAll('#chartPresetStrip .chart-preset-card')]
+      .find(card => card.querySelector('strong')?.textContent.trim() === '敏感性曲线');
+    sensitivity?.click();
+    const svg = document.querySelector('#chartPresetPreview .chart-mini-curve');
+    const line = svg?.querySelector('.chart-mini-curve-line');
+    const circles = [...(svg?.querySelectorAll('.chart-mini-curve-dot') ?? [])];
+    const coordinates = (line?.getAttribute('points') ?? '').trim().split(/\\s+/).filter(Boolean).map(pair => pair.split(',').map(Number));
+    return {
+      continuous: Boolean(svg && line && coordinates.length >= 2 && coordinates.length === circles.length),
+      inBounds: coordinates.length > 0 && coordinates.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 100 && y >= 0 && y <= 60),
+      pointCount: coordinates.length,
+      dotCount: circles.length
+    };
   })()`;
 }
