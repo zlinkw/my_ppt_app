@@ -29,6 +29,8 @@ const CHART_LABELS = {
   blandAltman: "Bland–Altman 图",
   volcano: "火山图",
   funnel: "漏斗图",
+  survival: "Kaplan–Meier 生存曲线",
+  cumulativeHazard: "累计风险曲线",
   heatmap: "热力图",
   donut: "环形图",
   polar: "极坐标图"
@@ -384,6 +386,62 @@ function datumFieldExpression(field) {
   return `datum[${JSON.stringify(field)}]`;
 }
 
+function eventStatus(value) {
+  if (value === true || value === 1) return true;
+  if (value === false || value === 0) return false;
+  const normalized = String(value ?? "").trim().toLocaleLowerCase("zh-CN");
+  if (["1", "true", "yes", "event", "发生", "事件", "死亡"].includes(normalized)) return true;
+  if (["0", "false", "no", "censor", "censored", "删失", "未发生", "存活"].includes(normalized)) return false;
+  return null;
+}
+
+function buildKaplanMeierRows(timeField, statusField, groupField, facetField) {
+  requireQuantitativeField(timeField, "生存分析的随访时间");
+  const grouped = new Map();
+  for (const row of state.rows) {
+    const time = Number(row[timeField]);
+    const event = eventStatus(row[statusField]);
+    if (!Number.isFinite(time) || time < 0) throw new Error("生存分析的随访时间必须是大于或等于 0 的数值。");
+    if (event === null) throw new Error("事件状态只接受 1/0、true/false、发生/删失或 event/censored。");
+    const group = groupField ? row[groupField] : "全部";
+    const facet = facetField ? row[facetField] : "";
+    const key = JSON.stringify([facet, group]);
+    if (!grouped.has(key)) grouped.set(key, { group, facet, items: [] });
+    grouped.get(key).items.push({ time, event });
+  }
+
+  const output = [];
+  for (const { group, facet, items } of grouped.values()) {
+    items.sort((a, b) => a.time - b.time);
+    let atRisk = items.length;
+    let survival = 1;
+    const base = { ...(groupField ? { [groupField]: group } : {}), ...(facetField ? { [facetField]: facet } : {}) };
+    output.push({ ...base, __kmTime: 0, __kmSurvival: 1, __kmCumulativeHazard: 0, __kmAtRisk: atRisk, __kmEvents: 0, __kmCensored: 0 });
+    for (let index = 0; index < items.length;) {
+      const time = items[index].time;
+      let events = 0;
+      let censored = 0;
+      while (index < items.length && items[index].time === time) {
+        if (items[index].event) events += 1;
+        else censored += 1;
+        index += 1;
+      }
+      if (events) survival *= 1 - events / atRisk;
+      output.push({
+        ...base,
+        __kmTime: time,
+        __kmSurvival: survival,
+        __kmCumulativeHazard: survival > 0 ? -Math.log(survival) : null,
+        __kmAtRisk: atRisk,
+        __kmEvents: events,
+        __kmCensored: censored
+      });
+      atRisk -= events + censored;
+    }
+  }
+  return output;
+}
+
 function probabilityScale(axisKey) {
   const scale = scaleSpec(axisKey, true);
   if (scale.type === "log") throw new Error("概率曲线包含 0，不能使用对数坐标。");
@@ -575,6 +633,7 @@ function buildSpec() {
   let layers;
   let violinSpec = null;
   let annotationXField = xField;
+  let chartData = state.rows;
 
   if (["bar", "groupedBar", "stackedBar"].includes(state.chartType)) {
     const encoding = addColor({ x, y: { ...y, stack: state.chartType === "stackedBar" ? "zero" : null } }, state.chartType === "bar" ? "" : colorField);
@@ -777,6 +836,26 @@ function buildSpec() {
       { transform, mark: { type: "line", color: els.axisColor.value, strokeWidth: 1, strokeDash: [6, 4] }, encoding: { x: { field: lowerField, type: "quantitative" }, y: { field: yField, type: "quantitative", scale: seScale }, order: { field: yField, sort: "ascending" } } },
       { transform, mark: { type: "rule", color: els.annotationColor.value, strokeWidth: 1.2 }, encoding: { x: { field: centerField, type: "quantitative" } } }
     ];
+  } else if (state.chartType === "survival" || state.chartType === "cumulativeHazard") {
+    chartData = buildKaplanMeierRows(xField, yField, colorField, els.facetField.value);
+    const survivalMode = state.chartType === "survival";
+    const outcomeField = survivalMode ? "__kmSurvival" : "__kmCumulativeHazard";
+    const outcomeTitle = survivalMode ? "生存概率" : "累计风险";
+    const yScale = survivalMode ? probabilityScale("y") : scaleSpec("y", true);
+    const encoding = addColor({
+      x: { field: "__kmTime", type: "quantitative", title: els.xAxisTitle.value || xField, axis: axis(els.xAxisTitle.value || xField, true, "x"), scale: scaleSpec("x", true) },
+      y: { field: outcomeField, type: "quantitative", title: els.yAxisTitle.value || outcomeTitle, axis: axis(els.yAxisTitle.value || outcomeTitle, true, "y"), scale: yScale },
+      order: { field: "__kmTime", type: "quantitative", sort: "ascending" },
+      tooltip: [{ field: "__kmTime", type: "quantitative", title: "时间" }, { field: outcomeField, type: "quantitative", title: outcomeTitle, format: ".3f" }, { field: "__kmAtRisk", type: "quantitative", title: "风险集" }, { field: "__kmEvents", type: "quantitative", title: "事件数" }, { field: "__kmCensored", type: "quantitative", title: "删失数" }]
+    }, colorField);
+    layers = [{ mark: mark("line", { interpolate: "step-after", strokeWidth: lineWidth }), encoding }];
+    if (survivalMode) {
+      layers.push({
+        transform: [{ filter: "datum.__kmCensored > 0" }],
+        mark: { type: "tick", color: PALETTES[state.palette][0], orient: "vertical", size: Math.max(8, Math.sqrt(pointSize)), thickness: 1.5 },
+        encoding: addColor({ x: encoding.x, y: encoding.y, tooltip: encoding.tooltip }, colorField)
+      });
+    }
   } else if (state.chartType === "heatmap") {
     const yCategory = colorField || xField;
     layers = [{
@@ -820,7 +899,7 @@ function buildSpec() {
     background: els.backgroundColor.value,
     padding: 18,
     title: els.chartTitle.value ? { text: els.chartTitle.value, color: els.textColor.value, fontSize: numericValue(els.fontSize, 13, 8, 28) + 3, anchor: "middle" } : null,
-    data: { values: state.rows },
+    data: { values: chartData },
     config: {
       font: "Segoe UI, Microsoft YaHei",
       view: { stroke: null },
