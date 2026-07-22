@@ -130,7 +130,7 @@
 - B511（已纠正）：独立科研绘图工作区消息已登记到 `bridge-contract.mjs`，全量 UI 合同通过。
 - B512（已纠正）：独立工作区回传消息的 `requestId` 仅用于页面应答，不再传给 `InsertZlkChart` 作为自动化请求标识；插入保持在当前 PPT 幻灯片目标，定向合同和完整验证通过。
 - 统一验证：`npm.cmd test`、`npm.cmd run build:ui`、`node --check` 和签名 Release 编译均通过；直接运行旧 `scripts/build.ps1` 因未传入 Restore/LangVersion 参数失败，不作为发布链路，`npm.cmd run package` 使用独立 Restore 与最新 C# 语言版本成功。
-- 发布产物：`releases/RoughPptAddin-0.1.735-b016b8e2/`，ZIP、MSI、EXE 清单、内置 `dirty=false` 构建信息和 SHA256 已复核；未自动安装、未关闭或重启 PowerPoint/VS Code。
+- 发布产物：`releases/RoughPptAddin-0.1.736-ed524841/`，发布提交 `ed524841`；ZIP、MSI、EXE 清单、内置 `dirty=false` 构建信息和 SHA256 已复核；未自动安装、未关闭或重启 PowerPoint/VS Code。
 
 ## 近期锚点
 
