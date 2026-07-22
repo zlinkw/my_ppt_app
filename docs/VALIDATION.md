@@ -3,8 +3,9 @@
 ## Required Checks
 
 - Inserted visible objects are PowerPoint Freeforms or Groups.
-- No inserted visible object is `msoPicture`.
-- No PNG, Canvas capture, or SVG is used as final slide content.
+- Rough and ZLK inserted visible objects are not `msoPicture`.
+- No PNG, Canvas capture, or SVG is used as final Rough or ZLK slide content.
+- Research SVG insertion is isolated to `ResearchChartStudioService`, uses a 4 MB UTF-8 limit, rejects active or external content, and rechecks SHA256 before insertion.
 - The insert window lists all known `MsoAutoShapeType` catalog entries.
 - The Ribbon shape dropdown loads the packaged AutoShape catalog, shows every insertable PPT shape, and returns unique dynamic item IDs so PowerPoint does not render a blank menu.
 - Opening the task pane with no selected shape reports an empty selection state instead of failing initialization.
@@ -75,6 +76,16 @@ The `validate-rough-realtime.mjs` check regenerates representative Rough.js shap
 The `validate-ui-contract.mjs` check enforces Chinese-first visible UI copy, static and dynamic hover tooltips, Ribbon screentips, and Chinese-first catalog display names.
 The `validate-installer-runtime-prereqs.mjs` check enforces that portable, MSI, and EXE installers only install WebView2 Runtime and VSTO Runtime for end users. Build Tools remain development and packaging prerequisites only.
 The `validate-external-plugin-compat.mjs` check compares the PPT add-in against local ZLK cluster and Zotero image saver contracts when those repos are present, and also enforces ZLK source-file resource guards.
+The `validate-research-chart-studio.mjs` check enforces the four-site HTTPS whitelist, system-browser launch, SVG-only workspace, same-content preview and insertion messages, PowerPoint version guard, and the retained native ZLK entry.
+
+## Research SVG Manual Smoke Test
+
+1. Open the research chart entry and confirm RAWGraphs opens in the system default browser while the local SVG workspace stays modeless.
+2. Export an SVG containing visible axes, labels, and several colors.
+3. Select the SVG and compare the workspace preview with the website export.
+4. Insert it into the current slide and compare colors, axes, labels, aspect ratio, and spacing with the preview.
+5. Confirm a file over 4 MB, a scripted SVG, an SVG with an external URL, and a modified cached file are rejected with Chinese errors.
+6. On PowerPoint 2013, confirm the SVG action reports the version requirement and the native JSON/CSV research chart path remains available.
 
 ## Native Resize Smoke Test
 

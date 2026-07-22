@@ -5,9 +5,9 @@ const root = process.cwd();
 const sourceDirs = ["src/RoughPptAddin"];
 const forbiddenPatterns = [
   { pattern: /\.Export\(/i, reason: "PowerPoint export APIs create raster/vector files, not final native objects", allowFiles: [/SelectionCaptureService\.cs$/, /PaletteLibraryService\.cs$/] },
-  { pattern: /AddPicture/i, reason: "AddPicture inserts raster images", allowFiles: [/ZoteroImageLibraryService\.cs$/] },
+  { pattern: /AddPicture/i, reason: "AddPicture is restricted to approved external graphic import services", allowFiles: [/ZoteroImageLibraryService\.cs$/, /ResearchChartStudioService\.cs$/] },
   { pattern: /msoPicture/i, reason: "msoPicture violates final object constraint", allowFiles: [/RoughAddInController\.cs$/, /ZoteroImageLibraryService\.cs$/] },
-  { pattern: /Insert.*SVG|SVG.*Insert/i, reason: "SVG insert is not accepted as final object" },
+  { pattern: /Insert.*SVG|SVG.*Insert/i, reason: "SVG insertion wiring is restricted to the research SVG workflow", allowFiles: [/ResearchChartStudioService\.cs$/, /ResearchChartStudioWindow\.cs$/, /RoughAddInController\.cs$/, /research-chart-studio\.mjs$/] },
   { pattern: /canvas\.toDataURL|toBlob\(/i, reason: "Canvas capture is raster output", allowFiles: [/ui[\\/]vendor[\\/]chart\.umd\.min\.js$/i] },
   { pattern: /<svg\b/i, reason: "Inline SVG is not accepted as final object" }
 ];
@@ -64,10 +64,17 @@ const zoteroService = fs.readFileSync(path.join(root, "src/RoughPptAddin/Service
 if (!zoteroService.includes("Shapes.AddPicture") || !zoteroService.includes("ReadImageBlob(imageId)")) {
   violations.push("Zotero reference image exception must stay isolated to image_blob insertion service");
 }
-const otherRuntimeSources = files.filter(file => !/ZoteroImageLibraryService\.cs$/.test(file));
+const researchSvgService = fs.readFileSync(path.join(root, "src/RoughPptAddin/Services/ResearchChartStudioService.cs"), "utf8");
+for (const snippet of ["MaxSvgBytes", "DtdProcessing = DtdProcessing.Prohibit", "ForbiddenElements", "ComputeSha256", "Shapes.AddPicture", "UseShellExecute = true"]) {
+  if (!researchSvgService.includes(snippet)) violations.push(`research SVG exception missing guard: ${snippet}`);
+}
+for (const url of ["https://app.rawgraphs.io/", "https://app.datawrapper.de/", "https://chart-studio.plotly.com/", "https://vega.github.io/editor/"]) {
+  if (!researchSvgService.includes(url)) violations.push(`research website whitelist missing ${url}`);
+}
+const otherRuntimeSources = files.filter(file => !/(?:ZoteroImageLibraryService|ResearchChartStudioService)\.cs$/.test(file));
 for (const file of otherRuntimeSources) {
   const text = fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
-  if (/Shapes\.AddPicture/i.test(text)) violations.push(`${file}: Zotero reference image exception leaked outside its service`);
+  if (/Shapes\.AddPicture/i.test(text)) violations.push(`${file}: external graphic insertion leaked outside approved services`);
 }
 
 if (violations.length) {

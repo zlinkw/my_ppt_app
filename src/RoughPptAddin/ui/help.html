@@ -67,7 +67,7 @@
             <tr><td>风格、填充、线条、箭头快捷</td><td>Ribbon → 风格</td><td>快速套用常见视觉参数</td></tr>
             <tr><td>精确风格参数与模板</td><td>右侧 → 风格</td><td>调线宽、粗糙度、弯曲度、颜色、填充和来源</td></tr>
             <tr><td>二维与三维特征块</td><td>Ribbon → 论文与特征；右侧精调</td><td>网络结构图中的特征图、张量和体数据块</td></tr>
-            <tr><td>科研图表</td><td>右侧 → 科研绘图工作区</td><td>同一 CSV 切换多种预览后插入原生图表；旧导入面板继续支持 JSON、统计结果和文件夹</td></tr>
+            <tr><td>科研图表</td><td>右侧 → 科研绘图</td><td>在浏览器网站完成绘图，导出 SVG 后按同一份内容预览并插入；旧导入面板继续支持 JSON、CSV、统计结果和文件夹</td></tr>
             <tr><td>论文结构预设</td><td>Ribbon → 论文与特征 → 论文套件</td><td>快速搭建多模态、医学 AI、Transformer 等框图</td></tr>
             <tr><td>完整论文图片库</td><td>Ribbon → 素材 → 打开论文图片库</td><td>复用 Zotero 生成的完整图库，进行筛选、高清查看、分享、导入和删除</td></tr>
             <tr><td>Zotero 论文图与配色</td><td>右侧 → 论文图像与配色</td><td>快速搜索、插入当前参考图，并按单张图取色或保存配色</td></tr>
@@ -155,19 +155,27 @@
 
     <section id="charts" class="guide-section">
       <h2>六、科研绘图</h2>
-      <p>科研绘图把实验聚合结果转换为 PowerPoint 原生线、形状、文字和表格。独立工作区使用本地 Papa Parse 读取 CSV，并使用本地 Chart.js 切换预览；预览不会作为图片插入。旧任务窗格导入面板继续处理统计 JSON、论文表格和自动化结果。</p>
+      <p>科研绘图主入口使用系统默认浏览器打开成熟绘图网站。网站导出的同一份 SVG 经安全校验后同时用于插件预览和 PowerPoint 插入，颜色、坐标、文字与布局不再由两套渲染器分别重建。旧任务窗格导入面板继续处理统计 JSON、CSV、论文表格和 SimpleExperiment 自动化结果，并保持 PowerPoint 原生对象输出。</p>
       <figure class="guide-figure wide">
-        <img src="./help-assets/chart-workspace.png" alt="科研绘图导入步骤、图表类型和预览工作区">
-        <figcaption>先导入数据，再选择图表并插入 PowerPoint。无数据时只显示示例预览，不执行绘图。</figcaption>
+        <img src="./help-assets/chart-workspace.png" alt="科研绘图工作区与 PowerPoint 插入入口">
+        <figcaption>科研绘图工作区保留网站入口、SVG 文件状态、同源预览和插入操作。</figcaption>
       </figure>
       <h3>标准流程</h3>
       <ol>
-        <li>点击右侧“科研绘图”，在独立工作区选择一个 CSV；也可先加载示例检查预览。</li>
-        <li>选择横轴或标签、数值、可选分组和误差字段。</li>
-        <li>在柱状图、折线图、散点图、分组对比、均值误差图、病例分布和结果表格之间切换预览。</li>
-        <li>确认标题和图表类型后点击“插入 PPT”。需要导入 JSON、Markdown、文件夹或 SimpleExperiment 聚合结果时，继续使用旧任务窗格导入面板。</li>
-        <li>插入后可用 PowerPoint 原生方式继续编辑每个元素。</li>
+        <li>点击右侧“科研绘图”。系统浏览器默认打开 RAWGraphs，独立 SVG 工作区同时打开。</li>
+        <li>也可在工作区改用 Datawrapper、Plotly Chart Studio 或 Vega Editor。</li>
+        <li>在网站完成图表并导出 SVG，不要导出网页截图。</li>
+        <li>回到工作区点击“选择 SVG”。通过安全校验后，页面显示即将插入的同一份 SVG。</li>
+        <li>点击“插入 PPT”，SVG 会等比居中插入当前幻灯片。PowerPoint 2013 请继续使用旧任务窗格原生绘图入口；SVG 插入需要 PowerPoint 2016 或更高版本。</li>
       </ol>
+      <h3>网站入口</h3>
+      <ul>
+        <li><strong>RAWGraphs：</strong>复杂关系、层级、流向和非常规统计图。</li>
+        <li><strong>Datawrapper：</strong>常用统计图、表格与出版型图表。</li>
+        <li><strong>Plotly Chart Studio：</strong>散点、三维、误差与交互图表。</li>
+        <li><strong>Vega Editor：</strong>使用 Vega 或 Vega Lite 规范精确控制图表。</li>
+      </ul>
+      <aside class="notice"><strong>SVG 安全边界：</strong>插件只打开四个固定 HTTPS 网站；本地 SVG 上限为 4 MB，必须使用 UTF-8，并拒绝脚本、事件、动画、外部 URL、嵌入图像和危险 XML。文件通过校验后会固定到插件会话缓存，插入前再次核对 SHA256。</aside>
       <h3>支持的结果入口</h3>
       <ul>
         <li>SIMPLEEXPERIMENT 项目中的 <code>statistics.json</code> 和论文结果表 CSV。</li>
@@ -256,6 +264,7 @@
       <ul>
         <li>先查看右侧连接状态和中文错误提示。</li>
         <li>ZLK 只接受本机回环接口和正确令牌；Zotero 图像库必须位于约定的本机共享数据库路径。</li>
+        <li>科研网站由系统默认浏览器打开；SVG 插入失败时先确认文件小于 4 MB、使用 UTF-8，且当前为 PowerPoint 2016 或更高版本。</li>
         <li>连接失败不会阻止普通手绘图形、特征块、模板和本机素材功能。</li>
       </ul>
     </section>

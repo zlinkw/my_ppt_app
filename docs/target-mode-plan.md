@@ -138,14 +138,14 @@
 - 目标：让简洁模式三个状态按钮直接复用快捷工作台按钮样式；科研绘图主入口打开系统浏览器中的成熟绘图网站；网站导出的 SVG 以同一份内容完成预览和 PPT 插入，消除颜色、坐标与排版差异。
 - 范围：简洁模式连接按钮、独立科研绘图工作区、系统浏览器白名单、SVG 选择/校验/插入、使用说明与静态合同。
 - 排除：不移除旧任务窗格 JSON/CSV/SimpleExperiment 原生绘图入口；不改变 ZLK `schemaVersion=1`、loopback/token 协议、结果 importer 或原生 renderer；不允许任意 URL、脚本化 SVG、外部资源或 Canvas 截图插入。
-- 保护区：PowerPoint 不自动关闭或重启；Rough 与 ZLK 自动绘图继续只生成原生对象；科研 SVG 仅接受 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 工作流中由用户显式导出的本地文件，并在插入前再次校验内容一致性。
+- 保护区：PowerPoint 不自动关闭或重启；Rough 与 ZLK 自动绘图继续只生成原生对象；浏览器只打开 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定地址；科研 SVG 只接受用户显式选择的本地文件，插件不伪造来源证明，并在插入前再次校验内容一致性。
 - 回归检查：连接按钮共享布局、系统浏览器白名单、SVG 安全校验、预览/插入同源、旧 ZLK 原生链路、Office 兼容提示、无渐变 UI、中文 tooltip。
 - 批次边界：单个小批次不运行测试、构建或打包；B513-B517 完成后统一运行完整 `npm.cmd test`、`npm.cmd run build:ui`、Release 编译并打包 ZIP/MSI/EXE。
 - B513（待统一验证）：三个简洁模式状态按钮改用 `workflow-actions` 容器与同一按钮尺寸、边框、间距和响应式网格；记录科研 SVG 窄范围例外。
 - B514（待统一验证）：科研绘图工作区已改为四个网站入口、受控 SVG 选择、同源预览和插入状态工作台；移除本地 Chart.js/CSV 预览主流程，不影响任务窗格旧原生导入入口。
 - B515（待统一验证）：系统浏览器仅接受 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定 HTTPS 地址；科研绘图主入口默认打开 RAWGraphs，并同时保留本地 SVG 工作区。
 - B516（待统一验证）：宿主文件选择器限制 4 MB UTF-8 SVG，拒绝 DTD、脚本、事件、动画、外部 URL/资源和嵌入图像；校验内容固定到插件会话缓存，预览和插入复用同一 SHA256 内容，并在 PowerPoint 2016 及更高版本居中等比插入当前幻灯片。
-- B517（待开始）：使用说明、架构、验证合同与兼容说明同步。
+- B517（待统一验证）：使用说明、架构、验证清单和源码隔离扫描已同步网站绘图、SVG 安全边界、同源预览/插入、PowerPoint 2016 版本门禁与 PowerPoint 2013 原生入口回退。
 
 ## 近期锚点
 
