@@ -47,6 +47,17 @@ const STYLE_DEFAULTS = {
   yDomainMax: "",
   xReverse: false,
   yReverse: false,
+  referenceX: "",
+  referenceY: "",
+  referenceXMin: "",
+  referenceXMax: "",
+  referenceYMin: "",
+  referenceYMax: "",
+  annotationText: "",
+  annotationX: "",
+  annotationY: "",
+  annotationColor: "#b42318",
+  showErrorBand: false,
   chartWidth: "760",
   chartHeight: "480",
   fontSize: "13",
@@ -99,6 +110,17 @@ const els = {
   yDomainMax: byId("yDomainMax"),
   xReverse: byId("xReverse"),
   yReverse: byId("yReverse"),
+  referenceX: byId("referenceX"),
+  referenceY: byId("referenceY"),
+  referenceXMin: byId("referenceXMin"),
+  referenceXMax: byId("referenceXMax"),
+  referenceYMin: byId("referenceYMin"),
+  referenceYMax: byId("referenceYMax"),
+  annotationText: byId("annotationText"),
+  annotationX: byId("annotationX"),
+  annotationY: byId("annotationY"),
+  annotationColor: byId("annotationColor"),
+  showErrorBand: byId("showErrorBand"),
   chartWidth: byId("chartWidth"),
   chartHeight: byId("chartHeight"),
   fontSize: byId("fontSize"),
@@ -377,6 +399,60 @@ function errorLayer(baseEncoding) {
   return { mark: { type: "errorbar", color: els.axisColor.value, ticks: true }, encoding };
 }
 
+function errorBandLayer(baseEncoding) {
+  const low = els.errorLowField.value;
+  const high = els.errorHighField.value;
+  if (!els.showErrorBand.checked || !low || !high || !baseEncoding.x) return null;
+  const encoding = {
+    x: baseEncoding.x,
+    y: { field: low, type: "quantitative" },
+    y2: { field: high }
+  };
+  if (baseEncoding.color) encoding.color = baseEncoding.color;
+  return { mark: mark("area", { opacity: 0.16, line: false }), encoding };
+}
+
+function annotationDatum(element, field) {
+  const raw = String(element?.value ?? "").trim();
+  if (!raw) return null;
+  if (fieldType(field) === "quantitative") {
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  }
+  return raw;
+}
+
+function annotationLayers(xField) {
+  const color = els.annotationColor.value;
+  const layers = [];
+  const xMin = optionalNumber(els.referenceXMin);
+  const xMax = optionalNumber(els.referenceXMax);
+  const yMin = optionalNumber(els.referenceYMin);
+  const yMax = optionalNumber(els.referenceYMax);
+  if (xMin !== null && xMax !== null) {
+    if (xMin >= xMax) throw new Error("X 参考区间下限必须小于上限。");
+    layers.push({ mark: { type: "rect", color, opacity: 0.08 }, encoding: { x: { datum: xMin }, x2: { datum: xMax } } });
+  }
+  if (yMin !== null && yMax !== null) {
+    if (yMin >= yMax) throw new Error("Y 参考区间下限必须小于上限。");
+    layers.push({ mark: { type: "rect", color, opacity: 0.08 }, encoding: { y: { datum: yMin }, y2: { datum: yMax } } });
+  }
+  const referenceX = annotationDatum(els.referenceX, xField);
+  const referenceY = optionalNumber(els.referenceY);
+  if (referenceX !== null) layers.push({ mark: { type: "rule", color, strokeWidth: 1.5, strokeDash: [6, 4] }, encoding: { x: { datum: referenceX } } });
+  if (referenceY !== null) layers.push({ mark: { type: "rule", color, strokeWidth: 1.5, strokeDash: [6, 4] }, encoding: { y: { datum: referenceY } } });
+  const annotationText = els.annotationText.value.trim();
+  const annotationX = annotationDatum(els.annotationX, xField);
+  const annotationY = optionalNumber(els.annotationY);
+  if (annotationText && annotationX !== null && annotationY !== null) {
+    layers.push({
+      mark: { type: "text", color, align: "left", baseline: "bottom", dx: 5, dy: -5, fontWeight: 700 },
+      encoding: { x: { datum: annotationX }, y: { datum: annotationY }, text: { value: annotationText } }
+    });
+  }
+  return layers;
+}
+
 function buildSpec() {
   const xField = els.xField.value;
   const yField = els.yField.value;
@@ -404,7 +480,8 @@ function buildSpec() {
   } else if (state.chartType === "line" || state.chartType === "area") {
     const encoding = addColor({ x, y }, colorField);
     const type = state.chartType === "line" ? "line" : "area";
-    layers = [{ mark: mark(type, { strokeWidth: lineWidth, point: state.chartType === "line" ? { size: pointSize, filled: true } : false, interpolate: els.smoothLine.checked ? "monotone" : "linear" }), encoding }];
+    const band = errorBandLayer(encoding);
+    layers = [...(band ? [band] : []), { mark: mark(type, { strokeWidth: lineWidth, point: state.chartType === "line" ? { size: pointSize, filled: true } : false, interpolate: els.smoothLine.checked ? "monotone" : "linear" }), encoding }];
     const errors = errorLayer(encoding);
     const labels = labelLayer(encoding);
     if (errors) layers.push(errors);
@@ -446,6 +523,8 @@ function buildSpec() {
   } else {
     throw new Error("当前图表类型不受支持。");
   }
+
+  if (state.chartType !== "donut") layers.push(...annotationLayers(xField));
 
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
@@ -628,10 +707,10 @@ function bindEvents() {
   els.chartTypeGrid.querySelectorAll("[data-chart-type]").forEach(button => button.addEventListener("click", () => setChartType(button.dataset.chartType)));
   els.paletteList.querySelectorAll("[data-palette]").forEach(button => button.addEventListener("click", () => setPalette(button.dataset.palette)));
 
-  for (const element of [els.xField, els.yField, els.colorField, els.sizeField, els.errorLowField, els.errorHighField, els.aggregateMode, els.sortMode, els.xScaleType, els.yScaleType, els.xTickFormat, els.yTickFormat, els.xReverse, els.yReverse, els.showLegend, els.showGrid, els.includeZero, els.showLabels, els.smoothLine]) {
+  for (const element of [els.xField, els.yField, els.colorField, els.sizeField, els.errorLowField, els.errorHighField, els.aggregateMode, els.sortMode, els.xScaleType, els.yScaleType, els.xTickFormat, els.yTickFormat, els.xReverse, els.yReverse, els.showErrorBand, els.showLegend, els.showGrid, els.includeZero, els.showLabels, els.smoothLine]) {
     element.addEventListener("change", () => scheduleRender(0));
   }
-  for (const element of [els.chartTitle, els.xAxisTitle, els.yAxisTitle, els.xDomainMin, els.xDomainMax, els.yDomainMin, els.yDomainMax, els.chartWidth, els.chartHeight, els.fontSize, els.lineWidth, els.markSize, els.markOpacity, els.backgroundColor, els.textColor, els.axisColor]) {
+  for (const element of [els.chartTitle, els.xAxisTitle, els.yAxisTitle, els.xDomainMin, els.xDomainMax, els.yDomainMin, els.yDomainMax, els.referenceX, els.referenceY, els.referenceXMin, els.referenceXMax, els.referenceYMin, els.referenceYMax, els.annotationText, els.annotationX, els.annotationY, els.annotationColor, els.chartWidth, els.chartHeight, els.fontSize, els.lineWidth, els.markSize, els.markOpacity, els.backgroundColor, els.textColor, els.axisColor]) {
     element.addEventListener("input", () => scheduleRender());
   }
   els.resetStyleButton.addEventListener("click", resetStyles);

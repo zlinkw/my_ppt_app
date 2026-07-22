@@ -44,6 +44,14 @@ for (const snippet of [
   'id="yScaleType"',
   'id="xDomainMin"',
   'id="yDomainMax"',
+  'id="referenceX"',
+  'id="referenceY"',
+  'id="referenceXMin"',
+  'id="referenceYMax"',
+  'id="annotationText"',
+  'id="annotationX"',
+  'id="annotationY"',
+  'id="showErrorBand"',
   'id="chartTypeGrid"',
   'id="websiteList"',
   'id="selectSvgButton"',
@@ -84,6 +92,9 @@ for (const snippet of [
 }
 for (const snippet of ["scaleSpec", "axisKeyElements", "domainMin", "domainMax", "xReverse", "yReverse", "xTickFormat", "yTickFormat"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图坐标控制合同缺少：${snippet}`);
+}
+for (const snippet of ["errorBandLayer", "annotationLayers", "annotationDatum", 'type: "rule"', 'type: "rect"', 'type: "text"', "strokeDash", "showErrorBand"]) {
+  if (!app.includes(snippet)) throw new Error(`科研绘图论文标注合同缺少：${snippet}`);
 }
 for (const chartType of ["bar", "groupedBar", "stackedBar", "horizontalBar", "line", "area", "scatter", "bubble", "histogram", "boxplot", "heatmap", "donut"]) {
   if (!app.includes(`${chartType}:`)) throw new Error(`科研绘图脚本缺少图表类型：${chartType}`);

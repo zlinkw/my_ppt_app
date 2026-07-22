@@ -141,6 +141,27 @@ Ours,0.887,0.015,B</textarea>
       </section>
 
       <section class="control-section">
+        <div class="section-heading"><h2>论文标注</h2><span class="section-meta">参考与不确定性</span></div>
+        <div class="field-grid">
+          <label><span>X 参考线</span><input id="referenceX" type="text" placeholder="分类或数值" title="在指定 X 位置绘制参考线，可输入分类标签或数值"></label>
+          <label><span>Y 参考线</span><input id="referenceY" type="number" step="any" placeholder="不显示" title="在指定 Y 数值绘制参考线"></label>
+          <label><span>X 区间下限</span><input id="referenceXMin" type="number" step="any" placeholder="不显示" title="设置 X 轴参考区间下限"></label>
+          <label><span>X 区间上限</span><input id="referenceXMax" type="number" step="any" placeholder="不显示" title="设置 X 轴参考区间上限"></label>
+          <label><span>Y 区间下限</span><input id="referenceYMin" type="number" step="any" placeholder="不显示" title="设置 Y 轴参考区间下限"></label>
+          <label><span>Y 区间上限</span><input id="referenceYMax" type="number" step="any" placeholder="不显示" title="设置 Y 轴参考区间上限"></label>
+        </div>
+        <div class="field-stack">
+          <label><span>注释文字</span><input id="annotationText" type="text" placeholder="例如：最佳结果" title="设置图中论文注释文字"></label>
+        </div>
+        <div class="field-grid">
+          <label><span>注释 X</span><input id="annotationX" type="text" placeholder="分类或数值" title="设置注释所在的 X 分类或数值"></label>
+          <label><span>注释 Y</span><input id="annotationY" type="number" step="any" placeholder="数值" title="设置注释所在的 Y 数值"></label>
+          <label><span>标注颜色</span><input id="annotationColor" type="color" value="#b42318" title="设置参考线、参考区间和注释颜色"></label>
+          <label class="toggle-row"><input id="showErrorBand" type="checkbox"><span>显示误差带</span></label>
+        </div>
+      </section>
+
+      <section class="control-section">
         <div class="section-heading"><h2>配色</h2></div>
         <div id="paletteList" class="palette-list" role="radiogroup" aria-label="图表配色">
           <button type="button" data-palette="simple" role="radio" aria-checked="true" class="active" title="SimpleExperiment 品牌配色"><span><i style="--swatch:#5871ef"></i><i style="--swatch:#2f9e44"></i><i style="--swatch:#7c5cbf"></i><i style="--swatch:#d97706"></i></span><b>插件配色</b></button>
