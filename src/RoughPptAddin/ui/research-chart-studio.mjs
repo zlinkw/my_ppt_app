@@ -36,15 +36,17 @@ const CHART_LABELS = {
   heatmap: "热力图",
   correlationMatrix: "相关矩阵",
   parallelCoordinates: "并行坐标图",
+  ternary: "三元图",
+  radar: "雷达图",
   donut: "环形图",
   polar: "极坐标图"
 };
 
 const CHART_CATEGORIES = {
-  bar: "comparison", groupedBar: "comparison", stackedBar: "comparison", horizontalBar: "comparison", donut: "comparison", polar: "comparison",
+  bar: "comparison", groupedBar: "comparison", stackedBar: "comparison", horizontalBar: "comparison", donut: "comparison", polar: "comparison", ternary: "comparison",
   line: "trend", step: "trend", area: "trend", regression: "trend",
   histogram: "distribution", boxplot: "distribution", density: "distribution", violin: "distribution", ecdf: "distribution", strip: "distribution", qqPlot: "distribution", ppPlot: "distribution",
-  scatter: "multivariate", bubble: "multivariate", heatmap: "multivariate", correlationMatrix: "multivariate", parallelCoordinates: "multivariate",
+  scatter: "multivariate", bubble: "multivariate", heatmap: "multivariate", correlationMatrix: "multivariate", parallelCoordinates: "multivariate", radar: "multivariate",
   roc: "evaluation", precisionRecall: "evaluation", calibration: "evaluation",
   blandAltman: "agreement", forest: "agreement", volcano: "agreement", funnel: "agreement",
   survival: "survival", cumulativeHazard: "survival"
@@ -625,6 +627,100 @@ function buildProbabilityPlotRows(mode, numericField, colorField, facetField) {
   return { rows: output, groupField };
 }
 
+function requireDistinctFields(fields, label) {
+  if (fields.some(field => !field) || new Set(fields).size !== fields.length) throw new Error(`${label}必须选择互不相同的字段。`);
+}
+
+function buildTernaryRows(aField, bField, cField, facetField) {
+  requireDistinctFields([aField, bField, cField], "三元图的三个分量");
+  requireQuantitativeField(aField, "三元图的 X 分量");
+  requireQuantitativeField(bField, "三元图的 Y 分量");
+  requireQuantitativeField(cField, "三元图的点大小分量");
+  return state.rows.map(row => {
+    const a = Number(row[aField]);
+    const b = Number(row[bField]);
+    const c = Number(row[cField]);
+    if (![a, b, c].every(Number.isFinite) || a < 0 || b < 0 || c < 0 || a + b + c <= 0) throw new Error("三元图分量必须是非负数值，且每行总和必须大于 0。");
+    const total = a + b + c;
+    const normalizedA = a / total;
+    const normalizedB = b / total;
+    const normalizedC = c / total;
+    return {
+      ...row,
+      ...(facetField ? { [facetField]: row[facetField] } : {}),
+      __ternaryX: normalizedB + normalizedC / 2,
+      __ternaryY: normalizedC * Math.sqrt(3) / 2,
+      __ternaryA: normalizedA,
+      __ternaryB: normalizedB,
+      __ternaryC: normalizedC
+    };
+  });
+}
+
+function buildTernaryGridRows() {
+  const rows = [];
+  for (const level of [0.2, 0.4, 0.6, 0.8]) {
+    rows.push(
+      { __gridX: level, __gridY: 0, __gridX2: (1 + level) / 2, __gridY2: (1 - level) * Math.sqrt(3) / 2 },
+      { __gridX: 1 - level, __gridY: 0, __gridX2: (1 - level) / 2, __gridY2: (1 - level) * Math.sqrt(3) / 2 },
+      { __gridX: level / 2, __gridY: level * Math.sqrt(3) / 2, __gridX2: 1 - level / 2, __gridY2: level * Math.sqrt(3) / 2 }
+    );
+  }
+  return rows;
+}
+
+function buildRadarRows(identifierField, colorField, facetField) {
+  const excluded = [identifierField, colorField, facetField].filter(Boolean);
+  const fields = quantitativeFields(excluded);
+  if (fields.length < 3) throw new Error("雷达图除标识、分组和分面字段外，至少需要三个数值字段。");
+  const extents = Object.fromEntries(fields.map(field => {
+    const values = state.rows.map(row => Number(row[field])).filter(Number.isFinite);
+    return [field, { min: Math.min(...values), max: Math.max(...values) }];
+  }));
+  const rows = [];
+  state.rows.forEach((row, rowIndex) => {
+    const series = `${rowIndex + 1}:${String(row[identifierField] ?? "")}`;
+    fields.forEach((field, fieldIndex) => {
+      const value = Number(row[field]);
+      if (!Number.isFinite(value)) throw new Error("雷达图数值字段不能包含空值或非数值。");
+      const extent = extents[field];
+      const normalized = extent.max > extent.min ? (value - extent.min) / (extent.max - extent.min) : 0.5;
+      const angle = -Math.PI / 2 + fieldIndex * Math.PI * 2 / fields.length;
+      rows.push({
+        ...(facetField ? { [facetField]: row[facetField] } : {}),
+        __radarSeries: series,
+        __radarLabel: row[identifierField] ?? `第 ${rowIndex + 1} 行`,
+        __radarGroup: colorField ? row[colorField] : "全部",
+        __radarMetric: field,
+        __radarValue: value,
+        __radarNormalized: normalized,
+        __radarOrder: fieldIndex,
+        __radarX: 0.5 + 0.45 * normalized * Math.cos(angle),
+        __radarY: 0.5 + 0.45 * normalized * Math.sin(angle)
+      });
+    });
+    const first = rows[rows.length - fields.length];
+    rows.push({ ...first, __radarOrder: fields.length });
+  });
+  return { rows, fields };
+}
+
+function buildRadarGuideRows(fields) {
+  const axes = fields.map((field, index) => {
+    const angle = -Math.PI / 2 + index * Math.PI * 2 / fields.length;
+    return { __guideMetric: field, __guideX: 0.5, __guideY: 0.5, __guideX2: 0.5 + 0.45 * Math.cos(angle), __guideY2: 0.5 + 0.45 * Math.sin(angle), __guideLabelX: 0.5 + 0.52 * Math.cos(angle), __guideLabelY: 0.5 + 0.52 * Math.sin(angle) };
+  });
+  const rings = [];
+  for (const level of [0.25, 0.5, 0.75, 1]) {
+    fields.forEach((field, index) => {
+      const angle = -Math.PI / 2 + index * Math.PI * 2 / fields.length;
+      rings.push({ __guideLevel: level, __guideOrder: index, __guideX: 0.5 + 0.45 * level * Math.cos(angle), __guideY: 0.5 + 0.45 * level * Math.sin(angle) });
+    });
+    rings.push({ ...rings[rings.length - fields.length], __guideOrder: fields.length });
+  }
+  return { axes, rings };
+}
+
 function probabilityScale(axisKey) {
   const scale = scaleSpec(axisKey, true);
   if (scale.type === "log") throw new Error("概率曲线包含 0，不能使用对数坐标。");
@@ -1120,6 +1216,44 @@ function buildSpec() {
     };
     if (parallelColor) parallelEncoding.color = parallelColor;
     layers = [{ mark: mark("line", { strokeWidth: lineWidth, opacity: Math.min(0.8, numericValue(els.markOpacity, 0.9, 0.1, 1)), point: { filled: true, size: Math.max(16, pointSize * 0.24) } }), encoding: parallelEncoding }];
+  } else if (state.chartType === "ternary") {
+    const cField = els.sizeField.value;
+    chartData = buildTernaryRows(xField, yField, cField, els.facetField.value);
+    const ternaryScale = { domain: [-0.08, 1.08], zero: false };
+    const ternaryYScale = { domain: [-0.08, 0.96], zero: false };
+    const ternaryColor = colorEncoding(colorField);
+    const pointEncoding = {
+      x: { field: "__ternaryX", type: "quantitative", axis: null, scale: ternaryScale },
+      y: { field: "__ternaryY", type: "quantitative", axis: null, scale: ternaryYScale },
+      tooltip: [{ field: xField, type: "quantitative", title: xField }, { field: yField, type: "quantitative", title: yField }, { field: cField, type: "quantitative", title: cField }, { field: "__ternaryA", type: "quantitative", title: `${xField} 占比`, format: ".1%" }, { field: "__ternaryB", type: "quantitative", title: `${yField} 占比`, format: ".1%" }, { field: "__ternaryC", type: "quantitative", title: `${cField} 占比`, format: ".1%" }]
+    };
+    if (ternaryColor) pointEncoding.color = ternaryColor;
+    layers = [
+      { data: { values: buildTernaryGridRows() }, mark: { type: "rule", color: "#d8dee8", strokeWidth: 0.8 }, encoding: { x: { field: "__gridX", type: "quantitative", scale: ternaryScale }, x2: { field: "__gridX2" }, y: { field: "__gridY", type: "quantitative", scale: ternaryYScale }, y2: { field: "__gridY2" } } },
+      { data: { values: [{ x: 0, y: 0, order: 0 }, { x: 1, y: 0, order: 1 }, { x: 0.5, y: Math.sqrt(3) / 2, order: 2 }, { x: 0, y: 0, order: 3 }] }, mark: { type: "line", color: els.axisColor.value, strokeWidth: Math.max(1.2, lineWidth * 0.75) }, encoding: { x: { field: "x", type: "quantitative", scale: ternaryScale }, y: { field: "y", type: "quantitative", scale: ternaryYScale }, order: { field: "order", type: "quantitative" } } },
+      { data: { values: [{ label: xField, x: -0.02, y: -0.035 }, { label: yField, x: 1.02, y: -0.035 }, { label: cField, x: 0.5, y: 0.91 }] }, mark: { type: "text", color: els.textColor.value, fontWeight: 650, fontSize: numericValue(els.fontSize, 13, 8, 28) }, encoding: { x: { field: "x", type: "quantitative", scale: ternaryScale }, y: { field: "y", type: "quantitative", scale: ternaryYScale }, text: { field: "label", type: "nominal" } } },
+      { mark: mark("point", { filled: true, size: pointSize, stroke: "#ffffff", strokeWidth: 0.7 }), encoding: pointEncoding }
+    ];
+  } else if (state.chartType === "radar") {
+    const radar = buildRadarRows(xField, colorField, els.facetField.value);
+    chartData = radar.rows;
+    const guides = buildRadarGuideRows(radar.fields);
+    const radarScale = { domain: [-0.08, 1.08], zero: false };
+    const radarColor = colorField ? { field: "__radarGroup", type: fieldType(colorField), scale: { range: PALETTES[state.palette] }, legend: els.showLegend.checked ? { title: colorField } : null } : { field: "__radarLabel", type: "nominal", scale: { range: PALETTES[state.palette] }, legend: els.showLegend.checked ? { title: xField } : null };
+    const radarEncoding = {
+      x: { field: "__radarX", type: "quantitative", axis: null, scale: radarScale },
+      y: { field: "__radarY", type: "quantitative", axis: null, scale: radarScale },
+      color: radarColor,
+      detail: { field: "__radarSeries", type: "nominal" },
+      order: { field: "__radarOrder", type: "quantitative" },
+      tooltip: [{ field: "__radarLabel", type: "nominal", title: xField }, { field: "__radarMetric", type: "nominal", title: "指标" }, { field: "__radarValue", type: "quantitative", title: "原始值" }, { field: "__radarNormalized", type: "quantitative", title: "归一化值", format: ".3f" }]
+    };
+    layers = [
+      { data: { values: guides.rings }, mark: { type: "line", color: "#d8dee8", strokeWidth: 0.8 }, encoding: { x: { field: "__guideX", type: "quantitative", scale: radarScale }, y: { field: "__guideY", type: "quantitative", scale: radarScale }, detail: { field: "__guideLevel", type: "quantitative" }, order: { field: "__guideOrder", type: "quantitative" } } },
+      { data: { values: guides.axes }, mark: { type: "rule", color: els.axisColor.value, strokeWidth: 0.8 }, encoding: { x: { field: "__guideX", type: "quantitative", scale: radarScale }, x2: { field: "__guideX2" }, y: { field: "__guideY", type: "quantitative", scale: radarScale }, y2: { field: "__guideY2" } } },
+      { data: { values: guides.axes }, mark: { type: "text", color: els.textColor.value, fontSize: numericValue(els.fontSize, 13, 8, 28), fontWeight: 650 }, encoding: { x: { field: "__guideLabelX", type: "quantitative", scale: radarScale }, y: { field: "__guideLabelY", type: "quantitative", scale: radarScale }, text: { field: "__guideMetric", type: "nominal" } } },
+      { mark: mark("line", { strokeWidth: lineWidth, point: { filled: true, size: Math.max(18, pointSize * 0.3) } }), encoding: radarEncoding }
+    ];
   } else if (state.chartType === "donut") {
     const encoding = {
       theta: quantitativeEncoding(yField, els.yAxisTitle.value, "y"),
@@ -1142,10 +1276,12 @@ function buildSpec() {
     throw new Error("当前图表类型不受支持。");
   }
 
-  if (!["density", "violin", "qqPlot", "ppPlot", "forest", "blandAltman", "volcano", "funnel", "correlationMatrix", "parallelCoordinates", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
+  if (!["density", "violin", "qqPlot", "ppPlot", "forest", "blandAltman", "volcano", "funnel", "correlationMatrix", "parallelCoordinates", "ternary", "radar", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
 
   const chartWidth = numericValue(els.chartWidth, 760, 360, 1600);
   const chartHeight = numericValue(els.chartHeight, 480, 260, 1200);
+  const equalAspect = state.chartType === "ternary" || state.chartType === "radar";
+  const equalAspectSize = Math.min(chartWidth, chartHeight);
   const facetField = els.facetField.value;
   const facetColumns = Math.round(numericValue(els.facetColumns, 2, 1, 6));
   const common = {
@@ -1180,19 +1316,20 @@ function buildSpec() {
   }
 
   if (facetField) {
+    const facetWidth = Math.max(180, Math.floor((equalAspect ? equalAspectSize : chartWidth) / facetColumns) - 46);
     return {
       ...common,
       facet: { field: facetField, type: fieldType(facetField), header: { title: null, labelColor: els.textColor.value } },
       columns: facetColumns,
-      spec: { width: Math.max(180, Math.floor(chartWidth / facetColumns) - 46), height: chartHeight, layer: layers },
+      spec: { width: facetWidth, height: equalAspect ? facetWidth : chartHeight, layer: layers },
       resolve: { scale: { y: "shared" } }
     };
   }
 
   return {
     ...common,
-    width: chartWidth,
-    height: chartHeight,
+    width: equalAspect ? equalAspectSize : chartWidth,
+    height: equalAspect ? equalAspectSize : chartHeight,
     layer: layers,
   };
 }
