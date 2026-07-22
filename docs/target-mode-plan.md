@@ -128,7 +128,8 @@
 - B534 范围：生存数据校验、本地 Kaplan–Meier 风险集计算、生存与累计风险 SVG 规格、静态合同和使用说明；不引入统计运行时或在线服务。
 - B534 开源依据：借鉴 lifelines MIT 与 scikit-survival BSD-3-Clause 的时间、事件、分组及删失标记语义，以及 Matplotlib 阶梯线表达；本仓自行实现有界本地计算。
 - B534 回归检查：同一时间点先按风险集计算事件概率再移除删失，分组与分面分别计算，删失点明确标记，过滤后的数据实时重算。
-- B534 验证：科研绘图脚本和验证脚本语法、28 图静态合同、生存字段接线检索和 `git diff --check` 通过；待执行 B530-B534 五批次统一测试、构建和打包。
+- B534 验证：科研绘图脚本和验证脚本语法、28 图静态合同、生存字段接线检索和 `git diff --check` 通过；B530-B534 五批次统一 `npm.cmd test`、签名 Release 构建、79 个 Ribbon 图标验证和 UI 构建均通过，保留 8 个既有 `CS4014` 警告、0 个错误。
+- B530-B534 统一发布：已生成并校验 ZIP、MSI、EXE 三种产物；版本 `0.1.773`，提交 `9294bbcde627`，`dirty=false`，产物目录 `releases/RoughPptAddin-0.1.773-9294bbcd/`；未自动安装或启动 PowerPoint。
 - B534 提交记录：`3e2f6a1 feat: add survival analysis plots`。
 
 ## 近期锚点
