@@ -12,13 +12,15 @@ const violations = [];
 for (const snippet of [
   "Controller?.ApplyRoughStylePreset(style, StylePresetLabel(presetId))",
   "Controller?.ApplyRoughStylePreset(style, \"论文风格\")",
-  "var count = UpdateSelectionStyle(style);",
   "ArrowheadLengthPt",
   "ArrowheadWidthPt"
 ]) {
   if (!ribbon.includes(snippet) && !controller.includes(snippet) && !model.includes(snippet) && !taskPane.includes(snippet)) {
     violations.push(`host style wiring missing: ${snippet}`);
   }
+}
+if (!/(?:var|int)\s+count\s*=\s*UpdateSelectionStyle\(style\);/.test(controller)) {
+  violations.push("host style wiring missing: selection style update count");
 }
 for (const snippet of [
   'ReadDouble(dict, "arrowheadLengthPt", style.ArrowheadLengthPt)',

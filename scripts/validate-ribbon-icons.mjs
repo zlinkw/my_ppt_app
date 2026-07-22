@@ -12,19 +12,28 @@ function attrs(tag) {
   return result;
 }
 
-for (const [index, match] of [...source.matchAll(/<(button|dynamicMenu)\b[^>]*>/g)].entries()) {
+function callbackReturnsChinese(name) {
+  if (!name) return false;
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const method = source.match(new RegExp(`\\b${escapedName}\\s*\\([^)]*\\)\\s*\\{([\\s\\S]{0,1600})`));
+  return Boolean(method && hasChinese(method[1]));
+}
+
+for (const [index, match] of [...source.matchAll(/<(button|dynamicMenu)\b[^>\r\n]*>/g)].entries()) {
   const tag = match[0];
   const attributes = attrs(tag);
   const label = `${match[1]} ${attributes.id ?? index + 1}`;
   if (!attributes.imageMso && !attributes.getImage) violations.push(`${label}: missing imageMso/getImage`);
-  if (!attributes.screentip || !hasChinese(attributes.screentip)) violations.push(`${label}: missing Chinese screentip`);
-  if (!attributes.supertip || !hasChinese(attributes.supertip)) violations.push(`${label}: missing Chinese supertip`);
+  if (!hasChinese(attributes.screentip) && !callbackReturnsChinese(attributes.getScreentip)) violations.push(`${label}: missing Chinese screentip`);
+  if (!hasChinese(attributes.supertip) && !callbackReturnsChinese(attributes.getSupertip)) violations.push(`${label}: missing Chinese supertip`);
   if (attributes.label && !hasChinese(attributes.label)) violations.push(`${label}: label is not Chinese-first`);
 }
 
 if (!/GetShapeMenu/.test(source)) violations.push("shape dynamic menu callback missing");
 if (!/InsertShapeFromMenu/.test(source)) violations.push("shape menu insert callback missing");
-if (!/imageMso='ShapesInsertGallery'/.test(source)) violations.push("main shape menu must reuse PPT shape gallery icon");
+if (!/GetShapeMenuGalleryItemImage[\s\S]*?GetShapeImageForEnum/.test(source) || !/ShapeIconFactory\.Create/.test(source)) {
+  violations.push("main shape menu must use local outline shape icons");
+}
 
 if (violations.length) {
   throw new Error(`Ribbon icon validation failed:\n${violations.join("\n")}`);

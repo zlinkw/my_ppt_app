@@ -16,9 +16,9 @@ if (!ribbon.includes("<button id='roughShapeMenu'")) violations.push("roughShape
 if (!ribbon.includes("onAction='OpenShapeGallery'")) violations.push("roughShapeMenu must call OpenShapeGallery");
 if (ribbon.includes("<dynamicMenu id='roughShapeMenu'")) violations.push("roughShapeMenu must not remain a fixed-size Office dynamicMenu");
 if (!ribbon.includes("ShapeGalleryWindow")) violations.push("RoughRibbon must own ShapeGalleryWindow");
-if (!ribbon.includes("enumName => Controller?.InsertShape(enumName)")) violations.push("Ribbon gallery must insert through the same Rough native shape path");
-if (!ribbon.includes("enumName => Controller?.PinQuickShape(enumName)")) violations.push("Ribbon gallery must pin through the same quick shape service");
-if (!ribbon.includes("enumName => Controller?.UnpinQuickShape(enumName)")) violations.push("Ribbon gallery must unpin through the same quick shape service");
+if (!/new ShapeGalleryWindow\([\s\S]*?Controller\?\.InsertShape\(enumName\)/.test(ribbon)) violations.push("Ribbon gallery must insert through the same Rough native shape path");
+if (!/new ShapeGalleryWindow\([\s\S]*?Controller\?\.PinQuickShape\(enumName\)/.test(ribbon)) violations.push("Ribbon gallery must pin through the same quick shape service");
+if (!/new ShapeGalleryWindow\([\s\S]*?Controller\?\.UnpinQuickShape\(enumName\)/.test(ribbon)) violations.push("Ribbon gallery must unpin through the same quick shape service");
 if (!ribbon.includes("() => Controller?.ListQuickShapes()")) violations.push("Ribbon gallery must read the same quick shape service");
 if (!ribbon.includes("() => Controller?.GetPowerPointWindowHandle() ?? IntPtr.Zero")) violations.push("Ribbon gallery must bind to the PowerPoint owner window");
 if (!ribbon.includes("showLabel='false'")) violations.push("Ribbon quick insert buttons must stay compact icon-first buttons");
@@ -33,15 +33,21 @@ for (const snippet of [
   "private sealed class WindowOwner : IWin32Window",
   "WebView2",
   "ribbon-shape-gallery.html",
-  "SetVirtualHostNameToFolderMapping(UiHostName",
   "WebMessageReceived",
   "NavigationCompleted",
   "insertShape?.Invoke(enumName)",
-  "pinQuickShape?.Invoke(enumName)",
-  "unpinQuickShape?.Invoke(enumName)",
   "SendQuickShapes();"
 ]) {
   if (!windowSource.includes(snippet)) violations.push(`ShapeGalleryWindow.cs missing ${snippet}`);
+}
+if (!/SetVirtualHostNameToFolderMapping\((?:UiHostName|"rough-ppt\.local")/.test(windowSource)) {
+  violations.push("ShapeGalleryWindow.cs missing local virtual host mapping");
+}
+if (!/pinQuickShape\?\.Invoke\(enumName\d*\)/.test(windowSource)) {
+  violations.push("ShapeGalleryWindow.cs missing pin quick shape callback");
+}
+if (!/unpinQuickShape\?\.Invoke\(enumName\d*\)/.test(windowSource)) {
+  violations.push("ShapeGalleryWindow.cs missing unpin quick shape callback");
 }
 if (!controller.includes("GetPowerPointWindowHandle") || !controller.includes("application.HWND")) {
   violations.push("RoughAddInController must expose PowerPoint HWND for owner-bound Ribbon gallery");
@@ -73,7 +79,7 @@ for (const snippet of [
   "button.addEventListener(\"keydown\"",
   "event.key === \"ContextMenu\"",
   "shiftKey && event.key === \"F10\"",
-  "openShapeContextMenu(event, item)",
+  "openShapeContextMenu(event, item",
   "action.setAttribute(\"role\", \"menuitem\")",
   "action.focus({ preventScroll: true })",
   "textContent = pinned ? \"从快速插入移除\" : \"添加到快速插入\"",

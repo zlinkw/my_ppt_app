@@ -3,12 +3,17 @@ import { JSDOM } from "jsdom";
 
 const source = fs.readFileSync("src/RoughPptAddin/Ribbon/RoughRibbon.cs", "utf8");
 const violations = [];
-const sourceXml = source.match(/var sourceXml = @"([\s\S]*?)";\s*return BuildConsolidatedRibbonXml\(sourceXml\);/)?.[1];
+let sourceXml = source.match(/return BuildConsolidatedRibbonXml\("([\s\S]*?)"\);/)?.[1]
+  ?.replace(/\\r\\n/g, "\n")
+  .replace(/\\n/g, "\n");
 if (!sourceXml) throw new Error("Ribbon source XML or consolidation call is missing");
+const libraryButton = source.match(/const string libraryButton = "([^"]+)";/)?.[1];
+if (!libraryButton) throw new Error("Ribbon library button injection is missing");
+sourceXml = sourceXml.replace("<button id='exportAssets'", `${libraryButton}<button id='exportAssets'`);
 
-const sourceDocument = new JSDOM(sourceXml.replace(/""/g, '"'), { contentType: "text/xml" }).window.document;
+const sourceDocument = new JSDOM(sourceXml, { contentType: "text/xml" }).window.document;
 const groupSpecs = [];
-for (const match of source.matchAll(/AppendRibbonGroup\(source,\s*output,\s*tab,\s*"([^"]+)",\s*"([^"]+)",\s*new\[\]\s*\{([\s\S]*?)\}\s*(?:,\s*true)?\);/g)) {
+for (const match of source.matchAll(/AppendRibbonGroup\(source,\s*output,\s*tab,\s*"([^"]+)",\s*"([^"]+)",\s*new(?:\s+string\[\d+\]|\[\])\s*\{([\s\S]*?)\}\s*(?:,\s*(?:true|forceLarge:\s*true))?\);/g)) {
   groupSpecs.push({
     id: match[1],
     label: match[2],
@@ -114,10 +119,10 @@ for (const obsoleteId of ["compactCommonMenu", "compactSelectionMenu", "roughSha
   if (ids.has(obsoleteId)) violations.push(`obsolete duplicate remains visible: ${obsoleteId}`);
 }
 
-const visibleStyleInvalidations = source.match(/VisibleStylePresetControlIds\s*=\s*\{([\s\S]*?)\};/)?.[1]
+const visibleStyleInvalidations = source.match(/VisibleStylePresetControlIds\s*=\s*(?:new string\[\d+\]\s*)?\{([\s\S]*?)\};/)?.[1]
   ?.match(/"([^"]+)"/g)
   ?.map(item => item.slice(1, -1)) ?? [];
-if (!source.includes("foreach (var id in VisibleStylePresetControlIds)")) {
+if (!/foreach\s*\((?:var|string)\s+id\s+in\s+(?:VisibleStylePresetControlIds|visibleStylePresetControlIds)\)/.test(source)) {
   violations.push("style invalidation must target the final visible preset controls");
 }
 for (const controlId of visibleStyleInvalidations) {

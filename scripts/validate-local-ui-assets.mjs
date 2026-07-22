@@ -90,13 +90,17 @@ for (const [label, snippet] of [
 
 for (const [label, snippet] of [
   ["fixed local host", 'private const string UiHostName = "rough-ppt.local"'],
-  ["virtual host navigation", '"https://" + UiHostName + "/index.html"'],
-  ["folder mapping", "SetVirtualHostNameToFolderMapping(UiHostName, uiDirectory"],
   ["all-request filter", 'AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All)'],
   ["403 external block", "CreateWebResourceResponse("],
   ["required rough bundle", 'Path.Combine("vendor", "rough.esm.js")']
 ]) {
   if (!bridge.includes(snippet)) violations.push(`RoughJsBridge.cs: offline contract missing ${label}`);
+}
+if (!/SetVirtualHostNameToFolderMapping\((?:UiHostName|"rough-ppt\.local"),\s*uiDirectory/.test(bridge)) {
+  violations.push("RoughJsBridge.cs: offline contract missing folder mapping");
+}
+if (!/(?:"https:\/\/"\s*\+\s*UiHostName\s*\+\s*"\/index\.html"|"https:\/\/rough-ppt\.local\/index\.html")/.test(bridge)) {
+  violations.push("RoughJsBridge.cs: offline contract missing virtual host navigation");
 }
 
 if (!bridge.includes("IsAllowedLocalUri") ||

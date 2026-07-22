@@ -81,7 +81,7 @@ for (const snippet of [
   "CommandBars",
   "GetImageMso",
   "PictureConverter.FromPicture",
-  "data:image/png;base64:",
+  "data:image/png;base64,",
   "ListQuickShapes",
   "PinQuickShape",
   "UnpinQuickShape"
@@ -93,7 +93,7 @@ const ribbon = fs.readFileSync("src/RoughPptAddin/Ribbon/RoughRibbon.cs", "utf8"
 for (const snippet of [
   "getImage='GetLibraryImage'",
   "public object GetLibraryImage(IRibbonControl control)",
-  "LibraryIconFactory.Create(32, 32)"
+  "LibraryIconFactory.Create(control?.Id, 32, 32)"
 ]) {
   if (!ribbon.includes(snippet)) violations.push(`RoughRibbon.cs missing library icon contract: ${snippet}`);
 }

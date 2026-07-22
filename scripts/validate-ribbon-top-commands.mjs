@@ -16,7 +16,7 @@ function attrs(tag) {
 }
 
 const tags = new Map();
-for (const match of ribbon.matchAll(/<(button|toggleButton|dynamicMenu)\b[^>]*>/g)) {
+for (const match of ribbon.matchAll(/<(button|toggleButton|dynamicMenu)\b[^>\r\n]*>/g)) {
   const attributes = attrs(match[0]);
   if (attributes.id) tags.set(attributes.id, { kind: match[1], tag: match[0], attributes });
 }
@@ -184,8 +184,9 @@ for (const [id, expectation] of Object.entries(expected)) {
   }
   if (expectation.feature) {
     const [direction, delta] = expectation.feature;
-    const pattern = new RegExp(`case "${id}"[\\s\\S]{0,120}new FeatureDirectionCommand\\("${direction}", ${delta}\\)`);
-    if (!pattern.test(ribbon)) violations.push(`${id}: feature direction mapping missing ${direction}/${delta}`);
+    const statementPattern = new RegExp(`case "${id}"[\\s\\S]{0,120}new FeatureDirectionCommand\\("${direction}", ${delta}\\)`);
+    const expressionPattern = new RegExp(`"${id}"\\s*=>\\s*new FeatureDirectionCommand\\("${direction}", ${delta}\\)`);
+    if (!statementPattern.test(ribbon) && !expressionPattern.test(ribbon)) violations.push(`${id}: feature direction mapping missing ${direction}/${delta}`);
   }
 }
 

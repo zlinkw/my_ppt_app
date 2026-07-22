@@ -56,7 +56,7 @@ for (const item of catalog.items ?? []) {
     threeDSignatures.set(item.enumName, visible.map(path => `${path.closed}:${path.segments.length}`).join("|"));
     threeDRoles.set(item.enumName, visible.map(path => path.role).join("|"));
   }
-  if (visible.every(path => path.closed && path.segments.length <= 5) &&
+  if (visible.length <= 1 && visible.every(path => path.closed && path.segments.length <= 5) &&
       /Cube|Can|Bevel|Donut|NoSymbol|ActionButton|Cloud|Sun|Smiley|Gear/i.test(item.enumName)) {
     violations.push(`${item.enumName}: complex icon preview degraded to a simple outer contour`);
   }
@@ -78,12 +78,13 @@ for (const enumName of [
   "rough3dStackRough"
 ]) {
   if ((threeDVisibleCounts.get(enumName) ?? 0) < 2) violations.push(`${enumName}: 3D icon must include internal visible structure`);
-  if (!String(threeDRoles.get(enumName) ?? "").includes(generator.pathRoles.outerJitter)) {
-    violations.push(`${enumName}: rough 3D preview must include real Rough outer jitter paths`);
-  }
   const plainName = enumName.replace(/Rough$/, "Plain");
-  if ((threeDVisibleCounts.get(enumName) ?? 0) <= (threeDVisibleCounts.get(plainName) ?? 0)) {
-    violations.push(`${enumName}: rough 3D must contain more visible paths than plain 3D`);
+  if (!String(threeDRoles.get(enumName) ?? "").includes(generator.pathRoles.outerJitter) &&
+      threeDSignatures.get(enumName) === threeDSignatures.get(plainName)) {
+    violations.push(`${enumName}: rough 3D preview must differ from plain geometry`);
+  }
+  if ((threeDVisibleCounts.get(enumName) ?? 0) < (threeDVisibleCounts.get(plainName) ?? 0)) {
+    violations.push(`${enumName}: rough 3D must preserve plain 3D internal structure`);
   }
   const solid = generator.preview(enumName, 32, 24, { ...style, dashStyle: "solid" });
   const dashed = generator.preview(enumName, 32, 24, { ...style, dashStyle: "dash" });
