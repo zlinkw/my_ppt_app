@@ -105,6 +105,7 @@
 - B529 验证：完整 `npm.cmd test`、UI 构建、79 个 Ribbon 图标验证、签名 Release 构建和三种安装产物生成通过；成功产物位于 `releases/RoughPptAddin-0.1.762-e045e31e-r2/`，版本 `0.1.762`、提交 `e045e31e70b7`、`dirty=false`。首次 WiX 下载不完整的失败目录已列入人工清理候选。
 - B529 提交记录：`e045e31 feat: add research chart filtering and SVG export`。
 - B530 验证：两个重复连接按钮、容器、运行时状态接线和专属样式已从源码直接删除；上方科研绘图与论文图像入口保留。相关 JS 和验证脚本语法、静态残留断言、`git diff --check` 通过；按新一轮五批次协议未运行统一测试、UI 构建或打包。
+- B530 提交记录：`62a9af6 fix: remove duplicate connection buttons`。
 
 ## 近期锚点
 
