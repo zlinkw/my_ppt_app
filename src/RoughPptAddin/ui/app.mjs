@@ -1606,8 +1606,7 @@ function activateSectionNav(key) {
     return;
   }
   if (key === "charts") {
-    focusPanel("charts", false);
-    focusLater("#zlkChartImport");
+    openResearchChartStudio();
     return;
   }
   if (key === "zoteroImages") {
@@ -1675,8 +1674,7 @@ function activateStarterAction(action) {
     return;
   }
   if (action === "charts") {
-    focusPanel("charts");
-    window.setTimeout(() => els.zlkChartImport?.focus({ preventScroll: true }), 260);
+    openResearchChartStudio();
     return;
   }
   if (action === "library") {
@@ -3774,6 +3772,15 @@ function initUsageGuideNavigation() {
   window.addEventListener("pageshow", restoreScroll);
   window.addEventListener("popstate", restoreScroll);
   restoreScroll();
+}
+
+function openResearchChartStudio() {
+  if (!describeHostConnection()) {
+    setStatus("当前页面未连接 PowerPoint，无法打开科研绘图工作区。", true);
+    return;
+  }
+  setStatus("正在打开独立科研绘图工作区。");
+  postHost({ type: "openResearchChartStudio" });
 }
 
 function samplePointsForPreset(preset, dataset = null) {

@@ -324,6 +324,10 @@ public sealed class RoughTaskPaneControl : UserControl
 		case "openUsageGuide":
 			controller.ShowUsageGuide();
 			break;
+		case "openResearchChartStudio":
+			controller.ShowResearchChartStudio();
+			PostStatus("已打开独立科研绘图工作区。", isError: false);
+			break;
 		case "getShapeIcons":
 			SendShapeIcons();
 			break;

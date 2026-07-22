@@ -87,6 +87,8 @@ namespace RoughPptAddin.Services
     	private RoughTaskPaneControl taskPaneControl;
     
     	private UsageGuideWindow usageGuideWindow;
+
+    	private ResearchChartStudioWindow researchChartStudioWindow;
     
     	public OfficeCompatibilityInfo Compatibility { get; }
     
@@ -1354,6 +1356,26 @@ namespace RoughPptAddin.Services
     	{
 		return new List<string> { "zlk_cluster\\results\\statistics.json", "paper\\tables", "zlk_cluster\\results\\summary.json", "zlk_cluster\\results\\result_registry.json", "zlk_cluster\\results\\quality_gate.json", "zlk_cluster\\results\\case_level_index.json", "zlk_cluster\\datasets\\profile.json", "experiments\\results", "work_dirs" };
     	}
+
+    	public void ShowResearchChartStudio()
+    	{
+    		try
+    		{
+    			if (researchChartStudioWindow == null || researchChartStudioWindow.IsDisposed)
+    			{
+    				researchChartStudioWindow = new ResearchChartStudioWindow(GetPowerPointWindowHandle, delegate(string message, bool isError)
+    				{
+    					NotifyUi(message, isError);
+    				}, InsertZlkChart);
+    			}
+    			researchChartStudioWindow.ShowAlongsidePowerPoint();
+    		}
+    		catch (Exception ex)
+    		{
+    			AddInLogger.Error("打开科研绘图工作区失败。", ex);
+    			NotifyUi("打开科研绘图工作区失败：" + ex.Message, isError: true);
+    		}
+    	}
     
     	private static string ToRelativeDisplayPath(string root, string path)
     	{
@@ -1645,6 +1667,7 @@ namespace RoughPptAddin.Services
     		application.WindowSelectionChange -= OnWindowSelectionChange;
     		regenerator?.Dispose();
     		usageGuideWindow?.Dispose();
+    		researchChartStudioWindow?.Dispose();
     		taskPaneControl?.Dispose();
     		dispatcher.Dispose();
     	}
