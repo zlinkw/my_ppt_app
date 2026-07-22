@@ -94,7 +94,7 @@
 7. PKG002（已完成，实现提交 `1c1ac8b`）：用户安装 MSI 时出现 “A newer Rough PPT Add-in is already installed.”。根因是本机已安装 `0.1.695` 高于恢复仓按当前提交数生成的 `0.1.22`。本批使用持久化 `installerVersionBaseline=0.1.695` 加当前提交数恢复版本单调性，并由共享解析器覆盖两条打包链路；UpgradeCode、覆盖安装、per-user 范围、三种入口及现有插件数据保持不变。旧版到恢复后首个构建的回归合同、完整 `npm.cmd test`、`npm.cmd run build:ui`、Release、Ribbon、MSI ProductVersion `0.1.719` 和三种产物 SHA256 均通过；最终产物位于 `releases/RoughPptAddin-0.1.719-1c1ac8b2/`，未自动安装或关闭 PowerPoint。
 8. B504（统一验证通过）：简洁模式连接状态片恢复三列紧凑布局，窄窗改为两列加完整模式整行，文字固定横排并省略过长内容；敏感性曲线预览改为单条有边界留白的 SVG polyline，节点与折线共享坐标，避免断裂和越界。首次浏览器验证暴露连接文字容器仍受全局按钮规则压缩、简洁模式测试状态使隐藏菜单无法获取焦点；现显式固定状态点/文字网格列，并让菜单合同先恢复完整模式。完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过。
 9. PKG003（已完成，发布提交 `d939c60`）：两处 UI 修复通过完整 `npm.cmd test`、`npm.cmd run build:ui`、独立 Restore、签名 Release 编译和 79 个 Ribbon 功能图标运行时验证。发布链路已修正内置构建信息，ZIP 中记录版本 `0.1.724`、提交 `d939c602d403`、`master`、`dirty=false`；MSI ProductVersion 与清单均为 `0.1.724`。ZIP、MSI、EXE 的长度和 SHA256 已逐项复核，最终产物位于 `releases/RoughPptAddin-0.1.724-d939c602/`。未自动安装，也未关闭或重启 PowerPoint/VS Code。
-10. PKG004（运行中）：用户手动重复安装 `0.1.724` 时，MSI 的 `RunInstall` 自定义动作返回 `1722/1603`；Windows Installer 仅保留通用错误，未持久化 PowerShell 子进程的具体失败信息。范围限定为 MSI/EXE 安装入口、持久日志、PowerPoint 运行状态提示、同版本重复安装合同和发布验证；保护现有 per-user UpgradeCode、插件数据、VSTO 注册与三种分发入口，不自动安装、不关闭或重启 PowerPoint/VS Code。回归检查为安装器静态合同、`npm.cmd test`、`npm.cmd run build:ui`、签名 Release、Ribbon 图标和 ZIP/MSI/EXE 清单校验。
+10. PKG004（已完成，实现提交 `8e0c211`）：用户手动重复安装 `0.1.724` 时，PowerPoint 运行状态被 MSI 隐藏为 `RunInstall` 的 `1722/1603`。安装器现将完整日志持久化到 `%LOCALAPPDATA%\RoughPptAddin\logs`，同步记录注册表诊断并显示具体中文失败原因；前置组件子进程失败会立即停止，安装器不再自动关闭 PowerPoint。安装事务与 Ribbon 验证的临时删除改走回收站。完整 `npm.cmd test`、`npm.cmd run build:ui`、签名 Release 编译和 79 个 Ribbon 功能图标验证通过；MSI 保持 per-user、固定 UpgradeCode、同版本覆盖和 `RunInstall` 执行合同。`0.1.726` 的 ZIP、MSI、EXE 长度及 SHA256 与清单一致，内置构建信息为 `8e0c211561d3`、`master`、`dirty=false`，最终产物位于 `releases/RoughPptAddin-0.1.726-8e0c2115/`。未自动安装，也未关闭或重启 PowerPoint/VS Code。
 
 ### 当前 SimpleExperiment 连接批次
 
@@ -111,7 +111,7 @@
 - 范围：`scripts/install.ps1`、本体事务测试接线、安装合同测试和部署说明。
 - 排除：不修改插件业务功能，不自动安装，不关闭或重启 PowerPoint/VS Code，不清理用户数据或旧发布目录。
 - 保护区：当前用户安装范围、UpgradeCode、覆盖安装、ZIP/MSI/EXE 三入口、VSTO/证书/前置环境合同。
-- 当前状态：运行中；根因确认是 PowerPoint 运行时安全门禁被 MSI 隐藏为 `1722/1603`。安装器现保留持久日志、注册表诊断和中文失败窗口，前置组件子进程失败会立即停止，且不再自动关闭 PowerPoint；安装事务与 Ribbon 验证的临时删除改走回收站。首次统一验证在部署文档旧措辞合同处失败，修正后完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过；待提交同步和重新打包。
+- 当前状态：已完成。首次统一验证在部署文档旧措辞合同处失败，修正后完整测试、UI 构建、签名 Release、Ribbon 运行时图标、安装包内部合同和三种产物清单校验均通过；发布目录为 `releases/RoughPptAddin-0.1.726-8e0c2115/`，等待用户关闭 PowerPoint 后手动安装验证。
 
 ## 近期锚点
 
