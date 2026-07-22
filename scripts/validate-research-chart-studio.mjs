@@ -60,7 +60,7 @@ for (const snippet of [
 ]) {
   if (!html.includes(snippet)) throw new Error(`科研绘图工作区 HTML 合同缺少：${snippet}`);
 }
-if ((html.match(/data-chart-type=/g) || []).length !== 12) throw new Error("科研绘图工作区必须保留 12 种图表入口。");
+if ((html.match(/data-chart-type=/g) || []).length !== 17) throw new Error("科研绘图工作区必须保留 17 种图表入口。");
 if (/\b(?:src|href)\s*=\s*["']https?:\/\//i.test(html)) throw new Error("科研绘图工作区运行时不得依赖外部 CDN。");
 if (/gradient\s*\(/i.test(css)) throw new Error("科研绘图工作区不得使用渐变。");
 if (/position\s*:\s*(?:fixed|sticky)/i.test(css)) throw new Error("科研绘图工作区不得用 fixed/sticky 遮挡滚动内容。");
@@ -96,8 +96,14 @@ for (const snippet of ["scaleSpec", "axisKeyElements", "domainMin", "domainMax",
 for (const snippet of ["errorBandLayer", "annotationLayers", "annotationDatum", 'type: "rule"', 'type: "rect"', 'type: "text"', "strokeDash", "showErrorBand"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图论文标注合同缺少：${snippet}`);
 }
-for (const chartType of ["bar", "groupedBar", "stackedBar", "horizontalBar", "line", "area", "scatter", "bubble", "histogram", "boxplot", "heatmap", "donut"]) {
+for (const chartType of ["bar", "groupedBar", "stackedBar", "horizontalBar", "line", "step", "area", "scatter", "bubble", "histogram", "boxplot", "density", "strip", "regression", "heatmap", "donut", "polar"]) {
   if (!app.includes(`${chartType}:`)) throw new Error(`科研绘图脚本缺少图表类型：${chartType}`);
+}
+for (const snippet of ['id="facetField"', 'id="facetColumns"']) {
+  if (!html.includes(snippet)) throw new Error(`科研绘图分面合同缺少：${snippet}`);
+}
+for (const snippet of ["density:", "regression:", 'state.chartType === "step" ? "step-after"', "facet:", "columns: facetColumns", "resolve:"]) {
+  if (!app.includes(snippet)) throw new Error(`科研绘图扩展图形合同缺少：${snippet}`);
 }
 if (/toDataURL|toBlob\(|getImageData|drawImage|renderer\s*:\s*["']canvas/i.test(app)) throw new Error("科研绘图工作区不得捕获 Canvas 或生成位图。");
 if ((app.match(/openWebsite\(/g) || []).length !== 2 || !app.includes('button.addEventListener("click", () => openWebsite(button.dataset.siteId))')) {

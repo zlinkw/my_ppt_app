@@ -53,13 +53,18 @@ Ours,0.887,0.015,B</textarea>
           <button type="button" data-chart-type="stackedBar" role="radio" aria-checked="false" title="按颜色字段堆叠比较数值">堆叠柱状</button>
           <button type="button" data-chart-type="horizontalBar" role="radio" aria-checked="false" title="横向显示分类柱状图">横向柱状</button>
           <button type="button" data-chart-type="line" role="radio" aria-checked="false" title="显示趋势与多系列折线">折线图</button>
+          <button type="button" data-chart-type="step" role="radio" aria-checked="false" title="显示离散阶段变化或累计过程">阶梯图</button>
           <button type="button" data-chart-type="area" role="radio" aria-checked="false" title="显示趋势和累计面积">面积图</button>
           <button type="button" data-chart-type="scatter" role="radio" aria-checked="false" title="显示两个数值字段的关系">散点图</button>
           <button type="button" data-chart-type="bubble" role="radio" aria-checked="false" title="用点大小显示第三个数值字段">气泡图</button>
           <button type="button" data-chart-type="histogram" role="radio" aria-checked="false" title="显示数值字段的分布">直方图</button>
           <button type="button" data-chart-type="boxplot" role="radio" aria-checked="false" title="显示分组分布与异常值">箱线图</button>
+          <button type="button" data-chart-type="density" role="radio" aria-checked="false" title="使用核密度估计显示连续变量分布">密度图</button>
+          <button type="button" data-chart-type="strip" role="radio" aria-checked="false" title="显示每个分组中的全部观测点">条带图</button>
+          <button type="button" data-chart-type="regression" role="radio" aria-checked="false" title="显示散点和线性回归拟合趋势">回归图</button>
           <button type="button" data-chart-type="heatmap" role="radio" aria-checked="false" title="用颜色显示二维分类或数值矩阵">热力图</button>
           <button type="button" data-chart-type="donut" role="radio" aria-checked="false" title="显示分类占比">环形图</button>
+          <button type="button" data-chart-type="polar" role="radio" aria-checked="false" title="使用极坐标半径比较分类数值">极坐标图</button>
         </div>
       </section>
 
@@ -74,6 +79,8 @@ Ours,0.887,0.015,B</textarea>
           <label><span>误差上限</span><select id="errorHighField" title="误差线上限字段"><option value="">不使用</option></select></label>
           <label><span>聚合</span><select id="aggregateMode" title="对重复分类进行聚合"><option value="">不聚合</option><option value="mean">平均值</option><option value="sum">求和</option><option value="median">中位数</option><option value="min">最小值</option><option value="max">最大值</option><option value="count">计数</option></select></label>
           <label><span>排序</span><select id="sortMode" title="控制分类和数值排序"><option value="none">原始顺序</option><option value="ascending">升序</option><option value="descending">降序</option></select></label>
+          <label><span>分面字段</span><select id="facetField" title="按指定字段拆分为多个共享样式的小图"><option value="">不分面</option></select></label>
+          <label><span>每行分面数</span><input id="facetColumns" type="number" min="1" max="6" step="1" value="2" title="设置每行排列的小图数量"></label>
         </div>
       </section>
     </aside>

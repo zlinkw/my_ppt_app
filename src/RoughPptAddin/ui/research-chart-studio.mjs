@@ -11,13 +11,18 @@ const CHART_LABELS = {
   stackedBar: "堆叠柱状图",
   horizontalBar: "横向柱状图",
   line: "折线图",
+  step: "阶梯图",
   area: "面积图",
   scatter: "散点图",
   bubble: "气泡图",
   histogram: "直方图",
   boxplot: "箱线图",
+  density: "密度图",
+  strip: "条带图",
+  regression: "回归图",
   heatmap: "热力图",
-  donut: "环形图"
+  donut: "环形图",
+  polar: "极坐标图"
 };
 
 const PALETTES = {
@@ -58,6 +63,7 @@ const STYLE_DEFAULTS = {
   annotationY: "",
   annotationColor: "#b42318",
   showErrorBand: false,
+  facetColumns: "2",
   chartWidth: "760",
   chartHeight: "480",
   fontSize: "13",
@@ -97,6 +103,8 @@ const els = {
   errorHighField: byId("errorHighField"),
   aggregateMode: byId("aggregateMode"),
   sortMode: byId("sortMode"),
+  facetField: byId("facetField"),
+  facetColumns: byId("facetColumns"),
   chartTitle: byId("chartTitle"),
   xAxisTitle: byId("xAxisTitle"),
   yAxisTitle: byId("yAxisTitle"),
@@ -272,6 +280,7 @@ function updateFieldOptions() {
   fillFieldSelect(els.sizeField, state.fields, defaults.size, true, preserveCurrent);
   fillFieldSelect(els.errorLowField, state.fields, "", true, preserveCurrent);
   fillFieldSelect(els.errorHighField, state.fields, "", true, preserveCurrent);
+  fillFieldSelect(els.facetField, state.fields, "", true, preserveCurrent);
   state.fieldsInitialized = true;
 }
 
@@ -477,11 +486,13 @@ function buildSpec() {
     layers = [{ mark: mark("bar", { cornerRadiusTopRight: 2, cornerRadiusBottomRight: 2 }), encoding }];
     const labels = labelLayer(encoding, "horizontal");
     if (labels) layers.push(labels);
-  } else if (state.chartType === "line" || state.chartType === "area") {
+  } else if (state.chartType === "line" || state.chartType === "step" || state.chartType === "area") {
     const encoding = addColor({ x, y }, colorField);
     const type = state.chartType === "line" ? "line" : "area";
     const band = errorBandLayer(encoding);
-    layers = [...(band ? [band] : []), { mark: mark(type, { strokeWidth: lineWidth, point: state.chartType === "line" ? { size: pointSize, filled: true } : false, interpolate: els.smoothLine.checked ? "monotone" : "linear" }), encoding }];
+    const lineType = state.chartType === "step" ? "line" : type;
+    const interpolation = state.chartType === "step" ? "step-after" : (els.smoothLine.checked ? "monotone" : "linear");
+    layers = [...(band ? [band] : []), { mark: mark(lineType, { strokeWidth: lineWidth, point: state.chartType === "line" ? { size: pointSize, filled: true } : false, interpolate: interpolation }), encoding }];
     const errors = errorLayer(encoding);
     const labels = labelLayer(encoding);
     if (errors) layers.push(errors);
@@ -502,6 +513,33 @@ function buildSpec() {
     layers = [{ mark: mark("bar"), encoding }];
   } else if (state.chartType === "boxplot") {
     layers = [{ mark: mark("boxplot", { extent: 1.5, size: Math.max(12, Math.sqrt(pointSize) * 3) }), encoding: addColor({ x, y: { field: yField, type: "quantitative", title: els.yAxisTitle.value || null, axis: axis(els.yAxisTitle.value, true, "y"), scale: scaleSpec("y", false) } }, colorField) }];
+  } else if (state.chartType === "density") {
+    const numericField = fieldType(xField) === "quantitative" ? xField : yField;
+    const densityField = `${numericField}_density`;
+    const encoding = addColor({
+      x: { field: numericField, type: "quantitative", title: els.xAxisTitle.value || numericField, axis: axis(els.xAxisTitle.value || numericField, true, "x"), scale: scaleSpec("x", false) },
+      y: { field: densityField, type: "quantitative", title: "密度", axis: axis("密度", true, "y"), scale: scaleSpec("y", true) }
+    }, colorField);
+    layers = [{
+      transform: [{ density: numericField, ...(colorField ? { groupby: [colorField] } : {}), as: [numericField, densityField] }],
+      mark: mark("area", { opacity: 0.28, line: { strokeWidth: lineWidth } }),
+      encoding
+    }];
+  } else if (state.chartType === "strip") {
+    layers = [{
+      mark: mark("point", { filled: true, size: pointSize, opacity: 0.66, stroke: "#ffffff", strokeWidth: 0.5 }),
+      encoding: addColor({ x, y: { field: yField, type: "quantitative", title: els.yAxisTitle.value || null, axis: axis(els.yAxisTitle.value, true, "y"), scale: scaleSpec("y", false) } }, colorField)
+    }];
+  } else if (state.chartType === "regression") {
+    if (fieldType(xField) !== "quantitative") throw new Error("回归图的 X 轴必须选择数值字段。");
+    const encoding = addColor({
+      x: { field: xField, type: "quantitative", title: els.xAxisTitle.value || null, axis: axis(els.xAxisTitle.value, true, "x"), scale: scaleSpec("x", false) },
+      y: { field: yField, type: "quantitative", title: els.yAxisTitle.value || null, axis: axis(els.yAxisTitle.value, true, "y"), scale: scaleSpec("y", false) }
+    }, colorField);
+    layers = [
+      { mark: mark("point", { filled: true, size: pointSize, opacity: 0.7 }), encoding },
+      { transform: [{ regression: yField, on: xField, ...(colorField ? { groupby: [colorField] } : {}) }], mark: mark("line", { strokeWidth: lineWidth, opacity: 1 }), encoding }
+    ];
   } else if (state.chartType === "heatmap") {
     const yCategory = colorField || xField;
     layers = [{
@@ -520,21 +558,32 @@ function buildSpec() {
     };
     layers = [{ mark: mark("arc", { innerRadius: 72, stroke: els.backgroundColor.value, strokeWidth: 1 }), encoding }];
     if (els.showLabels.checked) layers.push({ mark: mark("text", { radius: 118, color: els.textColor.value, opacity: 1 }), encoding: { theta: encoding.theta, text: { field: xField, type: "nominal" } } });
+  } else if (state.chartType === "polar") {
+    layers = [{
+      mark: mark("arc", { innerRadius: 16, stroke: els.backgroundColor.value, strokeWidth: 1 }),
+      encoding: {
+        theta: { field: xField, type: fieldType(xField), sort: sortValue() },
+        radius: { field: yField, type: "quantitative", scale: { type: "sqrt", zero: true } },
+        color: colorEncoding(colorField || xField),
+        tooltip: [{ field: xField, type: fieldType(xField) }, { field: yField, type: "quantitative" }]
+      }
+    }];
   } else {
     throw new Error("当前图表类型不受支持。");
   }
 
-  if (state.chartType !== "donut") layers.push(...annotationLayers(xField));
+  if (!["density", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(xField));
 
-  return {
+  const chartWidth = numericValue(els.chartWidth, 760, 360, 1600);
+  const chartHeight = numericValue(els.chartHeight, 480, 260, 1200);
+  const facetField = els.facetField.value;
+  const facetColumns = Math.round(numericValue(els.facetColumns, 2, 1, 6));
+  const common = {
     $schema: "https://vega.github.io/schema/vega-lite/v6.json",
     background: els.backgroundColor.value,
-    width: numericValue(els.chartWidth, 760, 360, 1600),
-    height: numericValue(els.chartHeight, 480, 260, 1200),
     padding: 18,
     title: els.chartTitle.value ? { text: els.chartTitle.value, color: els.textColor.value, fontSize: numericValue(els.fontSize, 13, 8, 28) + 3, anchor: "middle" } : null,
     data: { values: state.rows },
-    layer: layers,
     config: {
       font: "Segoe UI, Microsoft YaHei",
       view: { stroke: null },
@@ -542,6 +591,23 @@ function buildSpec() {
       legend: { labelColor: els.textColor.value, titleColor: els.textColor.value, labelFontSize: numericValue(els.fontSize, 13, 8, 28) },
       text: { font: "Segoe UI, Microsoft YaHei" }
     }
+  };
+
+  if (facetField) {
+    return {
+      ...common,
+      facet: { field: facetField, type: fieldType(facetField), header: { title: null, labelColor: els.textColor.value } },
+      columns: facetColumns,
+      spec: { width: Math.max(180, Math.floor(chartWidth / facetColumns) - 46), height: chartHeight, layer: layers },
+      resolve: { scale: { y: "shared" } }
+    };
+  }
+
+  return {
+    ...common,
+    width: chartWidth,
+    height: chartHeight,
+    layer: layers,
   };
 }
 
@@ -654,6 +720,7 @@ function resetStyles() {
     if (typeof value === "boolean") element.checked = value;
     else element.value = value;
   }
+  els.facetField.value = "";
   setPalette("simple");
 }
 
@@ -707,10 +774,10 @@ function bindEvents() {
   els.chartTypeGrid.querySelectorAll("[data-chart-type]").forEach(button => button.addEventListener("click", () => setChartType(button.dataset.chartType)));
   els.paletteList.querySelectorAll("[data-palette]").forEach(button => button.addEventListener("click", () => setPalette(button.dataset.palette)));
 
-  for (const element of [els.xField, els.yField, els.colorField, els.sizeField, els.errorLowField, els.errorHighField, els.aggregateMode, els.sortMode, els.xScaleType, els.yScaleType, els.xTickFormat, els.yTickFormat, els.xReverse, els.yReverse, els.showErrorBand, els.showLegend, els.showGrid, els.includeZero, els.showLabels, els.smoothLine]) {
+  for (const element of [els.xField, els.yField, els.colorField, els.sizeField, els.errorLowField, els.errorHighField, els.aggregateMode, els.sortMode, els.facetField, els.xScaleType, els.yScaleType, els.xTickFormat, els.yTickFormat, els.xReverse, els.yReverse, els.showErrorBand, els.showLegend, els.showGrid, els.includeZero, els.showLabels, els.smoothLine]) {
     element.addEventListener("change", () => scheduleRender(0));
   }
-  for (const element of [els.chartTitle, els.xAxisTitle, els.yAxisTitle, els.xDomainMin, els.xDomainMax, els.yDomainMin, els.yDomainMax, els.referenceX, els.referenceY, els.referenceXMin, els.referenceXMax, els.referenceYMin, els.referenceYMax, els.annotationText, els.annotationX, els.annotationY, els.annotationColor, els.chartWidth, els.chartHeight, els.fontSize, els.lineWidth, els.markSize, els.markOpacity, els.backgroundColor, els.textColor, els.axisColor]) {
+  for (const element of [els.chartTitle, els.xAxisTitle, els.yAxisTitle, els.xDomainMin, els.xDomainMax, els.yDomainMin, els.yDomainMax, els.referenceX, els.referenceY, els.referenceXMin, els.referenceXMax, els.referenceYMin, els.referenceYMax, els.annotationText, els.annotationX, els.annotationY, els.annotationColor, els.facetColumns, els.chartWidth, els.chartHeight, els.fontSize, els.lineWidth, els.markSize, els.markOpacity, els.backgroundColor, els.textColor, els.axisColor]) {
     element.addEventListener("input", () => scheduleRender());
   }
   els.resetStyleButton.addEventListener("click", resetStyles);
