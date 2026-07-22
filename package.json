@@ -12,7 +12,10 @@
     "package": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-release-preserving.ps1"
   },
   "dependencies": {
-    "roughjs": "^4.6.6"
+    "roughjs": "^4.6.6",
+    "vega": "6.3.1",
+    "vega-embed": "7.1.0",
+    "vega-lite": "6.4.3"
   },
   "devDependencies": {
     "jsdom": "^26.1.0"
