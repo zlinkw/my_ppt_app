@@ -32,6 +32,8 @@ const CHART_LABELS = {
   survival: "Kaplan–Meier 生存曲线",
   cumulativeHazard: "累计风险曲线",
   heatmap: "热力图",
+  correlationMatrix: "相关矩阵",
+  parallelCoordinates: "并行坐标图",
   donut: "环形图",
   polar: "极坐标图"
 };
@@ -40,7 +42,7 @@ const CHART_CATEGORIES = {
   bar: "comparison", groupedBar: "comparison", stackedBar: "comparison", horizontalBar: "comparison", donut: "comparison", polar: "comparison",
   line: "trend", step: "trend", area: "trend", regression: "trend",
   histogram: "distribution", boxplot: "distribution", density: "distribution", violin: "distribution", ecdf: "distribution", strip: "distribution",
-  scatter: "multivariate", bubble: "multivariate", heatmap: "multivariate",
+  scatter: "multivariate", bubble: "multivariate", heatmap: "multivariate", correlationMatrix: "multivariate", parallelCoordinates: "multivariate",
   roc: "evaluation", precisionRecall: "evaluation", calibration: "evaluation",
   blandAltman: "agreement", forest: "agreement", volcano: "agreement", funnel: "agreement",
   survival: "survival", cumulativeHazard: "survival"
@@ -472,6 +474,90 @@ function buildKaplanMeierRows(timeField, statusField, groupField, facetField) {
   return output;
 }
 
+function quantitativeFields(excluded = []) {
+  return state.fields.filter(field => state.fieldTypes[field] === "quantitative" && !excluded.includes(field));
+}
+
+function groupRowsByFacet(facetField) {
+  if (!facetField) return [{ facet: null, rows: state.rows }];
+  const groups = new Map();
+  for (const row of state.rows) {
+    const facet = row[facetField];
+    const key = JSON.stringify(facet);
+    if (!groups.has(key)) groups.set(key, { facet, rows: [] });
+    groups.get(key).rows.push(row);
+  }
+  return [...groups.values()];
+}
+
+function pearsonCorrelation(rows, xField, yField) {
+  const pairs = rows.map(row => [Number(row[xField]), Number(row[yField])]).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  if (pairs.length < 2) return null;
+  const meanX = pairs.reduce((sum, [x]) => sum + x, 0) / pairs.length;
+  const meanY = pairs.reduce((sum, [, y]) => sum + y, 0) / pairs.length;
+  let covariance = 0;
+  let varianceX = 0;
+  let varianceY = 0;
+  for (const [x, y] of pairs) {
+    const dx = x - meanX;
+    const dy = y - meanY;
+    covariance += dx * dy;
+    varianceX += dx * dx;
+    varianceY += dy * dy;
+  }
+  const denominator = Math.sqrt(varianceX * varianceY);
+  return denominator > 0 ? Math.max(-1, Math.min(1, covariance / denominator)) : null;
+}
+
+function buildCorrelationRows(facetField) {
+  const fields = quantitativeFields(facetField ? [facetField] : []);
+  if (fields.length < 2) throw new Error("相关矩阵至少需要两个数值字段。");
+  const output = [];
+  for (const group of groupRowsByFacet(facetField)) {
+    for (const xField of fields) {
+      for (const yField of fields) {
+        const correlation = xField === yField ? 1 : pearsonCorrelation(group.rows, xField, yField);
+        output.push({
+          ...(facetField ? { [facetField]: group.facet } : {}),
+          __correlationX: xField,
+          __correlationY: yField,
+          __correlation: correlation,
+          __correlationLabel: correlation === null ? "-" : correlation.toFixed(2)
+        });
+      }
+    }
+  }
+  return output;
+}
+
+function buildParallelCoordinateRows(identifierField, colorField, facetField) {
+  const fields = quantitativeFields(facetField ? [facetField] : []);
+  if (fields.length < 3) throw new Error("并行坐标至少需要三个数值字段。");
+  const extents = Object.fromEntries(fields.map(field => {
+    const values = state.rows.map(row => Number(row[field])).filter(Number.isFinite);
+    return [field, { min: Math.min(...values), max: Math.max(...values) }];
+  }));
+  const output = [];
+  state.rows.forEach((row, rowIndex) => {
+    for (const field of fields) {
+      const value = Number(row[field]);
+      if (!Number.isFinite(value)) continue;
+      const extent = extents[field];
+      const normalized = extent.max > extent.min ? (value - extent.min) / (extent.max - extent.min) : 0.5;
+      output.push({
+        ...(facetField ? { [facetField]: row[facetField] } : {}),
+        __parallelSeries: `${rowIndex + 1}:${String(row[identifierField] ?? "")}`,
+        __parallelLabel: row[identifierField] ?? `第 ${rowIndex + 1} 行`,
+        __parallelGroup: colorField ? row[colorField] : "全部",
+        __parallelField: field,
+        __parallelValue: value,
+        __parallelNormalized: normalized
+      });
+    }
+  });
+  return output;
+}
+
 function probabilityScale(axisKey) {
   const scale = scaleSpec(axisKey, true);
   if (scale.type === "log") throw new Error("概率曲线包含 0，不能使用对数坐标。");
@@ -896,6 +982,41 @@ function buildSpec() {
         color: { field: yField, type: "quantitative", scale: { scheme: "blues" }, legend: els.showLegend.checked ? { title: yField } : null }
       }
     }];
+  } else if (state.chartType === "correlationMatrix") {
+    chartData = buildCorrelationRows(els.facetField.value);
+    const matrixFields = quantitativeFields(els.facetField.value ? [els.facetField.value] : []);
+    const matrixEncoding = {
+      x: { field: "__correlationX", type: "nominal", title: els.xAxisTitle.value || "数值字段", axis: axis(els.xAxisTitle.value || "数值字段", false), sort: matrixFields },
+      y: { field: "__correlationY", type: "nominal", title: els.yAxisTitle.value || "数值字段", axis: axis(els.yAxisTitle.value || "数值字段", false), sort: matrixFields }
+    };
+    layers = [
+      {
+        mark: mark("rect", { stroke: els.backgroundColor.value, strokeWidth: 1 }),
+        encoding: {
+          ...matrixEncoding,
+          color: { field: "__correlation", type: "quantitative", title: "Pearson r", scale: { domain: [-1, 0, 1], range: [PALETTES[state.palette][1], els.backgroundColor.value, PALETTES[state.palette][0]] }, legend: els.showLegend.checked ? { title: "Pearson r" } : null },
+          tooltip: [{ field: "__correlationX", type: "nominal", title: "字段一" }, { field: "__correlationY", type: "nominal", title: "字段二" }, { field: "__correlation", type: "quantitative", title: "Pearson r", format: ".3f" }]
+        }
+      },
+      { mark: mark("text", { color: els.textColor.value, opacity: 1, fontWeight: 650 }), encoding: { ...matrixEncoding, text: { field: "__correlationLabel", type: "nominal" } } }
+    ];
+  } else if (state.chartType === "parallelCoordinates") {
+    chartData = buildParallelCoordinateRows(xField, colorField, els.facetField.value);
+    const parallelFields = quantitativeFields(els.facetField.value ? [els.facetField.value] : []);
+    const parallelColor = colorField ? {
+      field: "__parallelGroup",
+      type: fieldType(colorField),
+      scale: { range: PALETTES[state.palette] },
+      legend: els.showLegend.checked ? { title: colorField } : null
+    } : null;
+    const parallelEncoding = {
+      x: { field: "__parallelField", type: "nominal", title: els.xAxisTitle.value || "数值字段", axis: axis(els.xAxisTitle.value || "数值字段", false), sort: parallelFields },
+      y: { field: "__parallelNormalized", type: "quantitative", title: els.yAxisTitle.value || "归一化值", axis: axis(els.yAxisTitle.value || "归一化值", true, "y"), scale: { domain: [0, 1], zero: true } },
+      detail: { field: "__parallelSeries", type: "nominal" },
+      tooltip: [{ field: "__parallelLabel", type: "nominal", title: xField }, { field: "__parallelField", type: "nominal", title: "字段" }, { field: "__parallelValue", type: "quantitative", title: "原始值" }, { field: "__parallelNormalized", type: "quantitative", title: "归一化值", format: ".3f" }]
+    };
+    if (parallelColor) parallelEncoding.color = parallelColor;
+    layers = [{ mark: mark("line", { strokeWidth: lineWidth, opacity: Math.min(0.8, numericValue(els.markOpacity, 0.9, 0.1, 1)), point: { filled: true, size: Math.max(16, pointSize * 0.24) } }), encoding: parallelEncoding }];
   } else if (state.chartType === "donut") {
     const encoding = {
       theta: quantitativeEncoding(yField, els.yAxisTitle.value, "y"),
@@ -918,7 +1039,7 @@ function buildSpec() {
     throw new Error("当前图表类型不受支持。");
   }
 
-  if (!["density", "violin", "forest", "blandAltman", "volcano", "funnel", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
+  if (!["density", "violin", "forest", "blandAltman", "volcano", "funnel", "correlationMatrix", "parallelCoordinates", "donut", "polar"].includes(state.chartType)) layers.push(...annotationLayers(annotationXField));
 
   const chartWidth = numericValue(els.chartWidth, 760, 360, 1600);
   const chartHeight = numericValue(els.chartHeight, 480, 260, 1200);
