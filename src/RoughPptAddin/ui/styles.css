@@ -10630,6 +10630,14 @@ body.ux-simple .simple-connection-note > .simple-connection-chip {
   min-height: 38px;
 }
 
+body.ux-simple .simple-connection-chip > .connection-dot {
+  grid-column: 1;
+}
+
+body.ux-simple .simple-connection-chip > .simple-connection-copy {
+  grid-column: 2;
+}
+
 body.ux-simple .simple-connection-copy strong,
 body.ux-simple .simple-connection-copy small {
   writing-mode: horizontal-tb;
@@ -10638,6 +10646,12 @@ body.ux-simple .simple-connection-copy small {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+body.ux-simple .simple-connection-copy {
+  width: 100%;
+  max-width: none;
+  justify-self: stretch;
 }
 
 body.ux-simple .simple-connection-note > #simpleModeFullSwitch {

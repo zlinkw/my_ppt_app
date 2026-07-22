@@ -288,6 +288,7 @@ function commandProbe(keyword) {
 
 function contextMenuProbe() {
   return `(() => {
+    document.querySelector('#uiModeFull')?.click();
     const add = document.querySelector('#quickAddToggle');
     add.click();
     const button = document.querySelector('#quickShapeDropdown .gallery-shape');
