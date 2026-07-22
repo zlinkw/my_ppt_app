@@ -40,6 +40,10 @@ for (const snippet of [
   "vendor/vega-embed.min.js",
   'id="dataEditor"',
   'id="fullscreenButton"',
+  'id="xScaleType"',
+  'id="yScaleType"',
+  'id="xDomainMin"',
+  'id="yDomainMax"',
   'id="chartTypeGrid"',
   'id="websiteList"',
   'id="selectSvgButton"',
@@ -77,6 +81,9 @@ for (const snippet of [
   'event.key === "Escape"'
 ]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图工作区脚本合同缺少：${snippet}`);
+}
+for (const snippet of ["scaleSpec", "axisKeyElements", "domainMin", "domainMax", "xReverse", "yReverse", "xTickFormat", "yTickFormat"]) {
+  if (!app.includes(snippet)) throw new Error(`科研绘图坐标控制合同缺少：${snippet}`);
 }
 for (const chartType of ["bar", "groupedBar", "stackedBar", "horizontalBar", "line", "area", "scatter", "bubble", "histogram", "boxplot", "heatmap", "donut"]) {
   if (!app.includes(`${chartType}:`)) throw new Error(`科研绘图脚本缺少图表类型：${chartType}`);

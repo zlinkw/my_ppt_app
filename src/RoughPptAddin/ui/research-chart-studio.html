@@ -109,6 +109,26 @@ Ours,0.887,0.015,B</textarea>
       </section>
 
       <section class="control-section">
+        <div class="section-heading"><h2>坐标轴高级</h2><span class="section-meta">论文刻度</span></div>
+        <div class="field-grid">
+          <label><span>X 轴尺度</span><select id="xScaleType" title="选择 X 轴的线性、对数、平方根或对称对数尺度"><option value="linear">线性</option><option value="log">对数</option><option value="sqrt">平方根</option><option value="symlog">对称对数</option></select></label>
+          <label><span>Y 轴尺度</span><select id="yScaleType" title="选择 Y 轴的线性、对数、平方根或对称对数尺度"><option value="linear">线性</option><option value="log">对数</option><option value="sqrt">平方根</option><option value="symlog">对称对数</option></select></label>
+          <label><span>X 刻度格式</span><select id="xTickFormat" title="设置 X 轴刻度显示格式"><option value="">自动</option><option value=".2f">两位小数</option><option value=".2%">百分比</option><option value=".2s">科学缩写</option></select></label>
+          <label><span>Y 刻度格式</span><select id="yTickFormat" title="设置 Y 轴刻度显示格式"><option value="">自动</option><option value=".2f">两位小数</option><option value=".2%">百分比</option><option value=".2s">科学缩写</option></select></label>
+        </div>
+        <div class="number-grid">
+          <label><span>X 最小值</span><input id="xDomainMin" type="number" step="any" placeholder="自动" title="设置 X 轴可视范围下限"></label>
+          <label><span>X 最大值</span><input id="xDomainMax" type="number" step="any" placeholder="自动" title="设置 X 轴可视范围上限"></label>
+          <label><span>Y 最小值</span><input id="yDomainMin" type="number" step="any" placeholder="自动" title="设置 Y 轴可视范围下限"></label>
+          <label><span>Y 最大值</span><input id="yDomainMax" type="number" step="any" placeholder="自动" title="设置 Y 轴可视范围上限"></label>
+        </div>
+        <div class="field-grid">
+          <label class="toggle-row"><input id="xReverse" type="checkbox"><span>反转 X 轴</span></label>
+          <label class="toggle-row"><input id="yReverse" type="checkbox"><span>反转 Y 轴</span></label>
+        </div>
+      </section>
+
+      <section class="control-section">
         <div class="section-heading"><h2>画布与标记</h2></div>
         <div class="number-grid">
           <label><span>宽度</span><input id="chartWidth" type="number" min="360" max="1600" step="20" value="760"></label>

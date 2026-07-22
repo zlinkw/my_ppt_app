@@ -37,6 +37,16 @@ const STYLE_DEFAULTS = {
   chartTitle: "模型性能比较",
   xAxisTitle: "方法",
   yAxisTitle: "准确率",
+  xScaleType: "linear",
+  yScaleType: "linear",
+  xTickFormat: "",
+  yTickFormat: "",
+  xDomainMin: "",
+  xDomainMax: "",
+  yDomainMin: "",
+  yDomainMax: "",
+  xReverse: false,
+  yReverse: false,
   chartWidth: "760",
   chartHeight: "480",
   fontSize: "13",
@@ -79,6 +89,16 @@ const els = {
   chartTitle: byId("chartTitle"),
   xAxisTitle: byId("xAxisTitle"),
   yAxisTitle: byId("yAxisTitle"),
+  xScaleType: byId("xScaleType"),
+  yScaleType: byId("yScaleType"),
+  xTickFormat: byId("xTickFormat"),
+  yTickFormat: byId("yTickFormat"),
+  xDomainMin: byId("xDomainMin"),
+  xDomainMax: byId("xDomainMax"),
+  yDomainMin: byId("yDomainMin"),
+  yDomainMax: byId("yDomainMax"),
+  xReverse: byId("xReverse"),
+  yReverse: byId("yReverse"),
   chartWidth: byId("chartWidth"),
   chartHeight: byId("chartHeight"),
   fontSize: byId("fontSize"),
@@ -255,7 +275,32 @@ function sortValue() {
   return els.sortMode.value === "ascending" || els.sortMode.value === "descending" ? els.sortMode.value : null;
 }
 
-function axis(title, numeric = false) {
+function axisKeyElements(axisKey) {
+  return axisKey === "x"
+    ? { scale: els.xScaleType, format: els.xTickFormat, min: els.xDomainMin, max: els.xDomainMax, reverse: els.xReverse }
+    : { scale: els.yScaleType, format: els.yTickFormat, min: els.yDomainMin, max: els.yDomainMax, reverse: els.yReverse };
+}
+
+function optionalNumber(element) {
+  const raw = String(element?.value ?? "").trim();
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
+function scaleSpec(axisKey, zero = false) {
+  const controls = axisKeyElements(axisKey);
+  const scale = { type: controls.scale?.value || "linear", zero: controls.scale?.value === "log" ? false : zero, reverse: Boolean(controls.reverse?.checked) };
+  const min = optionalNumber(controls.min);
+  const max = optionalNumber(controls.max);
+  if (min !== null && max !== null && min >= max) throw new Error(`${axisKey.toUpperCase()} 轴最小值必须小于最大值。`);
+  if (min !== null) scale.domainMin = min;
+  if (max !== null) scale.domainMax = max;
+  return scale;
+}
+
+function axis(title, numeric = false, axisKey = "y") {
+  const controls = axisKeyElements(axisKey);
   return {
     title: title || null,
     grid: numeric && els.showGrid.checked,
@@ -264,14 +309,15 @@ function axis(title, numeric = false) {
     gridColor: "#e5e7eb",
     labelColor: els.textColor.value,
     titleColor: els.textColor.value,
+    ...(numeric && controls.format?.value ? { format: controls.format.value } : {}),
     labelFontSize: numericValue(els.fontSize, 13, 8, 28),
     titleFontSize: numericValue(els.fontSize, 13, 8, 28)
   };
 }
 
-function quantitativeEncoding(field, title = "") {
+function quantitativeEncoding(field, title = "", axisKey = "y") {
   const aggregate = els.aggregateMode.value;
-  const encoding = { type: "quantitative", title: title || null, axis: axis(title, true), scale: { zero: els.includeZero.checked } };
+  const encoding = { type: "quantitative", title: title || null, axis: axis(title, true, axisKey), scale: scaleSpec(axisKey, els.includeZero.checked) };
   if (aggregate === "count") encoding.aggregate = "count";
   else {
     encoding.field = field;
@@ -337,7 +383,7 @@ function buildSpec() {
   const colorField = els.colorField.value;
   if (!xField || !yField) throw new Error("请选择 X 轴和 Y 轴字段。");
   const x = categoricalEncoding(xField, els.xAxisTitle.value);
-  const y = quantitativeEncoding(yField, els.yAxisTitle.value);
+  const y = quantitativeEncoding(yField, els.yAxisTitle.value, "y");
   const lineWidth = numericValue(els.lineWidth, 2, 1, 8);
   const pointSize = numericValue(els.markSize, 90, 10, 500);
   let layers;
@@ -351,7 +397,7 @@ function buildSpec() {
     if (errors) layers.push(errors);
     if (labels) layers.push(labels);
   } else if (state.chartType === "horizontalBar") {
-    const encoding = addColor({ y: categoricalEncoding(xField, els.xAxisTitle.value), x: { ...quantitativeEncoding(yField, els.yAxisTitle.value), axis: axis(els.yAxisTitle.value, true) } }, colorField);
+    const encoding = addColor({ y: categoricalEncoding(xField, els.xAxisTitle.value), x: { ...quantitativeEncoding(yField, els.yAxisTitle.value, "y"), axis: axis(els.yAxisTitle.value, true, "y"), scale: scaleSpec("y", els.includeZero.checked) } }, colorField);
     layers = [{ mark: mark("bar", { cornerRadiusTopRight: 2, cornerRadiusBottomRight: 2 }), encoding }];
     const labels = labelLayer(encoding, "horizontal");
     if (labels) layers.push(labels);
@@ -365,7 +411,7 @@ function buildSpec() {
     if (labels) layers.push(labels);
   } else if (state.chartType === "scatter" || state.chartType === "bubble") {
     const encoding = addColor({
-      x: { field: xField, type: "quantitative", title: els.xAxisTitle.value || null, axis: axis(els.xAxisTitle.value, true), scale: { zero: els.includeZero.checked } },
+      x: { field: xField, type: "quantitative", title: els.xAxisTitle.value || null, axis: axis(els.xAxisTitle.value, true, "x"), scale: scaleSpec("x", els.includeZero.checked) },
       y
     }, colorField);
     if (state.chartType === "bubble" && els.sizeField.value) encoding.size = { field: els.sizeField.value, type: "quantitative", legend: els.showLegend.checked ? { title: els.sizeField.value } : null, scale: { range: [20, pointSize * 3] } };
@@ -373,12 +419,12 @@ function buildSpec() {
   } else if (state.chartType === "histogram") {
     const numericField = fieldType(xField) === "quantitative" ? xField : yField;
     const encoding = addColor({
-      x: { field: numericField, type: "quantitative", bin: true, title: els.xAxisTitle.value || numericField, axis: axis(els.xAxisTitle.value || numericField, false) },
-      y: { aggregate: "count", type: "quantitative", title: "频数", axis: axis("频数", true) }
+      x: { field: numericField, type: "quantitative", bin: true, title: els.xAxisTitle.value || numericField, axis: axis(els.xAxisTitle.value || numericField, true, "x") },
+      y: { aggregate: "count", type: "quantitative", title: "频数", axis: axis("频数", true, "y"), scale: scaleSpec("y", true) }
     }, colorField);
     layers = [{ mark: mark("bar"), encoding }];
   } else if (state.chartType === "boxplot") {
-    layers = [{ mark: mark("boxplot", { extent: 1.5, size: Math.max(12, Math.sqrt(pointSize) * 3) }), encoding: addColor({ x, y: { field: yField, type: "quantitative", title: els.yAxisTitle.value || null, axis: axis(els.yAxisTitle.value, true), scale: { zero: false } } }, colorField) }];
+    layers = [{ mark: mark("boxplot", { extent: 1.5, size: Math.max(12, Math.sqrt(pointSize) * 3) }), encoding: addColor({ x, y: { field: yField, type: "quantitative", title: els.yAxisTitle.value || null, axis: axis(els.yAxisTitle.value, true, "y"), scale: scaleSpec("y", false) } }, colorField) }];
   } else if (state.chartType === "heatmap") {
     const yCategory = colorField || xField;
     layers = [{
@@ -391,7 +437,7 @@ function buildSpec() {
     }];
   } else if (state.chartType === "donut") {
     const encoding = {
-      theta: quantitativeEncoding(yField, els.yAxisTitle.value),
+      theta: quantitativeEncoding(yField, els.yAxisTitle.value, "y"),
       color: colorEncoding(xField),
       tooltip: [{ field: xField, type: fieldType(xField) }, { field: yField, type: "quantitative" }]
     };
@@ -582,10 +628,10 @@ function bindEvents() {
   els.chartTypeGrid.querySelectorAll("[data-chart-type]").forEach(button => button.addEventListener("click", () => setChartType(button.dataset.chartType)));
   els.paletteList.querySelectorAll("[data-palette]").forEach(button => button.addEventListener("click", () => setPalette(button.dataset.palette)));
 
-  for (const element of [els.xField, els.yField, els.colorField, els.sizeField, els.errorLowField, els.errorHighField, els.aggregateMode, els.sortMode, els.showLegend, els.showGrid, els.includeZero, els.showLabels, els.smoothLine]) {
+  for (const element of [els.xField, els.yField, els.colorField, els.sizeField, els.errorLowField, els.errorHighField, els.aggregateMode, els.sortMode, els.xScaleType, els.yScaleType, els.xTickFormat, els.yTickFormat, els.xReverse, els.yReverse, els.showLegend, els.showGrid, els.includeZero, els.showLabels, els.smoothLine]) {
     element.addEventListener("change", () => scheduleRender(0));
   }
-  for (const element of [els.chartTitle, els.xAxisTitle, els.yAxisTitle, els.chartWidth, els.chartHeight, els.fontSize, els.lineWidth, els.markSize, els.markOpacity, els.backgroundColor, els.textColor, els.axisColor]) {
+  for (const element of [els.chartTitle, els.xAxisTitle, els.yAxisTitle, els.xDomainMin, els.xDomainMax, els.yDomainMin, els.yDomainMax, els.chartWidth, els.chartHeight, els.fontSize, els.lineWidth, els.markSize, els.markOpacity, els.backgroundColor, els.textColor, els.axisColor]) {
     element.addEventListener("input", () => scheduleRender());
   }
   els.resetStyleButton.addEventListener("click", resetStyles);
