@@ -43,7 +43,10 @@ if (-not $msbuildPath) {
 }
 
 Write-Host "Building VSTO add-in"
-& $msbuildPath RoughPptAddin.sln /p:Configuration=Release /m
+Invoke-Checked { & $msbuildPath RoughPptAddin.sln /t:Rebuild /p:Configuration=Release /m } "MSBuild Rebuild"
+
+Write-Host "Verifying compiled Ribbon icons"
+Invoke-Checked { powershell -ExecutionPolicy Bypass -File scripts\verify-ribbon-icons.ps1 } "verify-ribbon-icons"
 
 New-Item -ItemType Directory -Force publish | Out-Null
 Copy-Item -Recurse -Force src\RoughPptAddin\bin\Release\* publish\

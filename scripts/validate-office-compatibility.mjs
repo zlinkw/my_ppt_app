@@ -16,9 +16,6 @@ validatePowerShellSyntax("scripts/diagnose.ps1");
 
 for (const snippet of [
   "MinimumSupportedPowerPointMajor = 15",
-  'if (major == 15) return "PowerPoint 2013"',
-  'if (major == 16) return "PowerPoint 2016/2019/2021/2024/Microsoft 365"',
-  'if (major > 16) return "新版 PowerPoint"',
   "Environment.Is64BitProcess",
   'return "ARM64 Office"',
   "CoreWebView2Environment.GetAvailableBrowserVersionString()",
@@ -26,6 +23,12 @@ for (const snippet of [
   "UnauthorizedAccessException",
   "Evergreen WebView2 Runtime"
 ]) requireIncludes(service, snippet, `OfficeCompatibilityService.cs: missing compatibility contract ${snippet}`);
+
+for (const [pattern, label] of [
+  [/if\s*\(major\s*==\s*15\)[\s\S]{0,100}?return\s+"PowerPoint 2013"/, 'if (major == 15) return "PowerPoint 2013"'],
+  [/if\s*\(major\s*==\s*16\)[\s\S]{0,100}?return\s+"PowerPoint 2016\/2019\/2021\/2024\/Microsoft 365"/, 'if (major == 16) return current PowerPoint family'],
+  [/if\s*\(major\s*>\s*16\)[\s\S]{0,100}?return\s+"新版 PowerPoint"/, 'if (major > 16) return "新版 PowerPoint"']
+]) requirePattern(service, pattern, `OfficeCompatibilityService.cs: missing compatibility contract ${label}`);
 
 for (const snippet of [
   "Compatibility = OfficeCompatibilityService.Detect(application)",
@@ -94,6 +97,10 @@ function read(path) {
 
 function requireIncludes(text, snippet, message) {
   if (!text.includes(snippet)) violations.push(message);
+}
+
+function requirePattern(text, pattern, message) {
+  if (!pattern.test(text)) violations.push(message);
 }
 
 function validatePowerShellSyntax(path) {

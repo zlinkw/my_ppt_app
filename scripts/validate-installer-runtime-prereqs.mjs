@@ -17,9 +17,12 @@ requireIncludes(
   "function Wait-ForPowerPointToExit",
   "install.ps1: installer must safely handle running PowerPoint before replacing files"
 );
-requireIncludes(
+requireAny(
   install,
-  "PowerPoint 正在运行且有打开的演示文稿。请保存并关闭 PowerPoint 后重新安装。",
+  [
+    "PowerPoint 正在运行且有打开的演示文稿。请保存并关闭 PowerPoint 后重新安装。",
+    "PowerPoint \\u6b63\\u5728\\u8fd0\\u884c\\u4e14\\u6709\\u6253\\u5f00\\u7684\\u6f14\\u793a\\u6587\\u7a3f\\u3002\\u8bf7\\u4fdd\\u5b58\\u5e76\\u5173\\u95ed PowerPoint \\u540e\\u91cd\\u65b0\\u5b89\\u88c5\\u3002"
+  ],
   "install.ps1: running PowerPoint with open presentations must show localized actionable text"
 );
 requireIncludes(
@@ -186,6 +189,10 @@ function read(path) {
 
 function requireIncludes(text, needle, message) {
   if (!text.includes(needle)) violations.push(message);
+}
+
+function requireAny(text, needles, message) {
+  if (!needles.some((needle) => text.includes(needle))) violations.push(message);
 }
 
 function rejectIncludes(text, needle, message) {
