@@ -27,7 +27,7 @@ powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1
 The first packaging target is a staged publish directory under `publish/`. `scripts\package.ps1` creates a redistributable local bootstrap package at `dist\RoughPptAddin` and `dist\RoughPptAddin.zip`.
 
 `scripts\package-installers.ps1` wraps that package into root-level Windows installers: `RoughPptAddin-Windows11.zip`, `RoughPptAddin-Windows11.msi`, and `RoughPptAddin-Windows11-Setup.exe`. The MSI and EXE extract the same native editable VSTO add-in payload and run `scripts\install.ps1 -SkipBuild -InstallPrereqs`.
-The MSI allows same-version overwrite upgrades, and the EXE/portable installer overwrite the local `%LOCALAPPDATA%\RoughPptAddin\publish` payload after PowerPoint is closed. Rerunning the same MSI repairs and overwrites the local payload instead of leaving the previous files in place.
+The MSI allows same-version overwrite upgrades, and the EXE/portable installer overwrite the local `%LOCALAPPDATA%\RoughPptAddin\publish` payload after PowerPoint is closed. Rerunning the same MSI after closing PowerPoint repairs and overwrites the local payload instead of leaving the previous files in place.
 Packaging derives the MSI `ProductVersion` from the persisted `installerVersionBaseline` plus the current git commit count, then records it as `installerProductVersion` in the installer manifest. The baseline preserves monotonic upgrades after repository recovery, so packages remain newer than already installed historical builds even when the recovered git history is shorter. Packaging also writes SHA256 hashes for the portable zip, MSI, and EXE.
 
 ## Fixed Per-user Installation
@@ -48,6 +48,8 @@ End-user installers only install WebView2 Runtime and VSTO Runtime when missing.
 
 Every portable, MSI, and EXE install first checks desktop PowerPoint, .NET Framework 4.8, WebView2 Runtime, and VSTO Runtime. Missing WebView2 or VSTO components are installed automatically through winget when available. If .NET Framework or PowerPoint is missing, winget is unavailable, or automatic installation fails, the installer opens the matching Microsoft official page and shows a Chinese instruction to complete installation before rerunning Rough setup.
 
+Every install attempt writes a persistent transcript to `%LOCALAPPDATA%\RoughPptAddin\logs\install-*.log` and records the latest status, exit code, log path, and error message under `HKCU\Software\RoughPptAddin\InstallerDiagnostics`. MSI/EXE failures display the concrete Chinese error and log path before Windows Installer reports its final status. The installer never closes PowerPoint automatically; save and close all PowerPoint windows manually, then rerun the same package.
+
 `Uninstall-RoughPptAddin.cmd` removes the PowerPoint add-in registry entry and local installed files.
 
 `Complete-Uninstall-RoughPptAddin.cmd` is the explicit one-click complete removal path. It refuses to run while PowerPoint is open, removes related MSI registration, `%LOCALAPPDATA%\RoughPptAddin`, `%USERPROFILE%\Documents\RoughPptAddin`, `%LOCALAPPDATA%\RoughPptAddinInstaller`, plugin-specific certificates, and bounded Rough temporary directories. This permanently deletes saved materials, thumbnails, palettes, presets, exports, logs, WebView2 state, and automation tokens. It preserves the external Zotero library at `%LOCALAPPDATA%\ZLK\paper-image-library` and shared system WebView2, VSTO, and .NET Framework runtimes.
@@ -58,4 +60,4 @@ Every portable, MSI, and EXE install first checks desktop PowerPoint, .NET Frame
 
 `build.ps1` creates a CurrentUser development ClickOnce code-signing certificate named `CN=RoughPptAddin Dev` when one is missing. Production packaging should replace that certificate with an organization-issued signing cert.
 
-`install.ps1` builds by default, closes an empty PowerPoint instance if needed, refuses to continue while presentations are open, replaces `%LOCALAPPDATA%\RoughPptAddin\publish` with the current `publish/` payload, then launches the local `RoughPptAddin.vsto` through ClickOnce `dfshim.dll`. Save and close open presentations before running it, then reopen PowerPoint and enable the add-in if Office shows a trust prompt. Use `-SkipBuild` only after a successful build.
+`install.ps1` builds by default, refuses to continue while any PowerPoint process is running, replaces `%LOCALAPPDATA%\RoughPptAddin\publish` with the current `publish/` payload, then launches the local `RoughPptAddin.vsto` through ClickOnce `dfshim.dll`. Save and close all PowerPoint windows before running it, then reopen PowerPoint and enable the add-in if Office shows a trust prompt. Use `-SkipBuild` only after a successful build.

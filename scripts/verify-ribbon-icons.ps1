@@ -11,6 +11,23 @@ $assemblyFile = Resolve-Path $AssemblyPath
 
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName stdole
+Add-Type -AssemblyName Microsoft.VisualBasic
+
+function Move-VerifiedTempDirectoryToRecycleBin {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $resolved = [System.IO.Path]::GetFullPath($Path)
+    $tempRoot = [System.IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd("\")
+    if (-not $resolved.StartsWith($tempRoot + "\rough-ribbon-icons-", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to recycle an unexpected Ribbon verification path: $resolved"
+    }
+    Write-Host "Recycle Bin move: $resolved"
+    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory(
+        $resolved,
+        [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs,
+        [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin
+    )
+}
 
 $assembly = [Reflection.Assembly]::LoadFrom($assemblyFile)
 $ribbonType = $assembly.GetType("RoughPptAddin.Ribbon.RoughRibbon", $true)
@@ -118,7 +135,7 @@ try {
 }
 finally {
     if (Test-Path $tempRoot) {
-        Remove-Item -LiteralPath $tempRoot -Recurse -Force
+        Move-VerifiedTempDirectoryToRecycleBin -Path $tempRoot
     }
 }
 

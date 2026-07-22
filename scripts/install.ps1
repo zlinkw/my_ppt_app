@@ -9,6 +9,88 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $root
 
+function U {
+    param([string]$Value)
+    return [regex]::Replace($Value, "\\u([0-9A-Fa-f]{4})", {
+        param($Match)
+        [char][Convert]::ToInt32($Match.Groups[1].Value, 16)
+    })
+}
+
+$script:InstallerLogRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)) "RoughPptAddin\logs"
+$script:InstallerLogPath = Join-Path $script:InstallerLogRoot ("install-{0}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss-fff"))
+$script:InstallerTranscriptStarted = $false
+try {
+    New-Item -ItemType Directory -Path $script:InstallerLogRoot -Force | Out-Null
+    Start-Transcript -LiteralPath $script:InstallerLogPath -Force | Out-Null
+    $script:InstallerTranscriptStarted = $true
+    Write-Host "Rough PPT Add-in installer source: $root"
+}
+catch {
+    $script:InstallerLogPath = ""
+}
+
+function Set-InstallerDiagnosticRecord {
+    param(
+        [Parameter(Mandatory = $true)][string]$Status,
+        [Parameter(Mandatory = $true)][int]$ExitCode,
+        [string]$ErrorMessage = ""
+    )
+
+    try {
+        $diagnosticKey = "HKCU:\Software\RoughPptAddin\InstallerDiagnostics"
+        New-Item -Path $diagnosticKey -Force | Out-Null
+        New-ItemProperty -Path $diagnosticKey -Name "LastStatus" -Value $Status -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $diagnosticKey -Name "LastExitCode" -Value $ExitCode -PropertyType DWord -Force | Out-Null
+        New-ItemProperty -Path $diagnosticKey -Name "LastAttemptUtc" -Value ([DateTime]::UtcNow.ToString("o")) -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $diagnosticKey -Name "LastLogPath" -Value $script:InstallerLogPath -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $diagnosticKey -Name "LastErrorMessage" -Value $ErrorMessage -PropertyType String -Force | Out-Null
+    }
+    catch {
+    }
+}
+
+function Stop-InstallerTranscript {
+    if (-not $script:InstallerTranscriptStarted) {
+        return
+    }
+    try {
+        Stop-Transcript | Out-Null
+    }
+    catch {
+    }
+    $script:InstallerTranscriptStarted = $false
+}
+
+trap {
+    $message = if ($_.Exception -and $_.Exception.Message) { $_.Exception.Message } else { [string]$_ }
+    Stop-InstallerTranscript
+    if (-not [string]::IsNullOrWhiteSpace($script:InstallerLogPath)) {
+        try {
+            Add-Content -LiteralPath $script:InstallerLogPath -Encoding UTF8 -Value ((U "`r`n\u5b89\u88c5\u5931\u8d25\uff1a{0}`r`n{1}") -f $message, ($_ | Out-String))
+        }
+        catch {
+        }
+    }
+    Set-InstallerDiagnosticRecord -Status "Failed" -ExitCode 1 -ErrorMessage $message
+    try {
+        Add-Type -AssemblyName System.Windows.Forms
+        $logHint = if ([string]::IsNullOrWhiteSpace($script:InstallerLogPath)) { U "\u672a\u80fd\u521b\u5efa\u5b89\u88c5\u65e5\u5fd7\u3002" } else { (U "\u8bca\u65ad\u65e5\u5fd7\uff1a`r`n{0}") -f $script:InstallerLogPath }
+        $dialogText = (U "\u5b89\u88c5\u672a\u5b8c\u6210\u3002`r`n`r`n{0}`r`n`r`n{1}`r`n`r`n\u8bf7\u6309\u63d0\u793a\u5904\u7406\u540e\u91cd\u65b0\u8fd0\u884c\u540c\u4e00\u4e2a\u5b89\u88c5\u5305\u3002") -f $message, $logHint
+        [System.Windows.Forms.MessageBox]::Show(
+            $dialogText,
+            (U "Rough PPT Add-in \u5b89\u88c5\u672a\u5b8c\u6210"),
+            [System.Windows.Forms.MessageBoxButtons]::OK,
+            [System.Windows.Forms.MessageBoxIcon]::Warning,
+            [System.Windows.Forms.MessageBoxDefaultButton]::Button1,
+            [System.Windows.Forms.MessageBoxOptions]::DefaultDesktopOnly
+        ) | Out-Null
+    }
+    catch {
+    }
+    exit 1
+}
+
 $payloadCore = Join-Path $PSScriptRoot "install-payload-core.ps1"
 if (-not (Test-Path -LiteralPath $payloadCore -PathType Leaf)) {
     throw "安装包缺少本体事务模块：$payloadCore"
@@ -27,14 +109,6 @@ function Test-RegistryPath {
         }
     }
     return $false
-}
-
-function U {
-    param([string]$Value)
-    return [regex]::Replace($Value, "\\u([0-9A-Fa-f]{4})", {
-        param($Match)
-        [char][Convert]::ToInt32($Match.Groups[1].Value, 16)
-    })
 }
 
 function Test-PowerPointInstalled {
@@ -72,37 +146,10 @@ function Open-OfficialInstallPage {
     }
 }
 
-function Wait-ForPowerPointToExit {
-    param([int]$TimeoutSeconds = 30)
-
-    for ($i = 0; $i -lt $TimeoutSeconds; $i++) {
-        $process = Get-Process POWERPNT -ErrorAction SilentlyContinue
-        if (-not $process) {
-            return
-        }
-
-        $hasOpenPresentations = $false
-        try {
-            $app = [Runtime.InteropServices.Marshal]::GetActiveObject("PowerPoint.Application")
-            if ($app.Presentations.Count -gt 0) {
-                $hasOpenPresentations = $true
-            }
-            else {
-                $app.Quit()
-            }
-        }
-        catch {
-        }
-
-        if ($hasOpenPresentations) {
-            throw (U "PowerPoint \u6b63\u5728\u8fd0\u884c\u4e14\u6709\u6253\u5f00\u7684\u6f14\u793a\u6587\u7a3f\u3002\u8bf7\u4fdd\u5b58\u5e76\u5173\u95ed PowerPoint \u540e\u91cd\u65b0\u5b89\u88c5\u3002")
-        }
-
-        Start-Sleep -Seconds 1
-    }
-
-    if (Get-Process POWERPNT -ErrorAction SilentlyContinue) {
-        throw (U "PowerPoint \u4ecd\u5728\u8fd0\u884c\u3002\u8bf7\u5173\u95ed PowerPoint \u540e\u91cd\u65b0\u5b89\u88c5\uff0c\u4ee5\u4fbf\u5b89\u5168\u66ff\u6362 WebView2/VSTO \u6587\u4ef6\u3002")
+function Assert-PowerPointClosed {
+    $process = Get-Process POWERPNT -ErrorAction SilentlyContinue
+    if ($process) {
+        throw (U "PowerPoint \u6b63\u5728\u8fd0\u884c\u3002\u5b89\u88c5\u7a0b\u5e8f\u4e0d\u4f1a\u81ea\u52a8\u5173\u95ed PowerPoint\u3002\u8bf7\u4fdd\u5b58\u5e76\u624b\u52a8\u5173\u95ed\u6240\u6709 PowerPoint \u7a97\u53e3\uff0c\u518d\u91cd\u65b0\u8fd0\u884c\u540c\u4e00\u4e2a\u5b89\u88c5\u5305\u3002")
     }
 }
 
@@ -116,7 +163,10 @@ if (-not (Test-PowerPointInstalled)) {
 
 if ((-not (Test-DotNetFramework48)) -or (-not (Test-WebView2Runtime)) -or (-not (Test-VstoRuntime))) {
     if ($InstallPrereqs) {
-        powershell -ExecutionPolicy Bypass -File scripts\install-prereqs.ps1 -RuntimeOnly
+        powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-prereqs.ps1 -RuntimeOnly
+        if ($LASTEXITCODE -ne 0) {
+            throw ((U "\u524d\u7f6e\u7ec4\u4ef6\u5b89\u88c5\u672a\u5b8c\u6210\u3002\u8bf7\u6839\u636e\u5df2\u6253\u5f00\u7684 Microsoft \u5b98\u65b9\u9875\u9762\u8865\u9f50\u73af\u5883\uff0c\u518d\u91cd\u65b0\u8fd0\u884c\u5b89\u88c5\u5305\u3002\u9000\u51fa\u7801\uff1a") + $LASTEXITCODE)
+        }
     } else {
         throw (U "\u7f3a\u5c11 .NET Framework 4.8\u3001WebView2 Runtime \u6216 VSTO Runtime\u3002\u8bf7\u4f7f\u7528 -InstallPrereqs \u91cd\u65b0\u8fd0\u884c\uff0c\u6216\u6267\u884c scripts\install-prereqs.ps1 -RuntimeOnly\u3002")
     }
@@ -129,12 +179,15 @@ if (-not (Test-Path $sourceManifest)) {
     throw (U "\u672a\u627e\u5230 RoughPptAddin.vsto\u3002\u8bf7\u5148\u8fd0\u884c scripts\build.ps1\u3002")
 }
 
-Wait-ForPowerPointToExit
+Assert-PowerPointClosed
 
 $dfshim = Join-Path $env:WINDIR "System32\dfshim.dll"
 if (-not (Test-Path $dfshim)) {
     if ($InstallPrereqs) {
-        powershell -ExecutionPolicy Bypass -File scripts\install-prereqs.ps1 -RuntimeOnly
+        powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-prereqs.ps1 -RuntimeOnly
+        if ($LASTEXITCODE -ne 0) {
+            throw ((U "\u524d\u7f6e\u7ec4\u4ef6\u5b89\u88c5\u672a\u5b8c\u6210\u3002\u9000\u51fa\u7801\uff1a") + $LASTEXITCODE)
+        }
     }
     if (-not (Test-Path $dfshim)) {
         if ($InstallPrereqs) { Open-OfficialInstallPage "https://www.microsoft.com/download/details.aspx?id=48217" "VSTO Runtime" }
@@ -201,3 +254,5 @@ Complete-RoughPayloadTransaction -Paths $payloadTransaction
 Write-Host (U "\u5b89\u88c5\u8bf7\u6c42\u5df2\u5b8c\u6210\u3002\u5982 PowerPoint \u63d0\u793a\uff0c\u8bf7\u542f\u7528 Rough \u624b\u7ed8\u56fe\u5f62\u63d2\u4ef6\u3002")
 Write-Host ((U "\u5df2\u5b89\u88c5\u6587\u4ef6\uff1a") + $installDir)
 Write-Host ((U "\u6ce8\u518c\u8868\u9879\uff1a") + $addInKey)
+Set-InstallerDiagnosticRecord -Status "Succeeded" -ExitCode 0
+Stop-InstallerTranscript

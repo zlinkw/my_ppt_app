@@ -38,7 +38,7 @@ requireIncludes(preservingPackage, '$buildInfoSourcePath = Join-Path $root "src\
 requireIncludes(preservingPackage, "version = $installerProductVersion", "package-release-preserving.ps1: build metadata must expose installer version");
 requireIncludes(preservingPackage, 'source = "release-package"', "package-release-preserving.ps1: build metadata must identify release source");
 requireIncludes(preservingPackage, "[IO.File]::WriteAllBytes($buildInfoSourcePath, $originalBuildInfoBytes)", "package-release-preserving.ps1: packaging must restore tracked build metadata");
-requireIncludes(deployment, "Rerunning the same MSI repairs and overwrites the local payload", "docs/DEPLOYMENT.md: same-MSI overwrite behavior must be documented");
+requireIncludes(deployment, "Rerunning the same MSI after closing PowerPoint repairs and overwrites the local payload", "docs/DEPLOYMENT.md: same-MSI overwrite behavior and PowerPoint precondition must be documented");
 
 const testScript = packageJson.scripts?.test ?? "";
 requireIncludes(testScript, "node scripts/validate-deploy-contract.mjs", "package.json: npm test must include deploy contract validation");

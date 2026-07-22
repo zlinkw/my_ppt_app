@@ -7,6 +7,7 @@ const diagnose = read("scripts/diagnose.ps1");
 const deploy = read("scripts/deploy.ps1");
 const pack = read("scripts/package.ps1");
 const installers = read("scripts/package-installers.ps1");
+const preservingInstaller = read("scripts/package-release-preserving.ps1");
 const deployment = read("docs/DEPLOYMENT.md");
 const packageJson = JSON.parse(read("package.json"));
 const violations = [];
@@ -14,21 +15,37 @@ const violations = [];
 requireRuntimeOnlyInstallPrereqs("scripts/install.ps1", install);
 requireIncludes(
   install,
-  "function Wait-ForPowerPointToExit",
+  "function Assert-PowerPointClosed",
   "install.ps1: installer must safely handle running PowerPoint before replacing files"
 );
 requireAny(
   install,
   [
-    "PowerPoint 正在运行且有打开的演示文稿。请保存并关闭 PowerPoint 后重新安装。",
-    "PowerPoint \\u6b63\\u5728\\u8fd0\\u884c\\u4e14\\u6709\\u6253\\u5f00\\u7684\\u6f14\\u793a\\u6587\\u7a3f\\u3002\\u8bf7\\u4fdd\\u5b58\\u5e76\\u5173\\u95ed PowerPoint \\u540e\\u91cd\\u65b0\\u5b89\\u88c5\\u3002"
+    "PowerPoint 正在运行。安装程序不会自动关闭 PowerPoint。",
+    "PowerPoint \\u6b63\\u5728\\u8fd0\\u884c\\u3002\\u5b89\\u88c5\\u7a0b\\u5e8f\\u4e0d\\u4f1a\\u81ea\\u52a8\\u5173\\u95ed PowerPoint"
   ],
   "install.ps1: running PowerPoint with open presentations must show localized actionable text"
 );
-requireIncludes(
+rejectIncludes(
   install,
   "$app.Quit()",
-  "install.ps1: installer may close an empty PowerPoint instance automatically"
+  "install.ps1: installer must never close PowerPoint automatically"
+);
+for (const snippet of [
+  "Start-Transcript -LiteralPath $script:InstallerLogPath",
+  'HKCU:\\Software\\RoughPptAddin\\InstallerDiagnostics',
+  'New-ItemProperty -Path $diagnosticKey -Name "LastLogPath"',
+  'New-ItemProperty -Path $diagnosticKey -Name "LastErrorMessage"',
+  "[System.Windows.Forms.MessageBox]::Show(",
+  'Set-InstallerDiagnosticRecord -Status "Failed" -ExitCode 1',
+  'Set-InstallerDiagnosticRecord -Status "Succeeded" -ExitCode 0'
+]) {
+  requireIncludes(install, snippet, `install.ps1: missing persistent installer diagnostic contract ${snippet}`);
+}
+requireIncludes(
+  install,
+  "if ($LASTEXITCODE -ne 0)",
+  "install.ps1: prerequisite subprocess failures must stop payload replacement"
 );
 requireIncludes(
   deploy,
@@ -124,6 +141,13 @@ requireIncludes(
   '& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $work "scripts\\install.ps1") -SkipBuild -InstallPrereqs',
   "package-installers.ps1: MSI runner must call install.ps1 -SkipBuild -InstallPrereqs"
 );
+for (const [path, source] of [
+  ["scripts/package-installers.ps1", installers],
+  ["scripts/package-release-preserving.ps1", preservingInstaller]
+]) {
+  requireIncludes(source, "exit $LASTEXITCODE", `${path}: MSI runner must propagate install.ps1 failures to Windows Installer`);
+  requireIncludes(source, 'AllowSameVersionUpgrades="yes"', `${path}: MSI must support same-version overwrite installation`);
+}
 requireIncludes(
   installers,
   'powershell -NoProfile -ExecutionPolicy Bypass -File "%WORK%\\scripts\\install.ps1" -SkipBuild -InstallPrereqs',

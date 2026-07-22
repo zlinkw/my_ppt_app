@@ -67,6 +67,38 @@ if (-not $resolvedTestRoot.StartsWith($resolvedTemp + "\RoughPptInstallContract-
     throw "Unsafe transaction test directory rejected: $resolvedTestRoot"
 }
 
+Add-Type -AssemblyName Microsoft.VisualBasic
+function Move-TestPathToRecycleBin {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][bool]$Recurse
+    )
+
+    $resolved = [System.IO.Path]::GetFullPath($Path)
+    if (-not $resolved.StartsWith($resolvedTestRoot + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to recycle a transaction-test path outside the exact test root: $resolved"
+    }
+    if (-not (Test-Path -LiteralPath $resolved)) {
+        return
+    }
+    Write-Host "Recycle Bin move: $resolved"
+    if (Test-Path -LiteralPath $resolved -PathType Container) {
+        [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory(
+            $resolved,
+            [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs,
+            [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin
+        )
+    }
+    else {
+        [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile(
+            $resolved,
+            [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs,
+            [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin
+        )
+    }
+}
+$script:RoughPayloadRemovalAction = { param($Path, $Recurse) Move-TestPathToRecycleBin -Path $Path -Recurse $Recurse }
+
 try {
     $localAppDataRoot = Join-Path $testRoot "LocalAppData"
     $installRoot = Join-Path $localAppDataRoot "RoughPptAddin"
@@ -172,6 +204,7 @@ try {
 
     Write-Host "installer payload transaction ok"
 } finally {
+    $script:RoughPayloadRemovalAction = $null
     if (Test-Path -LiteralPath $resolvedTestRoot) {
         Write-Warning "测试目录已保留，避免永久删除：$resolvedTestRoot"
     }

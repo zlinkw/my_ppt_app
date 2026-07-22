@@ -5,6 +5,7 @@ $script:RoughPayloadDirectoryName = "publish"
 $script:RoughPayloadStagingName = "publish.installing"
 $script:RoughPayloadBackupName = "publish.rollback"
 $script:RoughPayloadTransactionName = "install-transaction.json"
+$script:RoughPayloadRemovalAction = $null
 $script:RoughPreservedLocalData = @(
     "WebView2",
     "logs",
@@ -80,7 +81,25 @@ function Remove-RoughPayloadDirectory {
         return
     }
     Assert-RoughNotReparsePoint $Path
-    Remove-Item -LiteralPath $Path -Recurse -Force
+    Invoke-RoughPayloadRemoval -Path $Path -Recurse
+}
+
+function Invoke-RoughPayloadRemoval {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [switch]$Recurse
+    )
+
+    if ($script:RoughPayloadRemovalAction) {
+        & $script:RoughPayloadRemovalAction $Path ([bool]$Recurse)
+        return
+    }
+    if ($Recurse) {
+        Remove-Item -LiteralPath $Path -Recurse -Force
+    }
+    else {
+        Remove-Item -LiteralPath $Path -Force
+    }
 }
 
 function Assert-RoughPublishPayload {
@@ -130,7 +149,7 @@ function Restore-RoughInterruptedPayloadTransaction {
             Remove-RoughPayloadDirectory -Paths $Paths -Path $Paths.Live
         }
         Remove-RoughPayloadDirectory -Paths $Paths -Path $Paths.Staging
-        Remove-Item -LiteralPath $Paths.Marker -Force
+        Invoke-RoughPayloadRemoval -Path $Paths.Marker
         return
     }
 
@@ -155,7 +174,7 @@ function Undo-RoughPayloadTransaction {
     }
     Remove-RoughPayloadDirectory -Paths $Paths -Path $Paths.Staging
     if (Test-Path -LiteralPath $Paths.Marker) {
-        Remove-Item -LiteralPath $Paths.Marker -Force
+        Invoke-RoughPayloadRemoval -Path $Paths.Marker
     }
 }
 
@@ -209,7 +228,7 @@ function Complete-RoughPayloadTransaction {
     param([Parameter(Mandatory = $true)][object]$Paths)
 
     if (Test-Path -LiteralPath $Paths.Marker) {
-        Remove-Item -LiteralPath $Paths.Marker -Force
+        Invoke-RoughPayloadRemoval -Path $Paths.Marker
     }
     try {
         Remove-RoughPayloadDirectory -Paths $Paths -Path $Paths.Backup
