@@ -406,9 +406,6 @@ const els = {
   zlkAutomationStatus: document.querySelector("#zlkAutomationStatus"),
   connectionZlk: document.querySelector("#connectionZlk"),
   connectionZotero: document.querySelector("#connectionZotero"),
-  simpleConnectionNote: document.querySelector("#simpleConnectionNote"),
-  simpleConnectionZlk: document.querySelector("#simpleConnectionZlk"),
-  simpleConnectionZotero: document.querySelector("#simpleConnectionZotero"),
   zlkChartResults: document.querySelector("#zlkChartResults"),
   chartPresetShell: document.querySelector("#chartPresetShell"),
   chartPresetStrip: document.querySelector("#chartPresetStrip"),
@@ -1646,8 +1643,6 @@ function markSectionNavActive(key) {
   const zoteroActive = key === "zoteroImages" || key === "paletteLibrary";
   if (els.connectionZlk) els.connectionZlk.setAttribute("aria-current", zlkActive ? "true" : "false");
   if (els.connectionZotero) els.connectionZotero.setAttribute("aria-current", zoteroActive ? "true" : "false");
-  if (els.simpleConnectionZlk) els.simpleConnectionZlk.setAttribute("aria-current", zlkActive ? "true" : "false");
-  if (els.simpleConnectionZotero) els.simpleConnectionZotero.setAttribute("aria-current", zoteroActive ? "true" : "false");
 }
 
 function activateStarterAction(action) {
@@ -4473,8 +4468,6 @@ function renderConnectionHealthStrip() {
 
   updateConnectionChip(els.connectionZlk, "zlk", zlkState, zlkText, zlkTitle);
   updateConnectionChip(els.connectionZotero, "zotero", zoteroState, zoteroText, zoteroTitle);
-  updateConnectionChip(els.simpleConnectionZlk, "zlk", zlkState, zlkText, zlkTitle);
-  updateConnectionChip(els.simpleConnectionZotero, "zotero", zoteroState, zoteroText, zoteroTitle);
 }
 
 
@@ -4484,7 +4477,7 @@ function updateConnectionChip(chip, key, stateName, text, title) {
   chip.dataset.domain = key === "zlk" ? "zlk" : key === "zotero" ? "zotero" : (key || "");
   chip.classList.remove("idle", "ok", "warn", "error", "ready");
   chip.classList.add(stateName);
-  const target = chip.querySelector(`[data-connection-${key}]`) || chip.querySelector(`[data-simple-connection-${key}]`) || chip.querySelector("small");
+  const target = chip.querySelector(`[data-connection-${key}]`) || chip.querySelector("small");
   if (target) target.textContent = compactConnectionText(text);
   chip.title = title || text || chip.title;
   if (!chip.getAttribute("aria-label")) {
@@ -8426,7 +8419,7 @@ function safeInitStep(label, fn) {
 
 function initHorizontalDragScroll() {
   const containers = document.querySelectorAll(
-    ".connection-health-strip, .simple-connection-note, .chart-preset-strip"
+    ".connection-health-strip, .chart-preset-strip"
   );
   for (const container of containers) {
     if (container.dataset.dragScrollReady === "true") continue;

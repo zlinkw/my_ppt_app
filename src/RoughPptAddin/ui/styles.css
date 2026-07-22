@@ -5708,10 +5708,6 @@ body.ux-simple .workflow-more,
 body.ux-simple .chart-support-grid {
   display: none;
 }
-body.ux-simple .simple-connection-note {
-  display: none;
-}
-
 .workflow-more-actions button,
 .workflow-quickfind-actions button,
 .style-quick-strip button,
@@ -6556,34 +6552,14 @@ body.ux-simple .asset-actions {
 }
 
 
-/* B328 simple connection and template bar */
-.simple-connection-note {
+/* B328 simple mode action and template bar */
+.simple-mode-actions {
   display: none;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
 }
-body.ux-simple .simple-connection-note {
+
+body.ux-simple .simple-mode-actions {
   display: grid;
-}
-.simple-connection-note button {
-  min-height: 28px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.simple-connection-note button:hover,
-.simple-connection-note button:focus-visible {
-  border-color: var(--accent);
-  outline: 0;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-.simple-connection-note #simpleModeFullSwitch {
-  color: var(--accent-strong);
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  grid-template-columns: minmax(0, 1fr);
 }
 .style-template-bar.is-custom {
   border: 1px dashed color-mix(in srgb, var(--accent) 24%, var(--line));
@@ -6635,9 +6611,6 @@ body.ux-simple .catalog-panel .panel-head strong::after {
 [data-section-nav][aria-current="page"] {
   border-color: var(--accent);
   box-shadow: inset 0 -2px 0 var(--accent);
-}
-.simple-connection-note button:active {
-  transform: translateY(1px);
 }
 body.ux-simple .selection-empty-actions {
   margin-top: 2px;
@@ -6773,13 +6746,6 @@ body.ux-simple .status {
 body.ux-simple .status.expanded {
   max-height: 110px;
 }
-.simple-connection-note button[data-section-nav][aria-current="page"] {
-  border-color: var(--accent);
-  color: var(--accent-strong);
-  box-shadow: inset 0 -2px 0 var(--accent);
-}
-
-
 /* B336 zotero swatch menu arm */
 .zotero-swatch-menu {
   z-index: 60;
@@ -6839,106 +6805,6 @@ body.ux-simple .topbar .status {
 }
 
 
-/* B339 simple connection chips */
-body.ux-simple .simple-connection-note {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) auto;
-  gap: 4px;
-  align-items: stretch;
-}
-.simple-connection-chip {
-  min-height: 34px;
-  display: grid;
-  grid-template-columns: 8px minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
-  color: var(--ink);
-  text-align: left;
-  cursor: pointer;
-}
-.simple-connection-copy {
-  display: grid;
-  gap: 0;
-  min-width: 0;
-}
-.simple-connection-copy strong {
-  font-size: 11px;
-  font-weight: 750;
-  line-height: 1.15;
-}
-.simple-connection-copy small {
-  font-size: 10px;
-  color: var(--muted);
-  line-height: 1.15;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.simple-connection-chip .connection-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #a0aab8;
-  box-shadow: 0 0 0 2px #eef2f7;
-}
-.simple-connection-chip.ok .connection-dot,
-.simple-connection-chip.ready .connection-dot {
-  background: #0f6cbd;
-  box-shadow: 0 0 0 3px #dbeafe;
-}
-.simple-connection-chip[data-domain="zotero"].ok .connection-dot,
-.simple-connection-chip[data-domain="zotero"].ready .connection-dot {
-  background: #7c5cbf;
-  box-shadow: 0 0 0 3px #efe8ff;
-}
-.simple-connection-chip.warn .connection-dot {
-  background: #b7791f;
-  box-shadow: 0 0 0 3px #fef3c7;
-}
-.simple-connection-chip.error .connection-dot {
-  background: var(--red);
-  box-shadow: 0 0 0 3px #fee2e2;
-}
-.simple-connection-chip.ok,
-.simple-connection-chip.ready {
-  border-color: #9ac7f7;
-  background: #eef4fc;
-}
-.simple-connection-chip[data-domain="zotero"].ok,
-.simple-connection-chip[data-domain="zotero"].ready {
-  border-color: color-mix(in srgb, #8764b8 40%, var(--line));
-  background: #f3eeff;
-}
-.simple-connection-chip.warn {
-  border-color: #f5d18b;
-  background: #fef0ef;
-}
-.simple-connection-chip.error {
-  border-color: #f2b8b5;
-  background: #fef0ef;
-}
-.simple-connection-chip:hover,
-.simple-connection-chip:focus-visible,
-.simple-connection-chip[aria-current="true"] {
-  border-color: var(--accent);
-  outline: 0;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-body.ux-simple #simpleModeFullSwitch {
-  min-height: 34px;
-  border-radius: 999px;
-  padding: 0 10px;
-  font-weight: 750;
-  color: var(--accent-strong);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
-  background: var(--panel);
-}
-
-
 /* B340 simple chrome density */
 body.ux-simple .workflow-panel > .panel-head {
   display: none;
@@ -6960,25 +6826,6 @@ body.ux-simple .novice-step {
   width: 16px;
   height: 16px;
   font-size: 10px;
-}
-body.ux-simple .simple-connection-note {
-  gap: 3px;
-}
-body.ux-simple .simple-connection-chip {
-  min-height: 30px;
-  padding: 3px 6px;
-  border-radius: 9px;
-}
-body.ux-simple .simple-connection-copy strong {
-  font-size: 10px;
-}
-body.ux-simple .simple-connection-copy small {
-  font-size: 9px;
-}
-body.ux-simple #simpleModeFullSwitch {
-  min-height: 30px;
-  padding: 0 8px;
-  font-size: 11px;
 }
 body.ux-simple .command-bar {
   padding: 4px 6px;
@@ -7425,10 +7272,6 @@ button:focus-visible .function-icon-glyph {
   .chart-import-actions,
   .zotero-card-actions,
   .palette-card-actions { gap: 5px; }
-}
-
-body.ux-simple .simple-connection-note {
-  display: none;
 }
 
 /* B355 final override: keep this block at end. */
@@ -10504,8 +10347,7 @@ body.ux-simple .topbar .status:not(.expanded) {
   user-select: none;
 }
 
-.connection-health-strip,
-.simple-connection-note {
+.connection-health-strip {
   min-width: 0;
   max-width: 100%;
   display: flex;
@@ -10516,10 +10358,6 @@ body.ux-simple .topbar .status:not(.expanded) {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
-}
-
-body.ux-simple .simple-connection-note {
-  display: flex;
 }
 
 body.ux-full .connection-health-strip {
@@ -10548,18 +10386,6 @@ body.ux-full .connection-health-strip {
   white-space: normal;
   overflow-wrap: anywhere;
   writing-mode: horizontal-tb;
-}
-
-.simple-connection-note > .simple-connection-chip {
-  flex: 1 0 156px;
-  width: auto;
-  min-width: 156px;
-  max-width: 240px;
-}
-
-.simple-connection-note > #simpleModeFullSwitch {
-  flex: 0 0 auto;
-  min-width: max-content;
 }
 
 .chart-preset-shell > .chart-preset-strip {
@@ -10612,52 +10438,6 @@ body.ux-full .connection-health-strip {
   overflow-wrap: anywhere;
 }
 
-/* B504: keep the compact connection summary bounded and curve previews continuous. */
-body.ux-simple .simple-connection-note {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  align-items: stretch;
-  overflow-x: visible !important;
-}
-
-body.ux-simple .simple-connection-note > .simple-connection-chip {
-  display: grid;
-  grid-template-columns: 8px minmax(0, 1fr);
-  flex: none;
-  width: auto;
-  min-width: 0;
-  max-width: none;
-  min-height: 38px;
-}
-
-body.ux-simple .simple-connection-chip > .connection-dot {
-  grid-column: 1;
-}
-
-body.ux-simple .simple-connection-chip > .simple-connection-copy {
-  grid-column: 2;
-}
-
-body.ux-simple .simple-connection-copy strong,
-body.ux-simple .simple-connection-copy small {
-  writing-mode: horizontal-tb;
-  word-break: normal;
-  overflow-wrap: normal;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-body.ux-simple .simple-connection-copy {
-  width: 100%;
-  max-width: none;
-  justify-self: stretch;
-}
-
-body.ux-simple .simple-connection-note > #simpleModeFullSwitch {
-  min-width: max-content;
-}
-
 .chart-mini-curve {
   width: 100%;
   height: 100%;
@@ -10679,182 +10459,6 @@ body.ux-simple .simple-connection-note > #simpleModeFullSwitch {
   stroke: #ffffff;
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
-}
-
-@media (max-width: 420px) {
-  body.ux-simple .simple-connection-note {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  body.ux-simple .simple-connection-note > #simpleModeFullSwitch {
-    grid-column: 1 / -1;
-    justify-self: stretch;
-  }
-}
-
-/* B505: final compact connection sizing must win over global fluid button rules. */
-body.ux-simple .simple-connection-note {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  grid-auto-rows: minmax(40px, 44px);
-  align-items: center;
-  min-width: 0;
-  min-height: 0;
-  max-height: 48px;
-  padding-bottom: 0;
-  overflow: hidden !important;
-}
-
-body.ux-simple .simple-connection-note > .simple-connection-chip {
-  grid-template-columns: 8px minmax(0, 1fr);
-  align-self: center;
-  width: 100%;
-  min-width: 0;
-  min-height: 40px;
-  height: 40px;
-  max-height: 40px;
-  padding: 4px 8px;
-  overflow: hidden;
-}
-
-body.ux-simple .simple-connection-note > #simpleModeFullSwitch {
-  align-self: center;
-  width: auto;
-  min-width: max-content;
-  min-height: 40px;
-  height: 40px;
-  max-height: 40px;
-  padding: 4px 10px;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-body.ux-simple .simple-connection-chip > .simple-connection-copy,
-body.ux-simple .simple-connection-chip > .simple-connection-copy > strong,
-body.ux-simple .simple-connection-chip > .simple-connection-copy > small {
-  min-width: 0;
-  max-width: 100%;
-  writing-mode: horizontal-tb;
-  white-space: nowrap;
-  word-break: normal;
-  overflow-wrap: normal;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 420px) {
-  body.ux-simple .simple-connection-note {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 40px;
-    max-height: 86px;
-  }
-
-  body.ux-simple .simple-connection-note > #simpleModeFullSwitch {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-}
-
-/* B513: connection buttons reuse the workflow action sizing and grid. */
-body.ux-simple .simple-connection-note.workflow-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(30px, auto);
-  align-items: stretch;
-  gap: 2px;
-  min-width: 0;
-  min-height: 0;
-  max-height: none;
-  padding-bottom: 0;
-  overflow: visible !important;
-}
-
-body.ux-simple .simple-connection-note.workflow-actions > button {
-  min-width: 0;
-  min-height: 30px;
-  height: auto;
-  max-height: none;
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: center;
-  gap: 3px;
-  padding: 3px 5px;
-  border-radius: var(--radius);
-  text-align: left;
-  overflow: hidden;
-}
-
-body.ux-simple .simple-connection-note.workflow-actions > .simple-connection-chip {
-  width: auto;
-  min-width: 0;
-  max-width: none;
-  grid-template-columns: 18px minmax(0, 1fr);
-}
-
-body.ux-simple .simple-connection-note.workflow-actions > .simple-connection-chip > .connection-dot {
-  grid-column: 1;
-  width: 8px;
-  height: 8px;
-  justify-self: center;
-  border: 0;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-body.ux-simple .simple-connection-note.workflow-actions > .simple-connection-chip > .simple-connection-copy {
-  grid-column: 2;
-  min-width: 0;
-  width: 100%;
-  max-width: none;
-  display: grid;
-  gap: 1px;
-}
-
-body.ux-simple .simple-connection-note.workflow-actions > .simple-connection-chip strong,
-body.ux-simple .simple-connection-note.workflow-actions > .simple-connection-chip small {
-  min-width: 0;
-  max-width: 100%;
-  writing-mode: horizontal-tb;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-body.ux-simple .simple-connection-note.workflow-actions > #simpleModeFullSwitch {
-  width: auto;
-  min-width: 0;
-  white-space: nowrap;
-}
-
-@media (min-width: 560px) {
-  body.ux-simple .simple-connection-note.workflow-actions > button {
-    min-height: 48px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 22px auto;
-    justify-items: center;
-    text-align: center;
-  }
-
-  body.ux-simple .simple-connection-note.workflow-actions > .simple-connection-chip {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 22px auto;
-  }
-
-  body.ux-simple .simple-connection-note.workflow-actions > .simple-connection-chip > .connection-dot,
-  body.ux-simple .simple-connection-note.workflow-actions > .simple-connection-chip > .simple-connection-copy {
-    grid-column: 1;
-  }
-}
-
-@media (max-width: 420px) {
-  body.ux-simple .simple-connection-note.workflow-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  body.ux-simple .simple-connection-note.workflow-actions > #simpleModeFullSwitch {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
 }
 
 /* B519: simple mode owns one compact connection row; full details stay full-mode only. */

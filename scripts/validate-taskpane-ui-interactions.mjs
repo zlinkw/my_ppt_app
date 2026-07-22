@@ -45,10 +45,9 @@ try {
     if (!readable.chartScrollable) violations.push(`${width}px: 科研图预设轨道未保留可读宽度或横向滚动`);
     if (!readable.dragReady) violations.push(`${width}px: 横向轨道未启用鼠标拖动滚动`);
     if (!readable.cardsReadable) violations.push(`${width}px: 科研图预设卡片文字被裁切或压缩`);
-    const simpleConnection = await evaluate(client, simpleConnectionProbe());
-    const maxSimpleHeight = width <= 420 ? 90 : 60;
-    if (!simpleConnection.bounded || simpleConnection.height > maxSimpleHeight) violations.push(`${width}px: 简洁模式连接状态区异常拉伸 ${JSON.stringify(simpleConnection)}`);
-    if (!simpleConnection.horizontalText) violations.push(`${width}px: 简洁模式连接状态文字未保持横排 ${JSON.stringify(simpleConnection)}`);
+    const simpleModeActions = await evaluate(client, simpleModeActionsProbe());
+    if (!simpleModeActions.bounded || simpleModeActions.height > 60) violations.push(`${width}px: 简洁模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
+    if (!simpleModeActions.horizontalText) violations.push(`${width}px: 完整模式按钮文字未保持横排 ${JSON.stringify(simpleModeActions)}`);
     const curve = await evaluate(client, chartCurvePreviewProbe());
     if (!curve.continuous || !curve.inBounds) violations.push(`${width}px: 科研图曲线预览断裂或越界 ${JSON.stringify(curve)}`);
   }
@@ -359,22 +358,21 @@ function horizontalControlProbe() {
   })()`;
 }
 
-function simpleConnectionProbe() {
+function simpleModeActionsProbe() {
   return `(() => {
     document.querySelector('#uiModeSimple')?.click();
-    const note = document.querySelector('#simpleConnectionNote');
-    const chips = [...(note?.querySelectorAll('.simple-connection-chip') ?? [])];
-    const rect = note?.getBoundingClientRect();
-    const textNodes = chips.flatMap(chip => [...chip.querySelectorAll('strong, small')]);
+    const actions = document.querySelector('#simpleModeActions');
+    const fullSwitch = document.querySelector('#simpleModeFullSwitch');
+    const rect = actions?.getBoundingClientRect();
+    const buttonRect = fullSwitch?.getBoundingClientRect();
+    const label = fullSwitch?.querySelector('span:last-child');
+    const style = label ? getComputedStyle(label) : null;
     return {
-      bounded: Boolean(rect && rect.width <= innerWidth && chips.length === 2 && chips.every(chip => chip.getBoundingClientRect().width >= 80)),
+      bounded: Boolean(rect && buttonRect && rect.width <= innerWidth && buttonRect.width > 0 && buttonRect.width <= rect.width + 1 &&
+        !document.querySelector('#simpleConnectionZlk, #simpleConnectionZotero, .simple-connection-chip')),
       height: Math.round(rect?.height ?? 0),
-      horizontalText: textNodes.length === 4 && textNodes.every(node => {
-        const style = getComputedStyle(node);
-        const nodeRect = node.getBoundingClientRect();
-        return style.writingMode === 'horizontal-tb' && nodeRect.width >= 40 && nodeRect.height < 24;
-      }),
-      chipWidths: chips.map(chip => Math.round(chip.getBoundingClientRect().width))
+      horizontalText: Boolean(label && style?.writingMode === 'horizontal-tb' && label.getBoundingClientRect().height < 24),
+      buttonWidth: Math.round(buttonRect?.width ?? 0)
     };
   })()`;
 }
