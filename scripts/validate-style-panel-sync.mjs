@@ -15,13 +15,16 @@ for (const snippet of [
   "markLocalParamEdit();",
   "shouldHoldLocalParams(key, style)",
   "正在等待 PowerPoint 完成实时重绘",
-  'postHost({ type: "refreshSelection", params: state.params });',
   "enhanceParamControls",
-  "data.paramNumber",
-  "data.paramStep",
   "adjustParamValue",
   "syncParamControls"
 ]) {
+  if (!app.includes(snippet)) violations.push(`app.mjs missing style sync guard: ${snippet}`);
+}
+if (!/postHost\(\{ type: "refreshSelection", params: (?:state\.params|currentStyleParams\(\)) \}\);/.test(app)) {
+  violations.push("app.mjs missing style sync guard: refreshSelection post");
+}
+for (const snippet of ["dataset.paramNumber", "dataset.paramStep"]) {
   if (!app.includes(snippet)) violations.push(`app.mjs missing style sync guard: ${snippet}`);
 }
 
@@ -34,7 +37,7 @@ for (const snippet of [
   'name="arrowheadPosition"',
   "style.ArrowheadPosition",
   "public string ArrowheadPosition",
-  "FillTransparency { get; set; } = 0",
+  "FillTransparency { get; set; }",
   "BeginArrowheadStyle",
   "EndArrowheadStyle"
 ]) {
@@ -47,26 +50,22 @@ for (const selector of [".param-number-row", ".param-number-input", ".param-step
   if (!css.includes(selector)) violations.push(`styles.css missing numeric param selector: ${selector}`);
 }
 
-const updateParamsStart = taskPane.indexOf('if (type == "updateParams")');
-const updateParamsEnd = taskPane.indexOf('if (type == "refreshSelection")', updateParamsStart);
+const updateParamsStart = taskPane.indexOf('case "updateParams"');
+const updateParamsEnd = taskPane.indexOf('case "refreshSelection"', updateParamsStart);
 const updateParamsBlock = taskPane.slice(updateParamsStart, updateParamsEnd);
 if (updateParamsBlock.includes("SendSelectionState();")) {
   violations.push("updateParams must not immediately send stale selection state back to the pane");
 }
 
-const refreshBlock = taskPane.slice(updateParamsEnd, taskPane.indexOf('if (type == "convertSelectionToRough")', updateParamsEnd));
-for (const snippet of [
-  "var style = ReadStyle(message);",
-  "await controller.RefreshSelectionNowAsync(style).ConfigureAwait(true)",
-  "SendSelectionState();"
-]) {
-  if (!refreshBlock.includes(snippet)) violations.push(`refreshSelection must use current pane params: ${snippet}`);
-}
+const refreshBlock = taskPane.slice(updateParamsEnd, taskPane.indexOf('case "convertSelectionToRough"', updateParamsEnd));
+if (!/RoughStyle\s+style\s*=\s*ReadStyle\(message\);/.test(refreshBlock)) violations.push("refreshSelection must use current pane params: ReadStyle(message)");
+if (!/RefreshSelectionNowAsync\(style\)\.ConfigureAwait\(continueOnCapturedContext:\s*true\)/.test(refreshBlock)) violations.push("refreshSelection must use current pane params: RefreshSelectionNowAsync(style)");
+if (!refreshBlock.includes("SendSelectionState();")) violations.push("refreshSelection must use current pane params: SendSelectionState()");
 
 const regenerator = fs.readFileSync("src/RoughPptAddin/Services/ShapeRegenerator.cs", "utf8");
 const controller = fs.readFileSync("src/RoughPptAddin/Services/RoughAddInController.cs", "utf8");
 for (const snippet of [
-  "RegenerateWithTimeoutAsync(target, styleOverride, TimeSpan.FromSeconds(20))",
+  "RegenerateWithTimeoutAsync(target, styleOverride, TimeSpan.FromSeconds(20",
   "return completed;",
   "Task.WhenAny(task, Task.Delay(timeout))",
   "return true;",
@@ -86,9 +85,10 @@ for (const snippet of [
 
 const paramsIndex = index.indexOf('<section id="params"');
 const commandIndex = index.indexOf('<section class="command-bar">');
-const libraryIndex = index.indexOf('<section class="library-panel panel">');
-if (!(paramsIndex >= 0 && commandIndex > paramsIndex && commandIndex < libraryIndex)) {
-  violations.push("search command bar must sit below style panel and above asset library");
+const libraryIndex = index.indexOf('<section class="library-panel panel"');
+const starterIndex = index.indexOf('<section class="starter-panel');
+if (!(starterIndex >= 0 && commandIndex > starterIndex && commandIndex < paramsIndex && paramsIndex < libraryIndex)) {
+  violations.push("search command bar must sit below the quick workbench and above parameter workspaces");
 }
 
 for (const snippet of [
@@ -100,10 +100,9 @@ for (const snippet of [
 }
 
 for (const snippet of [
-  "getImage='GetShapeImage'",
   "public object GetShapeImage(IRibbonControl control)",
-  "GetOfficeImageMso(imageMso, 32, 32)",
-  "ShapeIconFactory.Create(enumName, 32, 32)"
+  "GetShapeImageForEnum(item.EnumName)",
+  "ShapeIconFactory.Create(enumName, 32, 32"
 ]) {
   if (!ribbon.includes(snippet)) violations.push(`RoughRibbon.cs missing shape dropdown preview contract: ${snippet}`);
 }

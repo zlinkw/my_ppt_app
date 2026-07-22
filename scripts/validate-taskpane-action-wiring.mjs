@@ -47,17 +47,17 @@ for (const [id, snippets] of Object.entries(expectedStaticActions)) {
 
 for (const type of [...app.matchAll(/postHost\(\{\s*type:\s*"([^"]+)"/g)].map(match => match[1])) {
   if (!bridge.includes(`${type}: "${type}"`)) violations.push(`bridge-contract.mjs missing message type: ${type}`);
-  if (!taskPane.includes(`type == "${type}"`)) violations.push(`RoughTaskPaneControl.cs missing handler: ${type}`);
+  if (!new RegExp(`(?:case\\s+"${type}"\\s*:|type\\s*==\\s*"${type}")`).test(taskPane)) violations.push(`RoughTaskPaneControl.cs missing handler: ${type}`);
 }
 
 for (const snippet of [
-  'type == "updateParams"',
-  "await controller.RefreshSelectionNowAsync(ReadStyle(message)).ConfigureAwait(true)",
-  'type == "refreshSelection"',
-  "await controller.RefreshSelectionNowAsync(style).ConfigureAwait(true)",
-  'type == "adjustFeatureBlockDirection"',
+  'case "updateParams":',
+  "await controller.RefreshSelectionNowAsync(style2)",
+  'case "refreshSelection":',
+  "await controller.RefreshSelectionNowAsync(style)",
+  'case "adjustFeatureBlockDirection":',
   "controller.AdjustSelectedFeatureBlock",
-  'type == "updateFeatureBlockSelection"',
+  'case "updateFeatureBlockSelection":',
   "controller.UpdateSelectedFeatureBlock",
   "FeatureBlockMutationResult.Updated",
   "FeatureBlockMutationResult.Inserted",

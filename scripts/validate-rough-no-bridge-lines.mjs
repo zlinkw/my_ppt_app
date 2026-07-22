@@ -30,10 +30,12 @@ if (violations.length) {
 console.log("rough bridge-line validation ok");
 
 function hasInteriorClosedContour(path) {
-  const points = pathPoints(path);
+  const rawPoints = pathPoints(path);
+  if (rawPoints.length < 5) return false;
+  const epsilon = contourEpsilon(rawPoints);
+  const points = rawPoints.filter((point, index) => index === 0 || pointDistance(point, rawPoints[index - 1]) > epsilon);
   if (points.length < 5) return false;
   const first = points[0];
-  const epsilon = contourEpsilon(points);
   for (let index = 3; index < points.length - 1; index++) {
     if (pointDistance(first, points[index]) <= epsilon) return true;
   }

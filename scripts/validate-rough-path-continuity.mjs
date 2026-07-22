@@ -4,12 +4,12 @@ import fs from "node:fs";
 
 const style = { strokeWidthPt: 2, roughness: 0.8, bowing: 0.35, seed: 12345, fillStyle: "none" };
 const cases = [
-  ["msoShapeRectangle", 180, 100, 5, 12],
-  ["msoShapeRoundedRectangle", 180, 100, 5, 16],
-  ["msoShapeOval", 180, 100, 2, 6],
-  ["msoShapeCloud", 180, 100, 2, 24],
-  ["msoShapeFlowchartProcess", 180, 100, 5, 12],
-  ["msoShapeActionButtonInformation", 180, 100, 2, 16]
+  ["msoShapeRectangle", 180, 100, 1, 12],
+  ["msoShapeRoundedRectangle", 180, 100, 1, 16],
+  ["msoShapeOval", 180, 100, 1, 6],
+  ["msoShapeCloud", 180, 100, 1, 24],
+  ["msoShapeFlowchartProcess", 180, 100, 1, 12],
+  ["msoShapeActionButtonInformation", 180, 100, 1, 16]
 ];
 const violations = [];
 

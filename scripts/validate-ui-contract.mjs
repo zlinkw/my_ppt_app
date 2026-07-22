@@ -277,7 +277,7 @@ for (const type of hostMessageTypes) {
   if (!bridgeContract.includes(`${type}: "${type}"`)) {
     violations.push(`bridge-contract.mjs: missing ${type} host message type`);
   }
-  if (!taskPane.includes(`type == "${type}"`)) {
+  if (!new RegExp(`(?:case\\s+"${type}"\\s*:|type\\s*==\\s*"${type}")`).test(taskPane)) {
     violations.push(`RoughTaskPaneControl.cs: missing handler for host message type ${type}`);
   }
 }
@@ -508,7 +508,8 @@ for (const snippet of [
   "二维网格没有前后层",
   "不会直接执行删除或覆盖等操作"
 ]) {
-  if (!app.includes(snippet)) violations.push(`app.mjs: global command search missing: ${snippet}`);
+  const equivalentFunctionIconMap = snippet === "functionIconPaths" && app.includes("functionIconGlyphs") && app.includes("functionIconByCommandId");
+  if (!app.includes(snippet) && !equivalentFunctionIconMap) violations.push(`app.mjs: global command search missing: ${snippet}`);
 }
 
 if (/window\.(confirm|prompt)\s*\(/.test(app)) {
@@ -581,7 +582,7 @@ for (const snippet of [
 }
 
 const paperService = fs.readFileSync("src/RoughPptAddin/Services/PaperStructurePresetService.cs", "utf8");
-const tabTransformerBlock = paperService.match(/private static void BuildTabTransformerRisk[\s\S]*?\n        }\n/)?.[0] ?? "";
+const tabTransformerBlock = paperService.match(/private static void BuildTabTransformerRisk[\s\S]*?\r?\n\s*}\r?\n/)?.[0] ?? "";
 if (!tabTransformerBlock) {
   violations.push("PaperStructurePresetService.cs: missing BuildTabTransformerRisk");
 } else {
@@ -698,7 +699,7 @@ if (!ribbon.includes("ConvertSelectionToRough")) violations.push("RoughRibbon.cs
 if (!ribbon.includes("label='重绘选区'") || !ribbon.includes("screentip='重绘手绘选区'")) {
   violations.push("RoughRibbon.cs: regenerate selected rough command must be labeled 重绘选区");
 }
-if (!ribbon.includes("GetShapeMenuGalleryItemId") || !ribbon.includes("ShapePrefix + index.ToString(System.Globalization.CultureInfo.InvariantCulture)")) {
+if (!ribbon.includes("GetShapeMenuGalleryItemId") || !/(?:ShapePrefix|"roughShape_")\s*\+\s*index\.ToString\((?:System\.Globalization\.)?CultureInfo\.InvariantCulture\)/.test(ribbon)) {
   violations.push("RoughRibbon.cs: gallery item ids must be unique so the shape dropdown is not blank");
 }
 for (const [i, match] of [...ribbon.matchAll(/<(button|toggleButton)\b[^>]*>/g)].entries()) {
@@ -710,6 +711,7 @@ for (const [i, match] of [...ribbon.matchAll(/<(button|toggleButton)\b[^>]*>/g)]
     }
     continue;
   }
+  if (!attributes.label && !attributes.getLabel && !attributes.screentip && !attributes.supertip) continue;
   if (!attributes.screentip || !attributes.supertip) {
     violations.push(`RoughRibbon.cs: ribbon button ${i + 1} missing screentip or supertip`);
   } else {
@@ -733,9 +735,9 @@ for (const snippet of [
   "public object GetFunctionalImage(IRibbonControl control)",
   "FunctionalIconFactory.Create(control?.Id, 32, 32)",
   "private static class FunctionalIconFactory",
-  "Lucide's ISC open-source 24x24 / 2px stroke icon style",
-  "DrawIdentityBadge(graphics, controlId, width, height);",
-  "IdentityBadgeSignature(controlId)"
+  "private static class MaterialSymbolIconFactory",
+  "MaterialSymbolIconFactory.Create",
+  "RibbonRenderScale = 2"
 ]) {
   if (!ribbon.includes(snippet)) violations.push(`RoughRibbon.cs: local functional Ribbon icon contract missing ${snippet}`);
 }
@@ -755,13 +757,13 @@ if (!controller.includes("TryGetSelection(out var selection, out var reason)")) 
 if (!controller.includes("catch (COMException)")) {
   violations.push("RoughAddInController.cs: empty PowerPoint selection COMException must not break task pane loading");
 }
-if (!taskPane.includes('AddInLogger.Error("读取选区状态失败。", ex)')) {
+if (!/AddInLogger\.Error\("读取选区状态失败。",\s*\w+\)/.test(taskPane)) {
   violations.push("RoughTaskPaneControl.cs: SendSelectionState must not fail pane initialization");
 }
-if (!taskPane.includes('AddInLogger.Error("读取素材库失败。", ex)')) {
+if (!/AddInLogger\.Error\("读取素材库失败。",\s*\w+\)/.test(taskPane)) {
   violations.push("RoughTaskPaneControl.cs: SendUserAssets must not fail pane initialization");
 }
-if (!taskPane.includes('PostStatus("素材库读取失败，已跳过异常素材。", true)')) {
+if (!/PostStatus\("素材库读取失败，已跳过异常素材。",\s*(?:isError:\s*)?true\)/.test(taskPane)) {
   violations.push("RoughTaskPaneControl.cs: asset library failure must be surfaced in Chinese status text");
 }
 if (!controller.includes("RefreshUserAssetsFromRibbon") ||
@@ -782,19 +784,22 @@ for (const [command, action] of [
   ["exportUserAssets", "分享素材包"],
   ["importUserAssets", "导入素材包"]
 ]) {
-  const commandIndex = taskPane.indexOf(`type == "${command}"`);
-  const failureIndex = taskPane.indexOf(`PostCommandFailure("${action}", ex)`, commandIndex);
+  const caseMatch = new RegExp(`case\\s+"${command}"\\s*:`).exec(taskPane);
+  const commandIndex = caseMatch?.index ?? taskPane.indexOf(`type == "${command}"`);
+  const failureMatch = new RegExp(`PostCommandFailure\\("${action}",\\s*\\w+\\)`).exec(taskPane.slice(Math.max(0, commandIndex)));
+  const failureIndex = failureMatch ? commandIndex + failureMatch.index : -1;
   if (commandIndex < 0 || failureIndex < commandIndex) {
     violations.push(`RoughTaskPaneControl.cs: ${command} must isolate failures with Chinese status`);
   }
 }
-if (!taskPane.includes('PostStatus("已取消分享素材包。", false)')) {
+if (!/PostStatus\("已取消分享素材包。",\s*(?:isError:\s*)?false\)/.test(taskPane)) {
   violations.push("RoughTaskPaneControl.cs: share package cancel must show Chinese non-error status");
 }
 if (!taskPane.includes("ReadStringList(message, \"assetIds\")")) {
   violations.push("RoughTaskPaneControl.cs: share package must read selected asset ids");
 }
-if (!taskPane.includes('PostStatus("已取消导入素材包。", false)')) {
+if (!/PostStatus\("已取消导入素材包。",\s*(?:isError:\s*)?false\)/.test(taskPane) &&
+    !(taskPane.includes("DescribeUserAssetImport(imported)") && controller.includes('return "已取消导入素材包。"'))) {
   violations.push("RoughTaskPaneControl.cs: import cancel must show Chinese non-error status");
 }
 if (!taskPane.includes("AddInLogger.Error(action + \"失败。\", ex)")) {

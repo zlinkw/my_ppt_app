@@ -10,6 +10,10 @@ function requireIncludes(text, snippet, label) {
   if (!text.includes(snippet)) violations.push(label);
 }
 
+function requirePattern(text, pattern, label) {
+  if (!pattern.test(text)) violations.push(label);
+}
+
 for (const snippet of [
   "const ZOTERO_IMAGE_RENDER_BATCH = 30",
   "const PALETTE_SCHEME_RENDER_BATCH = 16",
@@ -37,13 +41,13 @@ for (const snippet of [
   requireIncludes(app, snippet, `app.mjs missing resource guard: ${snippet}`);
 }
 
-requireIncludes(app, 'els.search.addEventListener("input", () => {\n  state.query = els.search.value;\n  resetResourceRenderWindows("chart");\n  scheduleRender();', "search input must schedule one render per frame");
-requireIncludes(app, 'els.search.addEventListener("keydown", event => {\n  flushScheduledRender();', "keyboard command handling must flush pending search render first");
+requirePattern(app, /els\.search\.addEventListener\("input",\s*\(\)\s*=>\s*\{[\s\S]*?state\.query\s*=\s*els\.search\.value;[\s\S]*?resetResourceRenderWindows\((?:"chart"|\[[^\]]*"chart"[^\]]*\])\);[\s\S]*?scheduleRender\(\);/, "search input must schedule one render per frame");
+requirePattern(app, /els\.search\.addEventListener\("keydown",\s*event\s*=>\s*\{\s*flushScheduledRender\(\);/, "keyboard command handling must flush pending search render first");
 requireIncludes(app, "function requestZoteroImages(force = false)", "Zotero image requests must support forced reloads");
 requireIncludes(app, "if (zoteroImageRequestInFlight)", "Zotero image requests must be single-flight");
 requireIncludes(app, "completeZoteroImageRequest();", "Zotero image responses must release queued requests");
-requireIncludes(app, 'els.zoteroImageSearch?.addEventListener("input", () => {\n  state.zoteroQuery = els.zoteroImageSearch.value;\n  resetResourceRenderWindows("zotero");\n  resetResourceRenderWindows("palette");\n  scheduleZoteroLibraryRender();', "Zotero search input must batch image and palette render");
-requireIncludes(app, 'els.zoteroImageSearch?.addEventListener("keydown", event => {\n  flushZoteroLibraryRender();', "Zotero keyboard handling must flush batched render first");
+requirePattern(app, /els\.zoteroImageSearch\?\.addEventListener\("input",\s*\(\)\s*=>\s*\{[\s\S]*?state\.zoteroQuery\s*=\s*els\.zoteroImageSearch\.value;[\s\S]*?resetResourceRenderWindows\((?:\[[^\]]*"zotero"[^\]]*"palette"[^\]]*\])\);[\s\S]*?scheduleZoteroLibraryRender\(\);/, "Zotero search input must batch image and palette render");
+requirePattern(app, /els\.zoteroImageSearch\?\.addEventListener\("keydown",\s*event\s*=>\s*\{\s*flushZoteroLibraryRender\(\);/, "Zotero keyboard handling must flush batched render first");
 
 for (const snippet of [
   "const ZLK_IMPORT_MAX_FILES = 120",

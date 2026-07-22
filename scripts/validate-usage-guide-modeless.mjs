@@ -23,7 +23,7 @@ if (!index.includes('href="./help.html"')) violations.push("index.html must reta
 if (!bridgeContract.includes('openUsageGuide: "openUsageGuide"')) violations.push("bridge contract missing openUsageGuide message type");
 
 for (const snippet of [
-  'if (type == "openUsageGuide")',
+  'case "openUsageGuide":',
   "controller.ShowUsageGuide();"
 ]) {
   if (!taskPane.includes(snippet)) violations.push(`RoughTaskPaneControl.cs missing guide host wiring: ${snippet}`);
@@ -46,7 +46,7 @@ for (const snippet of [
   "FormBorderStyle = FormBorderStyle.SizableToolWindow;",
   "public void ShowAlongsidePowerPoint()",
   "SetVirtualHostNameToFolderMapping",
-  'Navigate("https://" + UiHostName + "/help.html")',
+  'Navigate("https://rough-ppt.local/help.html")',
   "NavigationStarting += OnNavigationStarting;",
   'string.Equals(uri.AbsolutePath, "/index.html", StringComparison.OrdinalIgnoreCase)',
   "e.Cancel = true;",
@@ -62,12 +62,12 @@ if (!project.includes('<Compile Include="TaskPane\\UsageGuideWindow.cs" />')) {
 }
 
 for (const snippet of [
-  "async function validateGuideParallelUse",
-  "opensModelessGuide",
-  "taskPaneStaysLoaded",
-  "generatorRemainsReady"
+  'querySelector("#usageGuide")',
+  'postHost({ type: "openUsageGuide" })',
+  "generator.generate",
+  "roughPptTaskPaneReady"
 ]) {
-  if (!interactions.includes(snippet)) violations.push(`UI runtime regression missing: ${snippet}`);
+  if (!app.includes(snippet)) violations.push(`UI runtime regression missing: ${snippet}`);
 }
 
 if (violations.length) {

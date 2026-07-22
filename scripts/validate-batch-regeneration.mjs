@@ -7,8 +7,14 @@ const violations = [];
 
 requireIncludes(regenerator, "pendingRegenerations", "ShapeRegenerator.cs: missing batch regeneration queue");
 requireIncludes(regenerator, "List<PendingRegeneration>", "ShapeRegenerator.cs: queue must retain multiple pending Rough objects");
-requireIncludes(regenerator, "for (int i = 1; i <= selection.ShapeRange.Count; i++)", "ShapeRegenerator.cs: manual refresh/style updates must cover full selection");
-requireIncludes(regenerator, "QueueRegeneration(selection.ShapeRange[i], styleOverride)", "ShapeRegenerator.cs: selected shapes must be queued individually");
+requireAny(regenerator, [
+  "for (int i = 1; i <= selection.ShapeRange.Count; i++)",
+  "foreach (Microsoft.Office.Interop.PowerPoint.Shape target in targets)"
+], "ShapeRegenerator.cs: manual refresh/style updates must cover full selection");
+requireAny(regenerator, [
+  "QueueRegeneration(selection.ShapeRange[i], styleOverride)",
+  "QueueRegeneration(target, styleOverride)"
+], "ShapeRegenerator.cs: selected shapes must be queued individually");
 requireIncludes(regenerator, "RegenerationKey(shape, request)", "ShapeRegenerator.cs: queue must coalesce by stable Rough group key");
 requireIncludes(regenerator, "batch = new List<PendingRegeneration>(pendingRegenerations)", "ShapeRegenerator.cs: drain must process a batch, not a single last shape");
 rejectIncludes(regenerator, "private PowerPoint.Shape pendingShape", "ShapeRegenerator.cs: single pendingShape drops earlier batch resize events");
@@ -38,6 +44,10 @@ function read(path) {
 
 function requireIncludes(text, needle, message) {
   if (!text.includes(needle)) violations.push(message);
+}
+
+function requireAny(text, needles, message) {
+  if (!needles.some((needle) => text.includes(needle))) violations.push(message);
 }
 
 function rejectIncludes(text, needle, message) {
