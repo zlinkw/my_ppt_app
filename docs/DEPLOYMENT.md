@@ -28,7 +28,7 @@ The first packaging target is a staged publish directory under `publish/`. `scri
 
 `scripts\package-installers.ps1` wraps that package into root-level Windows installers: `RoughPptAddin-Windows11.zip`, `RoughPptAddin-Windows11.msi`, and `RoughPptAddin-Windows11-Setup.exe`. The MSI and EXE extract the same native editable VSTO add-in payload and run `scripts\install.ps1 -SkipBuild -InstallPrereqs`.
 The MSI allows same-version overwrite upgrades, and the EXE/portable installer overwrite the local `%LOCALAPPDATA%\RoughPptAddin\publish` payload after PowerPoint is closed. Rerunning the same MSI repairs and overwrites the local payload instead of leaving the previous files in place.
-Packaging derives the MSI `ProductVersion` from the app major/minor version plus the git commit count, then records it as `installerProductVersion` in `dist\installer-manifest.json`. Packaging also writes SHA256 hashes for the portable zip, MSI, and EXE. `scripts\verify-deploy-package.ps1` verifies the hashes and MSI `ProductVersion` so stale installer artifacts cannot pass final deployment validation.
+Packaging derives the MSI `ProductVersion` from the persisted `installerVersionBaseline` plus the current git commit count, then records it as `installerProductVersion` in the installer manifest. The baseline preserves monotonic upgrades after repository recovery, so packages remain newer than already installed historical builds even when the recovered git history is shorter. Packaging also writes SHA256 hashes for the portable zip, MSI, and EXE.
 
 ## Fixed Per-user Installation
 

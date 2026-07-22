@@ -90,6 +90,7 @@
 4. SE004（统一验证通过）：任务窗格连接片、导入提示、自动绘图状态、错误反馈和默认图表标题已统一使用 SimpleExperiment 品牌；保留 ZLK 仅作为协议 ID、内部标记和兼容搜索词。
 5. SE005（统一验证通过）：连接合同验证、恢复源码等价实现兼容、部署与完整卸载入口、Office 版本兼容和批量重绘合同均已通过；完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过。本批不打包、不安装。
 6. PKG001（已完成，实现提交 `ab02a49`）：用户明确要求生成最新版 ZIP、MSI、EXE。非破坏性发布脚本已补齐独立输出 NuGet restore、C# 新语法版本、ClickOnce 签名、Material Symbols TTF 嵌入和 per-user WiX 组件合同；`npm.cmd test`、`npm.cmd run build:ui`、Release 编译、Ribbon 图标验证及三种产物 SHA256 校验均通过。最终产物位于 `releases/RoughPptAddin-0.1.22-ab02a492/`，未自动安装。
+7. PKG002（验证通过，待提交后生成最终产物）：用户安装 MSI 时出现 “A newer Rough PPT Add-in is already installed.”。已复现本机已安装 `0.1.695` 高于恢复仓按当前提交数生成的 `0.1.22`。本批使用持久化 `installerVersionBaseline=0.1.695` 加当前提交数恢复版本单调性，并由共享解析器覆盖两条打包链路；保护 UpgradeCode、覆盖安装、per-user 范围、三种入口及现有插件数据，不自动卸载或安装，不关闭 PowerPoint。旧版到恢复后首个构建的回归合同、完整 `npm.cmd test` 和 `npm.cmd run build:ui` 已通过；提交同步后生成最终 ZIP/MSI/EXE 并验证 Release、Ribbon、MSI ProductVersion 与 SHA256。
 
 ### 当前 SimpleExperiment 连接批次
 

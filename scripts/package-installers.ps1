@@ -9,6 +9,7 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $root
+. (Join-Path $PSScriptRoot "installer-version.ps1")
 
 function Invoke-Checked {
     param(
@@ -118,14 +119,12 @@ $exePath = Join-Path $root "RoughPptAddin-Windows11-Setup.exe"
 $workRoot = Join-Path $root "dist\installer-build"
 $manifestPath = Join-Path $root "dist\installer-manifest.json"
 
-$packageMetadata = Get-Content -LiteralPath (Join-Path $root "package.json") -Raw -Encoding UTF8 | ConvertFrom-Json
-$applicationVersion = [Version]$packageMetadata.version
 $commitCountText = (& git rev-list --count HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $commitCountText -notmatch "^\d+$") {
     throw "Unable to derive installer version from Git history."
 }
-$commitCount = [Math]::Min(65535, [Math]::Max(1, [int]$commitCountText))
-$installerProductVersion = "$($applicationVersion.Major).$($applicationVersion.Minor).$commitCount"
+$commitCount = [Math]::Max(1, [int]$commitCountText)
+$installerProductVersion = Resolve-InstallerProductVersion -PackageJsonPath (Join-Path $root "package.json") -CommitCount $commitCount
 
 if (Test-Path $workRoot) {
     Remove-Item -LiteralPath $workRoot -Recurse -Force

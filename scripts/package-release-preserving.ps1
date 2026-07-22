@@ -9,6 +9,7 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $root
+. (Join-Path $PSScriptRoot "installer-version.ps1")
 
 function Invoke-Checked {
     param([scriptblock]$Command, [string]$Name)
@@ -100,16 +101,14 @@ function Resolve-Wix([string]$ToolRoot) {
     return [ordered]@{ Candle = $resolvedCandle; Light = $resolvedLight }
 }
 
-$packageMetadata = Get-Content -LiteralPath (Join-Path $root "package.json") -Raw -Encoding UTF8 | ConvertFrom-Json
-$applicationVersion = [Version]$packageMetadata.version
 $commit = (& git rev-parse HEAD).Trim()
 $shortCommit = (& git rev-parse --short=8 HEAD).Trim()
 $commitCountText = (& git rev-list --count HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $commitCountText -notmatch "^\d+$") {
     throw "Unable to derive release version from Git history."
 }
-$commitCount = [Math]::Min(65535, [Math]::Max(1, [int]$commitCountText))
-$installerProductVersion = "$($applicationVersion.Major).$($applicationVersion.Minor).$commitCount"
+$commitCount = [Math]::Max(1, [int]$commitCountText)
+$installerProductVersion = Resolve-InstallerProductVersion -PackageJsonPath (Join-Path $root "package.json") -CommitCount $commitCount
 $releaseRootProvided = -not [string]::IsNullOrWhiteSpace($ReleaseRoot)
 if ([string]::IsNullOrWhiteSpace($ReleaseRoot)) {
     $ReleaseRoot = Join-Path $root ("releases\RoughPptAddin-{0}-{1}" -f $installerProductVersion, $shortCommit)

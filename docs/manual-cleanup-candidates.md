@@ -23,5 +23,6 @@
 | `releases/RoughPptAddin-0.1.21-97febadc-r5/` | 失败的恢复打包目录 | 第五次打包尝试的独立输出，WiX ICE 组件合同失败 | 确认不再需要失败构建日志或取证 | 待人工审核 |
 | `releases/RoughPptAddin-0.1.21-97febadc-r6/` | 失败的恢复打包目录 | 第六次打包尝试的独立输出，WiX 自动 GUID 合同失败 | 确认不再需要失败构建日志或取证 | 待人工审核 |
 | `releases/RoughPptAddin-0.1.21-97febadc-r7/` | 已被取代的验证打包目录 | 三件套验证成功，但基于打包修复提交前的工作树；最终交付已由 `ab02a49` 重新生成 | 确认仅保留 `releases/RoughPptAddin-0.1.22-ab02a492/` 作为本次最终交付 | 待人工审核 |
+| `releases/RoughPptAddin-0.1.22-ab02a492/` | 版本号失效的安装包目录 | MSI ProductVersion `0.1.22` 低于恢复前已安装版本 `0.1.695`，会触发错误的降级拦截 | 新版单调版本安装包验证成功后再人工删除；不要再对外分发此目录 | 待人工审核 |
 
 人工处理后，请在提交前重新运行 `git status --short`，避免把用户手动删除以外的清理动作误纳入代码批次。
