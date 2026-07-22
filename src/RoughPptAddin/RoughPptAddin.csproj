@@ -99,6 +99,7 @@
     <Compile Include="Services\OfficeCompatibilityService.cs" />
     <Compile Include="Services\PaletteLibraryService.cs" />
     <Compile Include="TaskPane\UsageGuideWindow.cs" />
+    <Compile Include="TaskPane\ResearchChartStudioWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="ui\vendor\material-symbols-rounded.subset.ttf">
@@ -169,6 +170,27 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="ui\vendor\material-symbols-rounded-LICENSE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ui\research-chart-studio.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ui\research-chart-studio.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ui\research-chart-studio.mjs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ui\vendor\chart.umd.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ui\vendor\chartjs-LICENSE.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ui\vendor\papaparse.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="ui\vendor\papaparse-LICENSE.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

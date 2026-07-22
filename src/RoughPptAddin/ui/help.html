@@ -67,7 +67,7 @@
             <tr><td>风格、填充、线条、箭头快捷</td><td>Ribbon → 风格</td><td>快速套用常见视觉参数</td></tr>
             <tr><td>精确风格参数与模板</td><td>右侧 → 风格</td><td>调线宽、粗糙度、弯曲度、颜色、填充和来源</td></tr>
             <tr><td>二维与三维特征块</td><td>Ribbon → 论文与特征；右侧精调</td><td>网络结构图中的特征图、张量和体数据块</td></tr>
-            <tr><td>科研图表</td><td>右侧 → 科研绘图</td><td>导入 JSON、CSV、统计结果或文件夹并绘制原生图表</td></tr>
+            <tr><td>科研图表</td><td>右侧 → 科研绘图工作区</td><td>同一 CSV 切换多种预览后插入原生图表；旧导入面板继续支持 JSON、统计结果和文件夹</td></tr>
             <tr><td>论文结构预设</td><td>Ribbon → 论文与特征 → 论文套件</td><td>快速搭建多模态、医学 AI、Transformer 等框图</td></tr>
             <tr><td>完整论文图片库</td><td>Ribbon → 素材 → 打开论文图片库</td><td>复用 Zotero 生成的完整图库，进行筛选、高清查看、分享、导入和删除</td></tr>
             <tr><td>Zotero 论文图与配色</td><td>右侧 → 论文图像与配色</td><td>快速搜索、插入当前参考图，并按单张图取色或保存配色</td></tr>
@@ -155,17 +155,17 @@
 
     <section id="charts" class="guide-section">
       <h2>六、科研绘图</h2>
-      <p>科研绘图把实验聚合结果转换为 PowerPoint 原生线、形状、文字和表格。优先使用统计 JSON 或论文表格 CSV，不建议直接导入大体积原始数据和 checkpoint。</p>
+      <p>科研绘图把实验聚合结果转换为 PowerPoint 原生线、形状、文字和表格。独立工作区使用本地 Papa Parse 读取 CSV，并使用本地 Chart.js 切换预览；预览不会作为图片插入。旧任务窗格导入面板继续处理统计 JSON、论文表格和自动化结果。</p>
       <figure class="guide-figure wide">
         <img src="./help-assets/chart-workspace.png" alt="科研绘图导入步骤、图表类型和预览工作区">
         <figcaption>先导入数据，再选择图表并插入 PowerPoint。无数据时只显示示例预览，不执行绘图。</figcaption>
       </figure>
       <h3>标准流程</h3>
       <ol>
-        <li>右侧打开“科研绘图”，选择“导入文件”或“导入文件夹”。</li>
-        <li>检查识别到的数据集、指标、分组、误差和来源文件。</li>
-        <li>从均值误差图、敏感性曲线、散点对比、柱状对比、病例分布等预设中选择用途。</li>
-        <li>调整标题、坐标轴、颜色、图例和误差显示，再执行插入。</li>
+        <li>点击右侧“科研绘图”，在独立工作区选择一个 CSV；也可先加载示例检查预览。</li>
+        <li>选择横轴或标签、数值、可选分组和误差字段。</li>
+        <li>在柱状图、折线图、散点图、分组对比、均值误差图、病例分布和结果表格之间切换预览。</li>
+        <li>确认标题和图表类型后点击“插入 PPT”。需要导入 JSON、Markdown、文件夹或 SimpleExperiment 聚合结果时，继续使用旧任务窗格导入面板。</li>
         <li>插入后可用 PowerPoint 原生方式继续编辑每个元素。</li>
       </ol>
       <h3>支持的结果入口</h3>

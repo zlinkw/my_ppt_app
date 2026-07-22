@@ -14,7 +14,7 @@ public sealed class RoughJsBridge
 {
 	private const string UiHostName = "rough-ppt.local";
 
-	private static readonly string[] RequiredUiFiles = new string[18]
+	private static readonly string[] RequiredUiFiles = new string[25]
 	{
 		"index.html",
 		"help.html",
@@ -33,7 +33,14 @@ public sealed class RoughJsBridge
 		"zlk-cluster-result-importer.mjs",
 		"autoshape-catalog.json",
 		"styles.css",
-		Path.Combine("vendor", "rough.esm.js")
+		Path.Combine("vendor", "rough.esm.js"),
+		"research-chart-studio.html",
+		"research-chart-studio.css",
+		"research-chart-studio.mjs",
+		Path.Combine("vendor", "chart.umd.min.js"),
+		Path.Combine("vendor", "chartjs-LICENSE.md"),
+		Path.Combine("vendor", "papaparse.min.js"),
+		Path.Combine("vendor", "papaparse-LICENSE.txt")
 	};
 
 	private readonly JavaScriptSerializer serializer = new JavaScriptSerializer
