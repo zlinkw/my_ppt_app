@@ -1366,7 +1366,7 @@ namespace RoughPptAddin.Services
 				researchChartStudioWindow = new ResearchChartStudioWindow(GetPowerPointWindowHandle, delegate(string message, bool isError)
 				{
 					NotifyUi(message, isError);
-				}, InsertZlkChart);
+				}, InsertZlkChart, InsertResearchSvg);
 			}
 			researchChartStudioWindow.ShowAlongsidePowerPoint();
 		}
@@ -1375,6 +1375,11 @@ namespace RoughPptAddin.Services
 			AddInLogger.Error("打开科研绘图工作区失败。", ex);
 			NotifyUi("打开科研绘图工作区失败：" + ex.Message, isError: true);
 		}
+	}
+
+	private string InsertResearchSvg(ResearchSvgDocument document)
+	{
+		return ResearchChartStudioService.InsertIntoCurrentSlide(application, document);
 	}
     
     	private static string ToRelativeDisplayPath(string root, string path)

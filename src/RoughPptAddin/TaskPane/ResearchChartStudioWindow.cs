@@ -30,20 +30,25 @@ public sealed class ResearchChartStudioWindow : Form
 
 	private readonly Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart;
 
+	private readonly Func<ResearchSvgDocument, string> insertSvg;
+
 	private readonly WebView2 webView = new WebView2();
 
 	private readonly JavaScriptSerializer serializer = new JavaScriptSerializer
 	{
-		MaxJsonLength = 8388608
+		MaxJsonLength = 16777216
 	};
 
 	private bool initializationStarted;
 
-	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart)
+	private ResearchSvgDocument selectedSvg;
+
+	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart, Func<ResearchSvgDocument, string> insertSvg)
 	{
 		this.ownerWindowHandle = ownerWindowHandle;
 		this.reportStatus = reportStatus;
 		this.insertChart = insertChart;
+		this.insertSvg = insertSvg;
 		Text = "科研绘图工作区";
 		base.ShowIcon = false;
 		base.ShowInTaskbar = false;
@@ -140,6 +145,16 @@ public sealed class ResearchChartStudioWindow : Form
 				OpenResearchChartWebsite(ReadString(message, "siteId", string.Empty));
 				return;
 			}
+			if (string.Equals(messageType, "selectResearchSvg", StringComparison.OrdinalIgnoreCase))
+			{
+				SelectResearchSvg();
+				return;
+			}
+			if (string.Equals(messageType, "insertResearchSvg", StringComparison.OrdinalIgnoreCase))
+			{
+				InsertResearchSvg(ReadString(message, "requestId", string.Empty));
+				return;
+			}
 			if (!string.Equals(messageType, "insertResearchChart", StringComparison.OrdinalIgnoreCase))
 			{
 				return;
@@ -164,6 +179,94 @@ public sealed class ResearchChartStudioWindow : Form
 			PostResult(string.Empty, false, string.Empty, ex.Message);
 			reportStatus?.Invoke("科研绘图工作区插入失败：" + ex.Message, true);
 		}
+	}
+
+	private void SelectResearchSvg()
+	{
+		using (OpenFileDialog dialog = new OpenFileDialog
+		{
+			Title = "选择科研绘图 SVG",
+			Filter = "SVG 矢量图 (*.svg)|*.svg",
+			CheckFileExists = true,
+			Multiselect = false,
+			RestoreDirectory = true
+		})
+		{
+			if (dialog.ShowDialog(this) != DialogResult.OK)
+			{
+				PostSvgSelectionResult(null, canceled: true, null);
+				return;
+			}
+			try
+			{
+				selectedSvg = ResearchChartStudioService.LoadSvg(dialog.FileName);
+				PostSvgSelectionResult(selectedSvg, canceled: false, null);
+				reportStatus?.Invoke("科研 SVG 已通过安全校验。", false);
+			}
+			catch (Exception ex)
+			{
+				selectedSvg = null;
+				AddInLogger.Error("读取科研 SVG 失败。", ex);
+				PostSvgSelectionResult(null, canceled: false, ex.Message);
+				reportStatus?.Invoke("读取科研 SVG 失败：" + ex.Message, true);
+			}
+		}
+	}
+
+	private void InsertResearchSvg(string requestId)
+	{
+		try
+		{
+			if (selectedSvg == null)
+			{
+				throw new InvalidOperationException("请先选择并预览一个 SVG 文件。");
+			}
+			string shapeName = insertSvg(selectedSvg);
+			PostSvgInsertResult(requestId, true, shapeName, null);
+			reportStatus?.Invoke("已将科研 SVG 插入当前幻灯片。", false);
+		}
+		catch (Exception ex)
+		{
+			AddInLogger.Error("插入科研 SVG 失败。", ex);
+			PostSvgInsertResult(requestId, false, string.Empty, ex.Message);
+			reportStatus?.Invoke("插入科研 SVG 失败：" + ex.Message, true);
+		}
+	}
+
+	private void PostSvgSelectionResult(ResearchSvgDocument document, bool canceled, string error)
+	{
+		if (webView.CoreWebView2 == null)
+		{
+			return;
+		}
+		webView.CoreWebView2.PostWebMessageAsJson(serializer.Serialize(new
+		{
+			type = "researchSvgSelectionResult",
+			ok = document != null,
+			canceled,
+			fileName = document?.FileName ?? string.Empty,
+			sizeBytes = document?.SizeBytes ?? 0L,
+			width = document?.Width ?? 0.0,
+			height = document?.Height ?? 0.0,
+			svgText = document?.SvgText ?? string.Empty,
+			error = error ?? string.Empty
+		}));
+	}
+
+	private void PostSvgInsertResult(string requestId, bool ok, string shapeName, string error)
+	{
+		if (webView.CoreWebView2 == null)
+		{
+			return;
+		}
+		webView.CoreWebView2.PostWebMessageAsJson(serializer.Serialize(new
+		{
+			type = "researchSvgInsertResult",
+			requestId,
+			ok,
+			shapeName = shapeName ?? string.Empty,
+			error = error ?? string.Empty
+		}));
 	}
 
 	private void OpenResearchChartWebsite(string websiteId)
