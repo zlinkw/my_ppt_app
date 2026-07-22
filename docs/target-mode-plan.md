@@ -85,70 +85,7 @@
 
 ## 活跃队列
 
-1. SE001（统一验证通过）：PPT 缺省结果发现优先使用 `statistics.json` 和论文表格，再考虑摘要、索引和 case-level 辅助文件；`npm test` 已覆盖结果选择合同。
-2. SE002（统一验证通过）：discovery 与 `/health` 已补充服务和进程身份、固定路径、token header 清单、`ready`、`busy` 和 additive capabilities；`npm test` 已覆盖连接诊断合同。
-3. SE003（统一验证通过）：automation server 已缓存最近 32 个成功 `requestId`，相同内容重试返回 `replayed=true` 且不重复建页，不同内容复用 ID 与并发请求均快速返回中文 `409`；`npm test` 已覆盖幂等合同。
-4. SE004（统一验证通过）：任务窗格连接片、导入提示、自动绘图状态、错误反馈和默认图表标题已统一使用 SimpleExperiment 品牌；保留 ZLK 仅作为协议 ID、内部标记和兼容搜索词。
-5. SE005（统一验证通过）：连接合同验证、恢复源码等价实现兼容、部署与完整卸载入口、Office 版本兼容和批量重绘合同均已通过；完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过。本批不打包、不安装。
-6. PKG001（已完成，实现提交 `ab02a49`）：用户明确要求生成最新版 ZIP、MSI、EXE。非破坏性发布脚本已补齐独立输出 NuGet restore、C# 新语法版本、ClickOnce 签名、Material Symbols TTF 嵌入和 per-user WiX 组件合同；`npm.cmd test`、`npm.cmd run build:ui`、Release 编译、Ribbon 图标验证及三种产物 SHA256 校验均通过。最终产物位于 `releases/RoughPptAddin-0.1.22-ab02a492/`，未自动安装。
-7. PKG002（已完成，实现提交 `1c1ac8b`）：用户安装 MSI 时出现 “A newer Rough PPT Add-in is already installed.”。根因是本机已安装 `0.1.695` 高于恢复仓按当前提交数生成的 `0.1.22`。本批使用持久化 `installerVersionBaseline=0.1.695` 加当前提交数恢复版本单调性，并由共享解析器覆盖两条打包链路；UpgradeCode、覆盖安装、per-user 范围、三种入口及现有插件数据保持不变。旧版到恢复后首个构建的回归合同、完整 `npm.cmd test`、`npm.cmd run build:ui`、Release、Ribbon、MSI ProductVersion `0.1.719` 和三种产物 SHA256 均通过；最终产物位于 `releases/RoughPptAddin-0.1.719-1c1ac8b2/`，未自动安装或关闭 PowerPoint。
-8. B504（统一验证通过）：简洁模式连接状态片恢复三列紧凑布局，窄窗改为两列加完整模式整行，文字固定横排并省略过长内容；敏感性曲线预览改为单条有边界留白的 SVG polyline，节点与折线共享坐标，避免断裂和越界。首次浏览器验证暴露连接文字容器仍受全局按钮规则压缩、简洁模式测试状态使隐藏菜单无法获取焦点；现显式固定状态点/文字网格列，并让菜单合同先恢复完整模式。完整 `npm.cmd test` 与 `npm.cmd run build:ui` 已通过。
-9. PKG003（已完成，发布提交 `d939c60`）：两处 UI 修复通过完整 `npm.cmd test`、`npm.cmd run build:ui`、独立 Restore、签名 Release 编译和 79 个 Ribbon 功能图标运行时验证。发布链路已修正内置构建信息，ZIP 中记录版本 `0.1.724`、提交 `d939c602d403`、`master`、`dirty=false`；MSI ProductVersion 与清单均为 `0.1.724`。ZIP、MSI、EXE 的长度和 SHA256 已逐项复核，最终产物位于 `releases/RoughPptAddin-0.1.724-d939c602/`。未自动安装，也未关闭或重启 PowerPoint/VS Code。
-10. PKG004（已完成，实现提交 `8e0c211`）：用户手动重复安装 `0.1.724` 时，PowerPoint 运行状态被 MSI 隐藏为 `RunInstall` 的 `1722/1603`。安装器现将完整日志持久化到 `%LOCALAPPDATA%\RoughPptAddin\logs`，同步记录注册表诊断并显示具体中文失败原因；前置组件子进程失败会立即停止，安装器不再自动关闭 PowerPoint。安装事务与 Ribbon 验证的临时删除改走回收站。完整 `npm.cmd test`、`npm.cmd run build:ui`、签名 Release 编译和 79 个 Ribbon 功能图标验证通过；MSI 保持 per-user、固定 UpgradeCode、同版本覆盖和 `RunInstall` 执行合同。`0.1.726` 的 ZIP、MSI、EXE 长度及 SHA256 与清单一致，内置构建信息为 `8e0c211561d3`、`master`、`dirty=false`，最终产物位于 `releases/RoughPptAddin-0.1.726-8e0c2115/`。未自动安装，也未关闭或重启 PowerPoint/VS Code。
-
-### 当前 SimpleExperiment 连接批次
-
-- 目标：提高 SimpleExperiment 到 PPT 原生科研绘图链路的结果选择正确性、连接可诊断性和重试安全性。
-- 范围：PPT automation server、结果发现、任务窗格状态、兼容验证和相关文档。
-- 排除：外部 `D:\GitRepo\MCP\zlk-cluster-orchestrator` 与 `D:\GitRepo\my_img_manager` 只读；不改其源码，不扫描 raw dataset/checkpoint/Agent 全局态，不自动安装、不关闭或重启 PowerPoint/VS Code。
-- 保护区：loopback 与 token 验证、`schemaVersion=1`、已有 PowerPoint 不关闭、结果统一经 importer 归一化、最终对象保持 PPT 原生可编辑。
-- 回归检查：SE001-SE005 已通过完整 `npm.cmd test` 与 `npm.cmd run build:ui`；本批未运行打包或安装，后续只有用户明确要求时才生成安装包。
-
-### 当前安装修复批次
-
-- 批次标识：PKG004。
-- 目标：让安装失败保留可定位日志，并让 PowerPoint 占用和同版本重复安装得到明确、可恢复的结果。
-- 范围：`scripts/install.ps1`、本体事务测试接线、安装合同测试和部署说明。
-- 排除：不修改插件业务功能，不自动安装，不关闭或重启 PowerPoint/VS Code，不清理用户数据或旧发布目录。
-- 保护区：当前用户安装范围、UpgradeCode、覆盖安装、ZIP/MSI/EXE 三入口、VSTO/证书/前置环境合同。
-- 当前状态：已完成。首次统一验证在部署文档旧措辞合同处失败，修正后完整测试、UI 构建、签名 Release、Ribbon 运行时图标、安装包内部合同和三种产物清单校验均通过；发布目录为 `releases/RoughPptAddin-0.1.726-8e0c2115/`，等待用户关闭 PowerPoint 后手动安装验证。
-
-### 当前 UI 与科研绘图工作区批次
-
-- 批次队列：B505、B506、B507、B508、B509。
-- 目标：修复简洁模式连接状态按钮在窄窗和全局流式规则下的纵向挤压；将“科研绘图”入口打开独立本地网页工作区，支持同一 CSV 切换多种预览类型，并把选中类型交回现有 PPT 原生图表渲染链路。
-- 范围：`src/RoughPptAddin/ui/**`、科研绘图独立 WebView2 窗口、任务窗格入口消息、相关静态合同与项目文档。
-- 排除：不移除旧任务窗格导入入口；不改变 ZLK `schemaVersion=1`、loopback/token 协议和结果 importer；不把 Canvas/SVG/图片作为 PPT 最终对象。
-- 保护区：PowerPoint 不自动关闭或重启；现有图表 renderer 继续只生成原生 `Shape`、`Line`、`Textbox`、`Table`；Chart.js 仅用于网页预览，CSV 通过 Papa Parse 解析。
-- 批次边界：每个小批次不单独测试、构建或打包；B505-B509 完成后统一运行完整 `npm test`、`npm run build:ui`，通过后按用户要求打包，供手动安装验证。
-- B505（统一验证通过）：按钮最终尺寸和可用宽度合同。
-- B506（统一验证通过）：独立科研绘图网页的本地静态界面、CSV 解析和 Chart.js 预览。
-- B507（统一验证通过）：独立 WebView2 窗口及本地资源映射。
-- B508（统一验证通过）：网页插入消息回传、PPT 原生图表插入和任务窗格入口跳转。
-- B509（统一验证通过）：资源清单、使用说明和端到端静态回归合同。
-- B510（已纠正）：第三方 Chart.js 包含可选 Canvas 导出 API；扫描器现只对该只读 vendor 文件豁免，工作区集成脚本禁止调用 Canvas 捕获或导出。
-- B511（已纠正）：独立科研绘图工作区消息已登记到 `bridge-contract.mjs`，全量 UI 合同通过。
-- B512（已纠正）：独立工作区回传消息的 `requestId` 仅用于页面应答，不再传给 `InsertZlkChart` 作为自动化请求标识；插入保持在当前 PPT 幻灯片目标，定向合同和完整验证通过。
-- 统一验证：`npm.cmd test`、`npm.cmd run build:ui`、`node --check` 和签名 Release 编译均通过；直接运行旧 `scripts/build.ps1` 因未传入 Restore/LangVersion 参数失败，不作为发布链路，`npm.cmd run package` 使用独立 Restore 与最新 C# 语言版本成功。
-- 发布产物：`releases/RoughPptAddin-0.1.736-ed524841/`，发布提交 `ed524841`；ZIP、MSI、EXE 清单、内置 `dirty=false` 构建信息和 SHA256 已复核；未自动安装、未关闭或重启 PowerPoint/VS Code。
-
-### 当前网页科研绘图与 SVG 所见即所得批次
-
-- 批次队列：B513、B514、B515、B516、B517、B518，均已完成并统一验证。
-- 目标：让简洁模式三个状态按钮直接复用快捷工作台按钮样式；科研绘图主入口打开系统浏览器中的成熟绘图网站；网站导出的 SVG 以同一份内容完成预览和 PPT 插入，消除颜色、坐标与排版差异。
-- 范围：简洁模式连接按钮、独立科研绘图工作区、系统浏览器白名单、SVG 选择/校验/插入、使用说明与静态合同。
-- 排除：不移除旧任务窗格 JSON/CSV/SimpleExperiment 原生绘图入口；不改变 ZLK `schemaVersion=1`、loopback/token 协议、结果 importer 或原生 renderer；不允许任意 URL、脚本化 SVG、外部资源或 Canvas 截图插入。
-- 保护区：PowerPoint 不自动关闭或重启；Rough 与 ZLK 自动绘图继续只生成原生对象；浏览器只打开 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定地址；科研 SVG 只接受用户显式选择的本地文件，插件不伪造来源证明，并在插入前再次校验内容一致性。
-- 回归检查：连接按钮共享布局、系统浏览器白名单、SVG 安全校验、预览/插入同源、旧 ZLK 原生链路、Office 兼容提示、无渐变 UI、中文 tooltip。
-- 批次边界：单个小批次不运行测试、构建或打包；B513-B517 完成后统一运行完整 `npm.cmd test`、`npm.cmd run build:ui`、Release 编译并打包 ZIP/MSI/EXE。
-- B513（统一验证通过）：三个简洁模式状态按钮改用 `workflow-actions` 容器与同一按钮尺寸、边框、间距和响应式网格；记录科研 SVG 窄范围例外。
-- B514（统一验证通过）：科研绘图工作区改为四个网站入口、受控 SVG 选择、同源预览和插入状态工作台；移除本地 Chart.js/CSV 预览主流程，不影响任务窗格旧原生导入入口。
-- B515（统一验证通过）：系统浏览器仅接受 RAWGraphs、Datawrapper、Plotly Chart Studio、Vega Editor 四个固定 HTTPS 地址；科研绘图主入口默认打开 RAWGraphs，并同时保留本地 SVG 工作区。
-- B516（统一验证通过）：宿主文件选择器限制 4 MB UTF-8 SVG，拒绝 DTD、脚本、事件、动画、外部 URL/资源和嵌入图像；校验内容固定到插件会话缓存，预览和插入复用同一 SHA256 内容，并在 PowerPoint 2016 及更高版本居中等比插入当前幻灯片。
-- B517（统一验证通过）：使用说明、架构、验证清单和源码隔离扫描已同步网站绘图、SVG 安全边界、同源预览/插入、PowerPoint 2016 版本门禁与 PowerPoint 2013 原生入口回退。
-- B518（统一验证通过）：修复科研 SVG 空状态破图占位和 Plotly 长按钮文字截断，允许网站按钮自然换行，并以真实工作区截图更新使用说明；旧 `0.1.743` 发布目录已登记为人工清理候选，不再交付。
-- 统一验证与发布：源码扫描误报修正后，完整 `npm.cmd test`、`npm.cmd run build:ui`、签名 Release 编译和 79 个 Ribbon 功能图标运行时验证均通过。最终三种产物位于 `releases/RoughPptAddin-0.1.744-c4df37f5/`；ZIP 内构建信息为版本 `0.1.744`、提交 `c4df37f5a162`、`master`、`dirty=false`，科研 SVG 工作区、插件 DLL、安装、环境补齐、卸载和彻底卸载入口均存在。
-- 产物复核：ZIP 为 `4763111` 字节，SHA256 `36D530BD37D84B686FAE60DC0986496AB2BF322E535FA0B182CD66E7A443D594`；MSI 为 `4775936` 字节，SHA256 `A7D72CEA497E891327B2EC3F2C3ACF03334ACDF6AA5AD6CF543893EC49A5DFBB`；EXE 为 `4923392` 字节，SHA256 `471ED0A141EBF26F04CF098168A2282074323AB314699F7EB7BB41723C0EC036`。三项均与 `installer-manifest.json` 一致；未自动安装、未关闭或重启 PowerPoint/VS Code。
+1. B519-B523：当前本地科研绘图工作台批次；此前已完成批次由 Git 历史追溯。
 
 ### 当前本地科研绘图工作台批次
 
@@ -159,30 +96,22 @@
 - 保护区：PowerPoint 不自动关闭或重启；Rough 与 ZLK 自动绘图继续只生成 PPT 原生对象；本地工作台生成的科研 SVG 仍经 4 MB、安全 XML、脚本、事件、外部资源和内容一致性校验后才允许插入。
 - 回归检查：简洁模式仅显示一组紧凑连接状态；科研绘图快捷入口只打开本地工作台；工作台中文且无渐变；数据、字段、图表、样式变化实时更新预览；PPT 插入与预览使用同一 SVG；旧原生入口继续可用。
 - 批次边界：单个小批次不运行测试、构建或打包；B519-B523 完成后统一运行完整 `npm.cmd test`、`npm.cmd run build:ui`、签名 Release 编译和 ZIP/MSI/EXE 打包，供用户手动安装验证。
-- B519（已实现，待统一验证）：简洁模式强制隐藏仅供完整模式使用的重复连接状态条；科研绘图快捷入口只打开本地工作台，不再自动打开 RAWGraphs 或其它网站。
-- B520（已实现，待统一验证）：固定 Vega `6.3.1`、Vega-Lite `6.4.3`、Vega-Embed `7.1.0`，将浏览器运行时和 BSD-3-Clause 许可证离线纳入 UI 资源；依赖审计为 0 个已知漏洞。
-- B521（已实现，待统一验证）：工作台已提供中文 CSV/TSV 编辑与导入、12 种图表、字段映射、聚合排序、标题坐标、画布标记、四套配色、颜色和显示选项，并以三栏流式布局保留稳定 SVG 预览区；外部网站降为折叠的显式扩展入口。
-- B522（已实现，待统一验证）：CSV/TSV 经 Papa Parse 本地解析，12 种图表与全部字段/样式设置经 Vega-Lite 防抖实时重绘；预览直接使用 `view.toSVG()` 结果，宿主按 4 MB 与安全 XML 合同暂存同一字符串并确认后才允许插入 PPT；快捷入口仍只打开本地工作台，外部网站仅响应工作台内的显式点击。
-- B523（待处理）：更新使用说明与验证合同，完成五批次统一验证、构建和三种安装包发布。
+- B519（统一验证通过）：简洁模式强制隐藏仅供完整模式使用的重复连接状态条；科研绘图快捷入口只打开本地工作台，主任务窗格宿主也拒绝网站跳转消息。
+- B520（统一验证通过）：固定 Vega `6.3.1`、Vega-Lite `6.4.3`、Vega-Embed `7.1.0`，将浏览器运行时和 BSD-3-Clause 许可证离线纳入 UI 资源；依赖审计为 0 个已知漏洞。
+- B521（统一验证通过）：工作台提供中文 CSV/TSV 编辑与导入、12 种图表、字段映射、聚合排序、标题坐标、画布标记、四套配色、颜色和显示选项，并以三栏流式布局保留稳定 SVG 预览区；外部网站降为折叠的显式扩展入口。
+- B522（统一验证通过）：CSV/TSV 经 Papa Parse 本地解析，全部字段与样式设置经 Vega-Lite 防抖实时重绘；预览直接使用 `view.toSVG()` 结果，宿主按 4 MB 与安全 XML 合同暂存同一字符串并确认后才允许插入 PPT。
+- B523（统一验证通过，待发布打包）：使用说明、架构、验证合同和真实截图已同步；首次完整测试暴露并修正 vendor 文件名规则与桥接消息白名单，随后完整 `npm.cmd test`、`npm.cmd run build:ui`、签名 Release 编译和 79 个 Ribbon 功能图标验证均通过。下一边界仅为从干净发布提交生成 ZIP、MSI、EXE 并复核清单。
 
 ## 近期锚点
 
-- B485：安装入口补齐 PowerPoint、.NET Framework 4.8、WebView2 和 VSTO 的前置检测；缺少 WebView2/VSTO 时优先经 winget 自动安装，缺少 .NET、PowerPoint、winget 或自动安装失败时打开对应 Microsoft 官方页面并给出中文补齐提示，端用户路径仍不安装 Build Tools。
-- B484：新增一键彻底卸载入口，先拒绝在 PowerPoint 运行时操作，再清除 MSI 产品注册、VSTO 注册、插件本体、WebView2 状态、日志、自动化令牌、素材、缩略图、配色、预设、导出、安装器缓存和插件专用证书；明确保留 Zotero 共享论文图像库与系统级运行时。
-- B483：使用说明占用任务窗格 WebView，导致 Ribbon 调用已卸载的绘图页面；现改为宿主独立非模态说明窗口，主绘图桥保持常驻，支持边看边操作 PowerPoint；全量合同、26 张 UI 截图、Release 编译及 Ribbon 图标验证通过。
-- B482：用户明确要求提前统一验证和打包；全量合同、UI 构建、26 张任务窗格与使用说明截图、Release 编译、Ribbon 运行时图标验证及最终安装产物合同全部通过，产出 `0.1.670` ZIP、MSI 和 EXE，不自动安装。
-- B481：统一测试暴露箭头参数可见性合同仍锁定旧版内联条件，实际实现已抽出等价的 `arrowEnabled` 变量；合同改为同时锁定变量定义与调用，避免把等价重构误报为功能断裂。
-- B480：使用说明补充箭头三角形长宽的入口、范围、默认值、短线限制和实时重绘步骤，并明确 Ribbon 风格、填充、线条快捷项会同步重绘当前选区。
-- B479：用户实测指出 Ribbon 风格菜单只更新后续插入风格，未统一触发选区重绘；同时 `LineArrow` 生成器把高度回退为 80 磅，导致手绘箭头头部异常放大。Ribbon 模板现复用选区样式重绘链路，箭头改为独立长度/宽度参数并在右侧线条参数中可调。
-- B478：首次编译后图标验证表明 `IPictureDisp` 经 `FromHbitmap` 读取时透明底会被系统转为不透明浅灰，旧像素规则把背景误算为图标并假报非中性；运行时验证现以角点实测背景作差分，只对实际笔画检查中性深色、清晰暗部、蓝色占位和实心密度；修正后统一完整测试、UI 构建、截图、运行时验证、`0.1.666` 打包和最终产物合同全部通过。
+- B484-B485：安装入口覆盖 PowerPoint、.NET Framework 4.8、WebView2、VSTO 检测与补齐；彻底卸载清除插件资源但保留 Zotero 共享库和系统运行时。
+- B482-B483：使用说明改为独立非模态窗口，支持边看边操作；完整 UI、Release、Ribbon 与三种安装产物验证通过。
+- B480-B481：箭头参数合同、三角形长宽入口、默认值、短线限制和实时重绘说明完成同步。
+- B478-B479：Ribbon 快捷风格实时重绘、箭头异常放大和透明 Ribbon 图标运行时误报均已修正并验证。
 
 ## 关键里程碑
 
-- B467-B474：Ribbon 拓扑收敛为 5 组唯一入口，编译后验证 78 个最终可见功能图标；安装合同确认当前用户事务安装、同版本覆盖和 ICE61/ICE91 定向抑制。
-- B457-B466：使用说明产物纳入启动完整性校验，返回路径保持简洁/完整模式、活动工作区、搜索范围、滚动位置和 Office 原生形状图标；静态、运行时与消息合同共同防止导航回归。
-- B452-B456：新增完整离线图文说明和右上角学习入口，覆盖全部功能与入口；建立窄窗、图片、本地导航及无渐变合同，并增加 PowerPoint 2013 以上、32/64 位 Office、WebView2、VSTO 与 .NET Framework 4.8 的宿主和安装兼容检测。
-- B442-B446：简洁模式按选区变化进入正确工作区，同类轮询保留用户主动工作区；特征块方向工具按需展开，科研绘图无数据时隐藏不可用清空操作，并建立串联运行时合同。
-- B437-B441：命令按钮改用本机 SimpleExperiment 当前主题的 `#5871EF/#6B83ED/#526FFF`，状态信息继续使用 `#2563EB`；同时压缩长状态并按上下文隐藏不可用的素材与配色命令。
-- B432-B436：清除 Ribbon 图库、论文预设、配色布局卡片和科研图预览中的装饰渐变，保留真正表达配色映射的功能预览，并建立核心 UI 计算样式无渐变审计。
-- B411-B415：任务窗格颜色、纯色按钮质感、30/24px 尺寸策略和状态反馈与 SimpleExperiment 对齐，并建立无装饰渐变验证合同。
-- B116：建立 Zotero 图像库读取基础；后续批次统一遵守当前冻结的外部 SQLite 与受限 bridge 协议。
+- B467-B474：Ribbon 收敛为 5 组唯一入口；安装合同覆盖当前用户、同版本覆盖和 ICE61/ICE91 定向抑制。
+- B452-B466：离线图文说明、右上角学习入口、返回状态、无渐变、窄窗和 PowerPoint 2013 以上兼容合同建立。
+- B411-B446：任务窗格配色、按钮尺寸、按选区显示、功能边界和 SimpleExperiment 主题完成统一。
+- B116：Zotero 图像库读取遵守冻结的外部 SQLite 与受限 bridge 协议。

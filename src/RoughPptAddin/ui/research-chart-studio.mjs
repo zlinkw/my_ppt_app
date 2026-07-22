@@ -117,6 +117,7 @@ const state = {
   previewUrl: "",
   renderTimer: 0,
   dataTimer: 0,
+  fieldsInitialized: false,
   sourceLabel: "内置示例"
 };
 
@@ -195,21 +196,24 @@ function chooseDefaultFields() {
   };
 }
 
-function fillFieldSelect(select, fields, preferred, allowNone) {
+function fillFieldSelect(select, fields, preferred, allowNone, preserveCurrent) {
   const current = select.value;
   select.innerHTML = `${allowNone ? '<option value="">不使用</option>' : ""}${fields.map(field => `<option value="${escapeHtml(field)}">${escapeHtml(field)}</option>`).join("")}`;
-  const next = fields.includes(current) || (allowNone && current === "") ? current : preferred;
+  const currentIsValid = fields.includes(current) || (allowNone && current === "");
+  const next = preserveCurrent && currentIsValid ? current : preferred;
   select.value = fields.includes(next) || (allowNone && next === "") ? next : (allowNone ? "" : fields[0] || "");
 }
 
 function updateFieldOptions() {
   const defaults = chooseDefaultFields();
-  fillFieldSelect(els.xField, state.fields, defaults.x, false);
-  fillFieldSelect(els.yField, state.fields, defaults.y, false);
-  fillFieldSelect(els.colorField, state.fields, defaults.color, true);
-  fillFieldSelect(els.sizeField, state.fields, defaults.size, true);
-  fillFieldSelect(els.errorLowField, state.fields, "", true);
-  fillFieldSelect(els.errorHighField, state.fields, "", true);
+  const preserveCurrent = state.fieldsInitialized;
+  fillFieldSelect(els.xField, state.fields, defaults.x, false, preserveCurrent);
+  fillFieldSelect(els.yField, state.fields, defaults.y, false, preserveCurrent);
+  fillFieldSelect(els.colorField, state.fields, defaults.color, true, preserveCurrent);
+  fillFieldSelect(els.sizeField, state.fields, defaults.size, true, preserveCurrent);
+  fillFieldSelect(els.errorLowField, state.fields, "", true, preserveCurrent);
+  fillFieldSelect(els.errorHighField, state.fields, "", true, preserveCurrent);
+  state.fieldsInitialized = true;
 }
 
 function updateDataSummary() {
@@ -322,9 +326,8 @@ function buildSpec() {
   let layers;
 
   if (["bar", "groupedBar", "stackedBar"].includes(state.chartType)) {
-    const encoding = addColor({ x, y }, state.chartType === "bar" ? "" : colorField);
+    const encoding = addColor({ x, y: { ...y, stack: state.chartType === "stackedBar" ? "zero" : null } }, state.chartType === "bar" ? "" : colorField);
     if (state.chartType === "groupedBar" && colorField) encoding.xOffset = { field: colorField };
-    if (state.chartType === "stackedBar") encoding.y = { ...y, stack: "zero" };
     layers = [{ mark: mark("bar", { cornerRadiusTopLeft: 2, cornerRadiusTopRight: 2 }), encoding }];
     const errors = errorLayer(encoding);
     const labels = labelLayer(encoding);

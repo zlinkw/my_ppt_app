@@ -3,13 +3,15 @@ import path from "node:path";
 
 const root = process.cwd();
 const sourceDirs = ["src/RoughPptAddin"];
+const chartVendorFiles = [/ui[\\/]vendor[\\/](?:chart\.umd|vega(?:-lite|-embed)?)\.min\.js$/i];
 const forbiddenPatterns = [
   { pattern: /\.Export\(/i, reason: "PowerPoint export APIs create raster/vector files, not final native objects", allowFiles: [/SelectionCaptureService\.cs$/, /PaletteLibraryService\.cs$/] },
   { pattern: /AddPicture/i, reason: "AddPicture is restricted to approved external graphic import services", allowFiles: [/ZoteroImageLibraryService\.cs$/, /ResearchChartStudioService\.cs$/] },
   { pattern: /msoPicture/i, reason: "msoPicture violates final object constraint", allowFiles: [/RoughAddInController\.cs$/, /ZoteroImageLibraryService\.cs$/] },
-  { pattern: /InsertResearchSvg|insertResearchSvg/, reason: "SVG insertion wiring is restricted to the research SVG workflow", allowFiles: [/ResearchChartStudioService\.cs$/, /ResearchChartStudioWindow\.cs$/, /RoughAddInController\.cs$/, /research-chart-studio\.mjs$/] },
-  { pattern: /canvas\.toDataURL|toBlob\(/i, reason: "Canvas capture is raster output", allowFiles: [/ui[\\/]vendor[\\/]chart\.umd\.min\.js$/i] },
-  { pattern: /<svg\b/i, reason: "Inline SVG is not accepted as final object" }
+  { pattern: /InsertResearchSvg|insertResearchSvg/, reason: "SVG insertion wiring is restricted to the research SVG workflow", allowFiles: [/ResearchChartStudioService\.cs$/, /ResearchChartStudioWindow\.cs$/, /RoughAddInController\.cs$/, /research-chart-studio\.mjs$/, /bridge-contract\.mjs$/] },
+  { pattern: /canvas\.toDataURL|toBlob\(/i, reason: "Canvas capture is raster output", allowFiles: chartVendorFiles },
+  { pattern: /\.toSVG\(/i, reason: "SVG generation is restricted to the research chart workbench", allowFiles: [/research-chart-studio\.mjs$/i, ...chartVendorFiles] },
+  { pattern: /<svg\b/i, reason: "Inline SVG is not accepted as final object", allowFiles: chartVendorFiles }
 ];
 
 function walk(dir) {
@@ -50,8 +52,11 @@ const requiredFiles = [
 ];
 
 const researchStudio = fs.readFileSync(path.join(root, "src/RoughPptAddin/ui/research-chart-studio.mjs"), "utf8");
-if (/toDataURL|toBlob\(|getImageData|drawImage/i.test(researchStudio)) {
-  violations.push("research chart studio may render previews on Canvas but must not capture or export them");
+if (/toDataURL|toBlob\(|getImageData|drawImage|renderer\s*:\s*["']canvas/i.test(researchStudio)) {
+  violations.push("research chart studio must render SVG directly and must not capture Canvas or export bitmaps");
+}
+for (const snippet of ["result.view.toSVG()", 'renderer: "svg"', 'type: "stageResearchSvg"', "new Blob", 'type: "image/svg+xml"']) {
+  if (!researchStudio.includes(snippet)) violations.push(`research chart studio SVG path missing: ${snippet}`);
 }
 
 for (const file of requiredFiles) {

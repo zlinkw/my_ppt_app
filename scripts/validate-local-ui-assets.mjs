@@ -12,7 +12,16 @@ const required = [
   "zlk-cluster-result-importer.mjs",
   "autoshape-catalog.json",
   "styles.css",
-  "vendor/rough.esm.js"
+  "vendor/rough.esm.js",
+  "research-chart-studio.html",
+  "research-chart-studio.css",
+  "research-chart-studio.mjs",
+  "vendor/papaparse.min.js",
+  "vendor/papaparse-LICENSE.txt",
+  "vendor/vega.min.js",
+  "vendor/vega-lite.min.js",
+  "vendor/vega-embed.min.js",
+  "vendor/vega-LICENSES.txt"
 ];
 
 const requiredGuideImages = [
@@ -53,14 +62,22 @@ const checkedFiles = [
   "src/RoughPptAddin/ui/rough-shape-generator.mjs",
   "src/RoughPptAddin/ui/office-preset-outlines.mjs",
   "src/RoughPptAddin/ui/zlk-cluster-result-importer.mjs",
-  "src/RoughPptAddin/ui/styles.css"
+  "src/RoughPptAddin/ui/styles.css",
+  "src/RoughPptAddin/ui/research-chart-studio.html",
+  "src/RoughPptAddin/ui/research-chart-studio.css",
+  "src/RoughPptAddin/ui/research-chart-studio.mjs"
 ];
+
+const allowedReferenceUrls = new Set([
+  "http://www.w3.org/2000/svg",
+  "https://vega.github.io/schema/vega-lite/v6.json"
+]);
 
 for (const file of checkedFiles) {
   const text = fs.readFileSync(file, "utf8");
   const external = [...text.matchAll(/https?:\/\/[^\s"'`)<>]+/g)].map(match => match[0]);
   for (const url of external) {
-    if (url !== "http://www.w3.org/2000/svg") violations.push(`${file}: external URL ${url}`);
+    if (!allowedReferenceUrls.has(url)) violations.push(`${file}: external URL ${url}`);
   }
   if (/\b(src|href)\s*=\s*["']https?:\/\//i.test(text)) {
     violations.push(`${file}: remote script/style/media URL is not allowed`);
@@ -95,6 +112,9 @@ for (const [label, snippet] of [
   ["required rough bundle", 'Path.Combine("vendor", "rough.esm.js")']
 ]) {
   if (!bridge.includes(snippet)) violations.push(`RoughJsBridge.cs: offline contract missing ${label}`);
+}
+for (const file of ["vega.min.js", "vega-lite.min.js", "vega-embed.min.js", "vega-LICENSES.txt"]) {
+  if (!bridge.includes(file)) violations.push(`RoughJsBridge.cs: offline contract missing ${file}`);
 }
 if (!/SetVirtualHostNameToFolderMapping\((?:UiHostName|"rough-ppt\.local"),\s*uiDirectory/.test(bridge)) {
   violations.push("RoughJsBridge.cs: offline contract missing folder mapping");

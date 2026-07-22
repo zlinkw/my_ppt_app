@@ -5,7 +5,7 @@
 - Inserted visible objects are PowerPoint Freeforms or Groups.
 - Rough and ZLK inserted visible objects are not `msoPicture`.
 - No PNG, Canvas capture, or SVG is used as final Rough or ZLK slide content.
-- Research SVG insertion is isolated to `ResearchChartStudioService`, uses a 4 MB UTF-8 limit, rejects active or external content, and rechecks SHA256 before insertion.
+- Research SVG insertion is isolated to `ResearchChartStudioService`, uses a 4 MB UTF-8 limit, rejects active or external content, and rechecks SHA256 before insertion; the local preview uses the exact staged `view.toSVG()` string.
 - The insert window lists all known `MsoAutoShapeType` catalog entries.
 - The Ribbon shape dropdown loads the packaged AutoShape catalog, shows every insertable PPT shape, and returns unique dynamic item IDs so PowerPoint does not render a blank menu.
 - Opening the task pane with no selected shape reports an empty selection state instead of failing initialization.
@@ -76,16 +76,17 @@ The `validate-rough-realtime.mjs` check regenerates representative Rough.js shap
 The `validate-ui-contract.mjs` check enforces Chinese-first visible UI copy, static and dynamic hover tooltips, Ribbon screentips, and Chinese-first catalog display names.
 The `validate-installer-runtime-prereqs.mjs` check enforces that portable, MSI, and EXE installers only install WebView2 Runtime and VSTO Runtime for end users. Build Tools remain development and packaging prerequisites only.
 The `validate-external-plugin-compat.mjs` check compares the PPT add-in against local ZLK cluster and Zotero image saver contracts when those repos are present, and also enforces ZLK source-file resource guards.
-The `validate-research-chart-studio.mjs` check enforces the four-site HTTPS whitelist, system-browser launch, SVG-only workspace, same-content preview and insertion messages, PowerPoint version guard, and the retained native ZLK entry.
+The `validate-research-chart-studio.mjs` check enforces offline Papa Parse and Vega resources, 12 local chart types, direct SVG rendering, same-content staging and insertion, the PowerPoint version guard, and the retained native ZLK entry. It also rejects any browser launch from the task-pane quick entry; the four-site HTTPS whitelist remains available only through explicit buttons inside the workbench.
 
 ## Research SVG Manual Smoke Test
 
-1. Open the research chart entry and confirm RAWGraphs opens in the system default browser while the local SVG workspace stays modeless.
-2. Export an SVG containing visible axes, labels, and several colors.
-3. Select the SVG and compare the workspace preview with the website export.
-4. Insert it into the current slide and compare colors, axes, labels, aspect ratio, and spacing with the preview.
-5. Confirm a file over 4 MB, a scripted SVG, an SVG with an external URL, and a modified cached file are rejected with Chinese errors.
-6. On PowerPoint 2013, confirm the SVG action reports the version requirement and the native JSON/CSV research chart path remains available.
+1. Open the research chart entry and confirm only the modeless local workbench opens; no browser tab or window may open automatically.
+2. Paste or import CSV/TSV, switch all 12 chart types, and verify field mappings and style controls update the SVG preview without page navigation.
+3. Confirm the preview uses SIMPLEEXPERIMENT colors by default, then compare colors, axes, labels, aspect ratio, and spacing after insertion into the current slide.
+4. Change a setting immediately before insertion and confirm the insert button remains disabled until the matching staged SVG is accepted by the host.
+5. Expand external tools and explicitly open one site; confirm only the clicked whitelist site opens. Import an exported SVG and compare its preview with the inserted result.
+6. Confirm a file over 4 MB, a scripted SVG, an SVG with an external URL, and a modified cached file are rejected with Chinese errors.
+7. On PowerPoint 2013, confirm the SVG action reports the version requirement and the native JSON/CSV research chart path remains available.
 
 ## Native Resize Smoke Test
 

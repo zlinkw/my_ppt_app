@@ -46,11 +46,13 @@ ZLK 结果区前端可缓存 trace view model 的统计摘要以降低重复渲�
 - The visible rough arrow is not a native Connector.
 - Rough 图形和 ZLK 自动绘图不使用 SVG、PNG、Canvas 截图或外部图片作为最终对象。
 
-## 科研绘图网站与 SVG
+## 本地科研绘图与 SVG
 
-任务窗格的科研绘图主入口向宿主发送固定网站 ID。`ResearchChartStudioService` 只把 `rawgraphs`、`datawrapper`、`plotly` 和 `vega` 映射到四个固定 HTTPS 地址，并通过系统默认浏览器打开；WebView 不接收也不导航任意外部 URL。
+任务窗格的科研绘图快捷入口只向宿主发送 `openResearchChartStudio`，主任务窗格不接受网站跳转消息。独立 WebView2 工作台离线加载 Papa Parse、Vega、Vega Lite 和 Vega Embed。CSV/TSV 在本机解析为结构化数据，字段、图表和样式变更经过防抖后生成 Vega Lite 规范，并用 SVG renderer 与 `view.toSVG()` 得到最终 SVG 字符串。预览直接显示该字符串创建的 Blob，不通过 Canvas 或另一套图表重建。
 
-用户从网站导出 SVG 后，由宿主文件选择器显式选择本地文件。服务限制文件为 4 MB UTF-8 SVG，使用禁止 DTD 和外部解析器的 XML 设置，拒绝脚本、事件处理器、动画、嵌入图像、处理指令、外部 URL 和外部样式资源。通过校验的字节固定到 `%LOCALAPPDATA%\RoughPptAddin\ResearchSvg\current.svg`，WebView 以该内容创建只读 Blob 预览；插入前宿主再次校验 SHA256 和 SVG 结构，确保预览与 PPT 使用同一份内容。
+工作台把同一 SVG 字符串和关联 `requestId` 发送给宿主。`ResearchChartStudioService.StageSvg` 将文本按严格 UTF-8 编码并限制为 4 MB，使用禁止 DTD 和外部解析器的 XML 设置，拒绝脚本、事件处理器、动画、嵌入图像、处理指令、外部 URL 和外部样式资源。通过校验的字节固定到 `%LOCALAPPDATA%\RoughPptAddin\ResearchSvg\current.svg`；只有匹配当前渲染请求的宿主确认返回后，网页才启用插入。插入前宿主再次校验 SHA256 和 SVG 结构，确保预览与 PPT 使用同一份内容。
+
+RAWGraphs、Datawrapper、Plotly Chart Studio 和 Vega Editor 仅保留在工作台折叠区。`ResearchChartStudioService` 把四个固定网站 ID 映射到 HTTPS 地址，只有用户明确点击具体网站按钮时才通过系统浏览器打开；WebView 不接收也不导航任意外部 URL。
 
 PowerPoint 2016 及更高版本通过 `ResearchChartStudioService` 的独立 `Shapes.AddPicture` 例外将 SVG 等比居中插入当前幻灯片。PowerPoint 2013 继续受插件其它功能支持，但科研 SVG 入口明确提示改用旧任务窗格的 ZLK 原生绘图链路。该例外不得进入 Rough、ZLK 自动绘图、用户素材或配色链路。
 
