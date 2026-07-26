@@ -93,6 +93,7 @@
 6. B539（已完成）：增加雨云图和山脊图，补齐高密度分布比较。
 7. B540（已完成）：增加真实 Vega 编译与 SVG 渲染回归，覆盖本轮八种新图；统一测试、构建和打包已完成。
 8. B541（已完成）：用户授权后按 `docs/manual-cleanup-candidates.md` 执行仓内无用文件清理，并回写处置结论。
+9. B542（已完成）：任务窗格状态条增加“完成”状态色，空闲、进行中、完成和错误成为四个可区分状态。
 
 ### B541 仓内清理批次
 
@@ -102,6 +103,14 @@
 - 保留：`node_modules/` 虽在候选列表内但被 `npm test` 与 `npm run build:ui` 直接依赖，删除会打断验证基线，故保留并在候选列表中记录原因。
 - 新增候选：`docs/target-mode-plan.md).Count` 属同类抽取残留但已被 Git 跟踪，不在本次授权范围内，已写入候选列表等待人工审核。
 - B541 验证与提交：`git status --short` 仅显示该次授权删除的唯一跟踪文件；`releases/RoughPptAddin-0.1.786-735227c7/` 与 `releases/RoughPptAddin-0.1.762-e045e31e-r2/` 按记录保留。按五批次协议本批不运行统一测试、UI 构建或打包。
+
+### B542 状态可读性批次
+
+- 故障：`setStatus` 只区分空闲、进行中和错误三种状态。完成类文案（例如“已插入 3 个手绘对象”）与“准备就绪”共用同一套灰色描边和文字色，操作成功后状态条外观不变，用户无法在一眼之内确认操作是否已完成。
+- 修复：新增 `isDoneStatusText` 判定完成类中文文案，`setStatus` 据此切换 `ok` 类；`statusToneLabel` 把悬浮说明前缀扩展为“当前状态 / 进行中状态 / 完成状态 / 错误状态”四种中文状态名。样式追加在文件末尾的 `.status.ok`，复用本仓既有绿色语汇（`#8fd19e` / `#ecf8f0` / `#1b7a34`），与进行中的蓝紫和错误的红色互不重叠。
+- 判定边界：含“失败、错误、无法、不支持、超出、拒绝、未找到、不能为空”的文案即使以“已”开头也不视为完成；错误和进行中状态优先级高于完成。
+- 回归保护：`validate-ui-contract.mjs` 新增状态色合同——提取 `isDoneStatusText` 源码并对 4 条完成文案和 6 条非完成文案做行为断言；再按逗号分组解析样式表，取 `.status.ok/.busy/.error` 的最后一条生效 `color` 并要求三者互不相同。
+- B542 验证与提交：`node --check src/RoughPptAddin/ui/app.mjs`、`validate-ui-contract.mjs`、`validate-taskpane-function-icons.mjs`、`validate-encoding.mjs`、`validate-taskpane-ui-interactions.mjs` 全部通过；新合同经反向注入验证——把 `.status.ok` 文字色改成与进行中相同会报“tones not distinct”，删除该规则会报“missing color”。解析器实测生效色为 busy `#4754d8`、error `#dc2626`、ok `#1b7a34`。按五批次协议本批不运行统一测试、UI 构建或打包。
 
 ### 当前科研绘图增强批次
 

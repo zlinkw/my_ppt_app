@@ -664,6 +664,50 @@ for (const [i, match] of [...app.matchAll(/setStatus\((`[^`]*`|"[^"]*"|'[^']*')/
   if (value && !hasChinese(value)) violations.push(`app.mjs: status text ${i + 1} lacks Chinese text: ${value}`);
 }
 
+// 状态可读性：空闲、进行中、完成和错误必须是四个可区分的状态色和中文状态名。
+for (const snippet of [
+  "function isDoneStatusText(text)",
+  "function statusToneLabel(isError, busy, done)",
+  "const done = !isError && !busy && isDoneStatusText(value)",
+  'els.status.classList.toggle("ok", done)',
+  '"完成状态"',
+  '"进行中状态"'
+]) {
+  if (!app.includes(snippet)) violations.push(`app.mjs: status tone contract missing: ${snippet}`);
+}
+const doneSource = app.match(/function isDoneStatusText\(text\) \{[\s\S]*?\n\}/)?.[0] ?? "";
+if (!doneSource) {
+  violations.push("app.mjs: isDoneStatusText source could not be extracted for behaviour check");
+} else {
+  const isDone = new Function(`${doneSource}; return isDoneStatusText;`)();
+  for (const sample of ["已插入 3 个手绘对象。", "已应用风格模板：论文框图", "完成配色替换。", "配色替换成功。"]) {
+    if (!isDone(sample)) violations.push(`app.mjs: completed status must use the done tone: ${sample}`);
+  }
+  for (const sample of ["准备就绪", "", "正在重绘选区...", "读取论文图像库失败：数据库不存在", "已用尺寸超出上限，无法插入", "名称不能为空。"]) {
+    if (isDone(sample)) violations.push(`app.mjs: non-completed status must not use the done tone: ${sample || "(空)"}`);
+  }
+}
+const statusToneBlock = css.slice(css.indexOf("/* B542:"));
+if (!statusToneBlock.includes(".status.ok {")) {
+  violations.push("styles.css: completed status tone .status.ok must be defined after the later status overrides");
+}
+// 取每个状态色的最后一条生效规则，规则选择器可以是逗号分组。
+const statusToneColors = new Map();
+for (const [, prelude, body] of css.replace(/\/\*[\s\S]*?\*\//g, "\n").matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+  const selectors = prelude.split(",").map(part => part.trim());
+  const color = body.match(/(?:^|;|\{)\s*color:\s*([^;]+);/)?.[1]?.trim();
+  if (!color) continue;
+  for (const tone of ["ok", "busy", "error"]) {
+    if (selectors.includes(`.status.${tone}`)) statusToneColors.set(tone, color);
+  }
+}
+for (const tone of ["ok", "busy", "error"]) {
+  if (!statusToneColors.has(tone)) violations.push(`styles.css: status tone .status.${tone} must set a text color`);
+}
+if (new Set(statusToneColors.values()).size !== statusToneColors.size) {
+  violations.push(`styles.css: status tones must stay visually distinct: ${[...statusToneColors].map(pair => pair.join("=")).join(", ")}`);
+}
+
 const ribbon = fs.readFileSync("src/RoughPptAddin/Ribbon/RoughRibbon.cs", "utf8");
 for (const snippet of [
   "openPaperPresetPane",

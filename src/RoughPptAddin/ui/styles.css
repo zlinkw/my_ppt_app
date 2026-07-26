@@ -10233,3 +10233,24 @@ body.ux-simple .topbar .status:not(.expanded) {
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
+
+/* B542: completed task-pane operations get their own status tone so success is
+   readable at a glance instead of looking identical to the idle state. */
+.status.ok {
+  border-color: #8fd19e;
+  background: #ecf8f0;
+  color: #1b7a34;
+}
+
+.status.ok.long {
+  border-color: #8fd19e;
+  background: #ecf8f0;
+  background-image: none;
+  color: #14682b;
+}
+
+.status.ok:hover {
+  border-color: #6fc186;
+  background: #e3f4e9;
+  color: #14682b;
+}

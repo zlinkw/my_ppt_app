@@ -6271,6 +6271,13 @@ function isBusyStatusText(text) {
   return /正在|请稍候|处理中|导入中|导出中|识别中|重绘中|转换中|应用中|保存中|读取中|同步中|删除中|插入中|取色中|分享中/.test(value);
 }
 
+function isDoneStatusText(text) {
+  const value = String(text ?? "");
+  if (!value) return false;
+  if (/失败|错误|无法|不支持|超出|拒绝|未找到|不能为空/.test(value)) return false;
+  return /^(已|完成)/.test(value) || /已完成|成功/.test(value);
+}
+
 
 function resourceBatchFor(base) {
   return state.uiMode === "simple" ? Math.max(8, Math.floor(base * 0.75)) : base;
@@ -6357,16 +6364,25 @@ function syncBusyActionLocks(busy) {
   }
 }
 
+function statusToneLabel(isError, busy, done) {
+  if (isError) return "错误状态";
+  if (busy) return "进行中状态";
+  if (done) return "完成状态";
+  return "当前状态";
+}
+
 function setStatus(text, isError = false) {
   if (!els.status) return;
   const value = String(text ?? "");
   const busy = !isError && isBusyStatusText(value);
+  const done = !isError && !busy && isDoneStatusText(value);
   els.status.textContent = value || "准备就绪";
   els.status.title = value
-    ? `${isError ? "错误状态" : "当前状态"}：${value}；点击可展开或收起完整文本`
+    ? `${statusToneLabel(isError, busy, done)}：${value}；点击可展开或收起完整文本`
     : "当前没有状态信息；点击可展开或收起";
   els.status.classList.toggle("error", Boolean(isError));
   els.status.classList.toggle("busy", busy);
+  els.status.classList.toggle("ok", done);
   els.status.classList.toggle("long", value.length > 12);
   els.status.setAttribute("aria-busy", busy ? "true" : "false");
   syncBusyActionLocks(busy);
