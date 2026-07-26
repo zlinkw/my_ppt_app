@@ -15,7 +15,7 @@
 - Rough generation handles 20 continuous resize regenerations under the realtime threshold.
 - Batch resize and batch style refresh regenerate every selected Rough group instead of only the last queued shape.
 - All user-visible task pane pages, Ribbon commands, dialogs, statuses, and installer-facing names are Chinese-first.
-- The research chart studio has no horizontal overflow, offscreen visible elements, unclickable buttons, or clipped control text at its 720x560 minimum and 1180x820 default window sizes, and every visible control there carries a Chinese hover tooltip.
+- The standalone UI windows have no horizontal overflow, offscreen visible elements, unclickable buttons, or clipped control text at their host-defined minimum and default sizes, and every visible control carries a Chinese hover tooltip. Covered windows: the research chart studio at 720x560 and 1180x820, and the Ribbon shape gallery at 420x320 and 700x620.
 - Every `.ps1` script containing Chinese text is saved as UTF-8 with a BOM. Windows PowerShell 5.1 decodes BOM-less files using the system ANSI codepage, which garbles Chinese output and can swallow a closing quote and break parsing.
 - Every custom control, non-native PowerPoint command, ambiguous title, badge, chip, status, or action has a hover `title` tooltip or Office Ribbon `screentip`/`supertip`.
 - End-user ZIP/MSI/EXE installers call the shared runtime installer path and never install Visual Studio Build Tools.

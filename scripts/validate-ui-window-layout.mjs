@@ -1,0 +1,211 @@
+// 独立 UI 窗口的真实浏览器布局验证。
+// 每个窗口的尺寸取自宿主 WinForms 窗口的 MinimumSize 与默认 Size，
+// 这样验证的是用户真的能拉到的最窄状态，而不是任意猜测的宽度。
+import path from "node:path";
+import {
+  startStaticServer,
+  launchBrowser,
+  connectToBrowser,
+  evaluate,
+  waitFor,
+  waitForExit,
+  delay
+} from "./lib/ui-browser.mjs";
+
+const windows = [
+  {
+    page: "research-chart-studio.html",
+    label: "科研绘图工作台",
+    source: "TaskPane/ResearchChartStudioWindow.cs",
+    ready: "Boolean(document.querySelector('#chartTypeGrid'))",
+    viewports: [
+      { width: 720, height: 560, label: "最小窗口" },
+      { width: 1180, height: 820, label: "默认窗口" }
+    ],
+    extraProbe: chartTypeProbe,
+    checkExtra(result, push) {
+      if (result.total < 36) push(`图表类型入口只有 ${result.total} 个，应至少 36 个`);
+      if (result.overflowing.length) push(`图表类型入口横向越出容器 ${result.overflowing.slice(0, 6).join(", ")}`);
+      if (!result.gridReachable) push("图表类型列表既未完整显示也未提供滚动");
+      if (result.checkedCount !== 1) push(`图表类型单选状态异常，aria-checked=true 的入口有 ${result.checkedCount} 个`);
+    }
+  },
+  {
+    page: "ribbon-shape-gallery.html",
+    label: "形状图库窗口",
+    source: "Ribbon/ShapeGalleryWindow.cs",
+    ready: "Boolean(document.querySelector('#shapeDropdown')) && document.querySelectorAll('#shapeDropdown button').length > 100",
+    viewports: [
+      { width: 420, height: 320, label: "最小窗口" },
+      { width: 700, height: 620, label: "默认窗口" }
+    ],
+    extraProbe: shapeGalleryProbe,
+    checkExtra(result, push) {
+      if (result.cardCount < 200) push(`形状卡片只有 ${result.cardCount} 个，应覆盖完整目录`);
+      if (result.groupCount < 10) push(`形状分组只有 ${result.groupCount} 个`);
+      if (result.overflowing.length) push(`形状卡片横向越出容器 ${result.overflowing.slice(0, 6).join(", ")}`);
+    }
+  }
+];
+
+const uiRoot = path.join(process.cwd(), "src", "RoughPptAddin", "ui");
+const violations = [];
+
+const server = await startStaticServer(uiRoot);
+const browser = await launchBrowser("ui-window-layout-browser");
+const client = await connectToBrowser(browser.port);
+
+try {
+  await client.send("Runtime.enable");
+  await client.send("Page.enable");
+
+  for (const target of windows) {
+    await client.send("Page.navigate", { url: `http://127.0.0.1:${server.port}/${target.page}` });
+    await waitFor(client, `document.readyState === 'complete' && ${target.ready}`);
+
+    for (const viewport of target.viewports) {
+      await client.send("Emulation.setDeviceMetricsOverride", {
+        width: viewport.width,
+        height: viewport.height,
+        deviceScaleFactor: 1,
+        mobile: false
+      });
+      await delay(300);
+      const label = `${target.label} ${viewport.label} ${viewport.width}x${viewport.height}`;
+      const push = message => violations.push(`${label}: ${message}`);
+
+      const layout = await evaluate(client, layoutProbe());
+      if (layout.hasHorizontalOverflow) {
+        push(`存在横向滚动 (scrollWidth ${layout.scrollWidth} > clientWidth ${layout.clientWidth})`);
+      }
+      if (layout.offscreen.length) push(`可见元素横向超出窗口 ${layout.offscreen.slice(0, 6).join(", ")}`);
+      if (layout.tinyButtons.length) push(`可见按钮过小无法点击 ${layout.tinyButtons.slice(0, 6).join(", ")}`);
+      if (layout.clippedText.length) push(`控件文字被裁切 ${layout.clippedText.slice(0, 6).join(", ")}`);
+
+      const tooltips = await evaluate(client, tooltipProbe());
+      if (tooltips.missing.length) push(`可见控件缺少中文悬浮说明 ${tooltips.missing.join(", ")}`);
+      if (tooltips.nonChinese.length) push(`悬浮说明缺少中文 ${tooltips.nonChinese.join(", ")}`);
+
+      const extra = await evaluate(client, target.extraProbe());
+      target.checkExtra(extra, push);
+    }
+  }
+} finally {
+  await client.close().catch(() => {});
+  browser.process.kill();
+  await waitForExit(browser.process).catch(() => {});
+  await server.close();
+}
+
+if (violations.length) {
+  throw new Error(`UI window layout validation failed:\n${violations.join("\n")}`);
+}
+
+console.log(`UI window layout ok: ${windows.map(target => `${target.page} (${target.viewports.map(v => `${v.width}x${v.height}`).join(", ")})`).join("; ")}`);
+
+function layoutProbe() {
+  return `(() => {
+    const de = document.documentElement;
+    const isVisible = element => {
+      const style = getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    };
+    const scrollableAncestor = element => {
+      for (let node = element.parentElement; node && node !== document.body; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowX + ' ' + style.overflowY)) return node;
+      }
+      return null;
+    };
+    const name = element => element.id || (element.className || '').toString().split(/\\s+/)[0] || element.tagName;
+    const offscreen = [];
+    const tinyButtons = [];
+    const clippedText = [];
+    for (const element of document.querySelectorAll('body *')) {
+      if (!isVisible(element)) continue;
+      const rect = element.getBoundingClientRect();
+      if (!scrollableAncestor(element) && (rect.left < -2 || rect.right > innerWidth + 2)) offscreen.push(name(element));
+      if (element.tagName === 'BUTTON' && (rect.width < 18 || rect.height < 18)) tinyButtons.push(name(element));
+      if ((element.tagName === 'BUTTON' || element.tagName === 'LABEL') &&
+          element.scrollWidth > element.clientWidth + 2 &&
+          getComputedStyle(element).overflowX === 'hidden') {
+        clippedText.push(name(element));
+      }
+    }
+    return {
+      hasHorizontalOverflow: de.scrollWidth > de.clientWidth + 2,
+      scrollWidth: de.scrollWidth,
+      clientWidth: de.clientWidth,
+      offscreen: [...new Set(offscreen)],
+      tinyButtons: [...new Set(tinyButtons)],
+      clippedText: [...new Set(clippedText)]
+    };
+  })()`;
+}
+
+function tooltipProbe() {
+  return `(() => {
+    const hasChinese = text => /[\\u3400-\\u9fff]/.test(text || '');
+    const isVisible = element => {
+      const style = getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    };
+    const describe = element => element.id || (element.textContent || '').trim().slice(0, 18) || element.tagName;
+    const missing = [];
+    const nonChinese = [];
+    for (const element of document.querySelectorAll('button, select, input:not([type=hidden]), summary, [role=radio]')) {
+      if (!isVisible(element)) continue;
+      const tip = element.getAttribute('title') || element.getAttribute('aria-label') ||
+        element.closest('label')?.getAttribute('title') || '';
+      if (!tip.trim()) {
+        missing.push(describe(element));
+        continue;
+      }
+      if (!hasChinese(tip)) nonChinese.push(describe(element) + ' => ' + tip.slice(0, 24));
+    }
+    return { missing: [...new Set(missing)], nonChinese: [...new Set(nonChinese)] };
+  })()`;
+}
+
+function chartTypeProbe() {
+  return `(() => {
+    const grid = document.querySelector('#chartTypeGrid');
+    if (!grid) return { total: 0, overflowing: ['chartTypeGrid missing'], gridReachable: false, checkedCount: 0 };
+    const buttons = [...grid.querySelectorAll('[data-chart-type]')];
+    const gridRect = grid.getBoundingClientRect();
+    const style = getComputedStyle(grid);
+    const gridReachable = /(auto|scroll)/.test(style.overflowY + ' ' + style.overflowX) ||
+      grid.scrollHeight <= grid.clientHeight + 2;
+    const overflowing = buttons.filter(button => {
+      const rect = button.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return true;
+      return rect.left < gridRect.left - 2 || rect.right > gridRect.right + 2;
+    }).map(button => button.dataset.chartType);
+    return {
+      total: buttons.length,
+      overflowing,
+      gridReachable,
+      checkedCount: buttons.filter(button => button.getAttribute('aria-checked') === 'true').length
+    };
+  })()`;
+}
+
+function shapeGalleryProbe() {
+  return `(() => {
+    const dropdown = document.querySelector('#shapeDropdown');
+    if (!dropdown) return { cardCount: 0, groupCount: 0, overflowing: ['shapeDropdown missing'] };
+    const cards = [...dropdown.querySelectorAll('button')];
+    const groups = [...dropdown.querySelectorAll('.gallery-group, details')];
+    const dropdownRect = dropdown.getBoundingClientRect();
+    const overflowing = cards.filter(card => {
+      const rect = card.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return false;
+      return rect.left < dropdownRect.left - 2 || rect.right > dropdownRect.right + 2;
+    }).map(card => (card.dataset.enumName || card.textContent || '').trim().slice(0, 20));
+    return { cardCount: cards.length, groupCount: groups.length, overflowing: [...new Set(overflowing)] };
+  })()`;
+}

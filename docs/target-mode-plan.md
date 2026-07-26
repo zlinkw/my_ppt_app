@@ -96,15 +96,23 @@
 - B546：含中文的 `.ps1` 必须带 UTF-8 BOM。6 个文件已补齐，其中 `install.ps1`、`install-payload-core.ps1`、`install-prereqs.ps1` 属终端用户安装链路。
 - B547 / B551：按维护规则压缩本文件历史流水。
 - B548：`--sticky-topbar-height` 与 `--panel-scroll-margin` 现由 `ResizeObserver` 跟随 `.topbar` 实际高度。修复前实测状态条展开使顶栏 76→96 px 而变量停在 77 px，定位面板被遮挡 8 px；修复后变量同步 97 px、scroll-margin 109 px，留 13 px 余量。
-- B549：新增 `scripts/lib/ui-browser.mjs` 共享无头浏览器 harness 和 `validate-research-chart-studio-layout.mjs`（720x560 与 1180x820 两个真实窗口尺寸），首次运行即查出并修复工作台 14 个控件缺失中文悬浮说明。
+- B549：新增 `scripts/lib/ui-browser.mjs` 共享无头浏览器 harness 和工作台布局验证（720x560 与 1180x820 两个真实窗口尺寸），首次运行即查出并修复工作台 14 个控件缺失中文悬浮说明。该脚本已在 B552 并入 `validate-ui-window-layout.mjs`。
 - B550：`index.html` 447 个可见控件悬浮说明零缺失；`help.html` 目录 10 个章节链接原本全部缺失，已补写并加入静态合同（`title` 不得等于链接文字）。
+
+### B552 独立窗口布局验证合并批次
+
+- 目的：`ribbon-shape-gallery.html` 是最后一个没有真实浏览器验证的 UI 面。与其再加第三份近似脚本，把工作台布局验证泛化为按窗口表驱动的 `validate-ui-window-layout.mjs`，同时覆盖科研绘图工作台和形状图库窗口。
+- 窗口尺寸取自宿主 WinForms 定义，验证用户真的能拉到的最窄状态：工作台 `ResearchChartStudioWindow.cs` 的 720x560 与 1180x820，形状图库 `ShapeGalleryWindow.cs` 的 420x320 与 700x620。
+- 检查项：横向溢出、可见元素越界、按钮过小、控件文字裁切、可见控件中文悬浮说明，加上每个窗口的专属检查（工作台 36 图表入口与单选状态；图库卡片数、分组数与卡片横向不越界）。
+- 形状图库审计结论：**未发现缺陷**。两个尺寸下均无横向溢出、无越界元素、无过小按钮、悬浮说明零缺失；210 个形状卡片分 12 组，搜索“菱形”把卡片从 210 过滤到 2。本批只增加覆盖，不改产品代码。
+- B552 验证与提交：`validate-ui-window-layout.mjs` 两个窗口四个尺寸全部通过；旧脚本已删除并从 `npm test` 换成新脚本，仓内无残留引用。
 
 ### 下一批次方向
 
 - 继续按 `PROJECT_CONSTRAINTS.md` 5.1 优先做 UI：外观、布局、发现性、首屏密度、图标一致性、状态可读性。
 - 每批只做一个同风险面改动，新增可见控件必须同时补中文文案、tooltip 和对应静态合同。
 - 下一个统一验证节点为 B551-B555；节点前不运行 `npm test`、UI 构建或打包。
-- 可复用 `scripts/lib/ui-browser.mjs` 对尚未做真实浏览器验证的 UI 面继续做布局与悬浮说明普查。`validate-taskpane-ui-interactions.mjs` 仍带自己的 harness 副本，后续批次可迁移到共享模块。
+- 四个 UI 页面已全部纳入真实浏览器验证。`validate-taskpane-ui-interactions.mjs` 仍带自己的 harness 副本，后续批次可迁移到 `scripts/lib/ui-browser.mjs`。
 - 用户若要求安装包，需先完成一次统一验证再运行 `npm run package`，只打包、不安装。
 
 ## 近期锚点
