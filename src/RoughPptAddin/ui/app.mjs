@@ -2372,6 +2372,7 @@ function renderSearchEmpty(items = filteredItems()) {
   const hasPresets = searchScopeAllows("preset") && filteredPaperPresets().length > 0;
   const hasCharts = searchScopeAllows("chart") && filteredChartDatasets().length > 0;
   const hasAssets = searchScopeAllows("asset") && filteredAssets().length > 0;
+  const shapeRescue = crossScopeShapeMatches();
   const commandRescue = crossScopeCommandMatches();
   const presetRescue = crossScopePaperPresetMatches();
   const chartRescue = crossScopeChartMatches();
@@ -2387,38 +2388,60 @@ function renderSearchEmpty(items = filteredItems()) {
   const title = document.createElement("strong");
   title.textContent = `没有匹配“${query}”`;
   title.title = "当前搜索词没有匹配结果";
+  const rescueSummary = [
+    ["形状", shapeRescue.length],
+    ["功能", commandRescue.length],
+    ["预设", presetRescue.length],
+    ["数据", chartRescue.length],
+    ["素材", assetRescue.length]
+  ].filter(([, count]) => count > 0);
   const detail = document.createElement("span");
-  detail.textContent = commandRescue.length || presetRescue.length || chartRescue.length || assetRescue.length
-    ? `当前范围：${searchScopeLabel()}。其他范围中有相关结果，可直接切换查找。`
+  detail.textContent = rescueSummary.length
+    ? `当前范围：${searchScopeLabel()}。其他范围中有结果：${rescueSummary.map(([label, count]) => `${label} ${count} 个`).join("、")}，可直接切换查找。`
     : `当前范围：${searchScopeLabel()}。可切换到全部、形状、功能、预设、数据或素材，也可试试：${contextualSearchExamples()}。`;
-  detail.title = "提示当前搜索范围，并给出可尝试的关键词";
+  detail.title = "提示当前搜索范围、其他范围的匹配数量，并给出可尝试的关键词";
+  const canTryShapeRescue = shapeRescue.length > 0;
   const canTryPresetRescue = presetRescue.length > 0;
   const canTryChartRescue = chartRescue.length > 0;
   const canTryAssetRescue = assetRescue.length > 0;
-  if (commandRescue.length || canTryPresetRescue || canTryChartRescue || canTryAssetRescue) {
+  if (commandRescue.length || canTryShapeRescue || canTryPresetRescue || canTryChartRescue || canTryAssetRescue) {
     const actions = document.createElement("span");
     actions.className = "search-rescue-actions";
+    if (canTryShapeRescue) {
+      const shape = document.createElement("button");
+      shape.type = "button";
+      shape.textContent = `在形状中查找（${shapeRescue.length}）`;
+      shape.title = `切换到形状范围并显示匹配的 ${shapeRescue.length} 个 PPT 原生形状手绘版，不会直接插入形状`;
+      shape.addEventListener("click", () => {
+        state.searchScope = "shape";
+        localStorage.setItem("roughPptSearchScope", state.searchScope);
+        render();
+        setStatus(`已切换到形状范围，匹配 ${shapeRescue.length} 个形状。`);
+        window.setTimeout(() => document.querySelector("#shapeGrid .shape-card")?.focus({ preventScroll: true }), 260);
+      });
+      actions.append(shape);
+    }
     if (canTryPresetRescue) {
       const preset = document.createElement("button");
       preset.type = "button";
-      preset.textContent = "在预设中查找";
-      preset.title = "切换到预设范围并显示匹配的论文图预设，不会直接插入 PPT";
+      preset.textContent = `在预设中查找（${presetRescue.length}）`;
+      preset.title = `切换到预设范围并显示匹配的 ${presetRescue.length} 个论文图预设，不会直接插入 PPT`;
       preset.addEventListener("click", () => switchToPaperPresetResults(true));
       actions.append(preset);
     }
     if (commandRescue.length) {
       const rescue = document.createElement("button");
       rescue.type = "button";
-      rescue.textContent = "在功能中查找";
-      rescue.title = "切换到功能范围并显示匹配的插件命令，不会直接执行插入、删除、分享或重绘";
+      rescue.textContent = `在功能中查找（${commandRescue.length}）`;
+      rescue.title = `切换到功能范围并显示匹配的 ${commandRescue.length} 个插件命令，不会直接执行插入、删除、分享或重绘`;
       rescue.addEventListener("click", () => switchToCommandResults(commandRescue[0], true));
       actions.append(rescue);
     }
     if (canTryChartRescue) {
       const chart = document.createElement("button");
       chart.type = "button";
-      chart.textContent = "在数据中查找";
-      chart.title = "切换到数据范围并显示匹配的已导入科研绘图数据集，不会直接插入图表";
+      chart.textContent = `在数据中查找（${chartRescue.length}）`;
+      chart.title = `切换到数据范围并显示匹配的 ${chartRescue.length} 个已导入科研绘图数据集，不会直接插入图表`;
       chart.addEventListener("click", () => {
         state.searchScope = "chart";
         localStorage.setItem("roughPptSearchScope", state.searchScope);
@@ -2431,8 +2454,8 @@ function renderSearchEmpty(items = filteredItems()) {
     if (canTryAssetRescue) {
       const asset = document.createElement("button");
       asset.type = "button";
-      asset.textContent = "在素材中查找";
-      asset.title = "切换到素材范围并显示匹配的我的素材，不会直接插入或删除";
+      asset.textContent = `在素材中查找（${assetRescue.length}）`;
+      asset.title = `切换到素材范围并显示匹配的 ${assetRescue.length} 个我的素材，不会直接插入或删除`;
       asset.addEventListener("click", () => {
         state.searchScope = "asset";
         localStorage.setItem("roughPptSearchScope", state.searchScope);
@@ -2489,6 +2512,15 @@ function switchToPaperPresetResults(focusResult = false) {
       if (focusResult && card && document.activeElement !== card) card.focus({ preventScroll: true });
     }, 120);
   }, 80);
+}
+
+function crossScopeShapeMatches() {
+  const query = state.query.trim();
+  if (!query || searchScopeAllows("shape")) return [];
+  return state.catalog.filter(item => {
+    const categoryMatch = state.category === "all" || item.category === state.category;
+    return categoryMatch && matchesSearchText(catalogSearchText(item), query);
+  });
 }
 
 function crossScopePaperPresetMatches() {

@@ -708,6 +708,32 @@ if (new Set(statusToneColors.values()).size !== statusToneColors.size) {
   violations.push(`styles.css: status tones must stay visually distinct: ${[...statusToneColors].map(pair => pair.join("=")).join(", ")}`);
 }
 
+// 发现性：搜索空结果时，每个非当前范围都必须能被跨范围救援，并显示匹配数量。
+for (const matcher of [
+  "crossScopeShapeMatches",
+  "crossScopeCommandMatches",
+  "crossScopePaperPresetMatches",
+  "crossScopeChartMatches",
+  "crossScopeAssetMatches"
+]) {
+  if (!app.includes(`function ${matcher}()`)) violations.push(`app.mjs: cross-scope search rescue missing: ${matcher}`);
+  if (!app.includes(`${matcher}()`)) violations.push(`app.mjs: cross-scope search rescue never called: ${matcher}`);
+}
+for (const [label, variable] of [
+  ["形状", "shapeRescue"],
+  ["功能", "commandRescue"],
+  ["预设", "presetRescue"],
+  ["数据", "chartRescue"],
+  ["素材", "assetRescue"]
+]) {
+  if (!app.includes(`在${label}中查找（\${${variable}.length}）`)) {
+    violations.push(`app.mjs: search rescue button for ${label} must show the cross-scope match count`);
+  }
+}
+if (!app.includes("const rescueSummary = [")) {
+  violations.push("app.mjs: search empty state must summarise which other scopes have results");
+}
+
 const ribbon = fs.readFileSync("src/RoughPptAddin/Ribbon/RoughRibbon.cs", "utf8");
 for (const snippet of [
   "openPaperPresetPane",

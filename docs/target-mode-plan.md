@@ -95,6 +95,7 @@
 8. B541（已完成）：用户授权后按 `docs/manual-cleanup-candidates.md` 执行仓内无用文件清理，并回写处置结论。
 9. B542（已完成）：任务窗格状态条增加“完成”状态色，空闲、进行中、完成和错误成为四个可区分状态。
 10. B543（已完成）：UI 同步脚本过滤并清除运行时 UI 目录中的残留文件，避免旧样式备份被当作运行时资源分发。
+11. B544（已完成）：搜索空结果补齐形状跨范围救援，并在救援按钮和说明中显示各范围匹配数量。
 
 ### B541 仓内清理批次
 
@@ -121,6 +122,15 @@
 - 回归保护：`validate-local-ui-assets.mjs` 校验同步脚本仍保留残留判定、`filter` 接线和 `pruneResidue`，并扫描四个存在的运行时 UI 目录，出现残留文件即失败。
 - 保留：`src/RoughPptAddin/ui/styles.css.bak345`、`app.mjs).Count` 位于源目录且不在本次删除授权范围内，已连同另两个同类残留写入人工清理候选列表。
 - B543 验证与提交：`node --check scripts/sync-ui-output.mjs` 与 `validate-local-ui-assets.mjs` 通过；用等价代码对真实 UI 目录做端到端复制实测——残留判定精确命中 2 个残留并保留全部 20 个正式资源，预置的根目录和 `vendor/` 嵌套残留各 1 个均被清除，`index.html`、`app.mjs`、`styles.css`、`help.html`、`vendor/rough.esm.js`、`vendor/vega.min.js`、`help-assets/taskpane-overview.png`、`build-info.json` 全部存活。因 `sync-ui-output.mjs` 会改写已跟踪的 `build-info.json`，本批未直接运行该脚本，按五批次协议也不运行统一测试、UI 构建或打包。
+
+### B544 搜索跨范围发现性批次
+
+- 故障：搜索空结果的跨范围救援只覆盖功能、预设、数据、素材四个范围，缺少形状救援。当搜索范围是功能、预设、数据或素材，而关键词只命中 PPT 原生形状时（例如在“功能”范围搜索“菱形”），空状态只提供“清空搜索”，用户无法得知形状范围里其实有结果，也没有一键切换的入口。
+- 故障：救援按钮文案只写“在预设中查找”一类固定文字，不显示各范围匹配数量；切换后状态条才报出数量。用户在切换前无法判断哪个范围值得进入。
+- 修复：新增 `crossScopeShapeMatches`，沿用与 `filteredItems` 相同的类别加文本判定，只忽略当前搜索范围；空状态增加“在形状中查找（N）”按钮，切换范围、持久化到 `roughPptSearchScope`、重渲染并聚焦首个形状卡片。五个救援按钮的文案和悬浮说明统一带匹配数量，说明行改为逐范围列出“形状 N 个、功能 N 个……”。
+- 保护区：救援按钮只切换范围并定位，不插入形状、不执行删除或分享；已有的功能、预设、数据、素材救援路径和 `switchToCommandResults`、`switchToPaperPresetResults` 行为不变。
+- 回归保护：`validate-ui-contract.mjs` 要求五个 `crossScope*Matches` 均已定义且被调用，五个救援按钮文案都带 `${...Rescue.length}` 数量插值，并要求空状态保留 `rescueSummary` 逐范围汇总。
+- B544 验证与提交：`node --check src/RoughPptAddin/ui/app.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-function-icons.mjs`、`validate-taskpane-ui-interactions.mjs` 全部通过。行为实测从 `app.mjs` 提取真实函数并对 203 项真实形状目录求值：功能范围搜“菱形”得 1 个救援结果，素材范围搜 `diamond` 得 1 个，预设范围搜“箭头”得 30 个；形状范围和全部范围均返回 0（已在范围内不重复救援），空白词和无匹配词均返回 0。按五批次协议本批不运行统一测试、UI 构建或打包。
 
 ### 当前科研绘图增强批次
 
