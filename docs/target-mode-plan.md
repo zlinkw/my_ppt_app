@@ -93,6 +93,7 @@
 5. B552（已完成）：独立窗口布局验证合并为 `validate-ui-window-layout.mjs`，新增形状图库窗口覆盖；该窗口审计未发现缺陷。
 6. B553（已完成）：任务窗格 50 处本机存储写入集中到带 try/catch 的 `persistSetting`，避免存储不可用时异常中断点击处理。
 7. B554（已完成）：形状图库窗口 4 处存储写入补齐同类守卫，修复存储不可用时插入形状彻底失效。
+8. B555（已完成）：任务窗格交互验证迁移到共享浏览器 harness，删除 157 行重复代码并清掉一处未使用读取。
 
 ### B546-B550 批次结论
 
@@ -127,6 +128,13 @@
 - 回归保护：`validate-ribbon-shape-menu.mjs` 的两条字面量断言改为 `persistSetting(...)` 形式，并新增要求——`persistSetting` 存在、内部确实用 try/catch 包住 `localStorage.setItem`、保留中文失败反馈，且该文件中 `localStorage.setItem` 只允许出现 1 次。
 - 排查记录：首次探针因为给 `window.chrome.webview` 打了桩导致图库初始化超时，与存储无关；移除桩后复现正常。
 - B554 验证与提交：`validate-ribbon-shape-menu.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-research-chart-studio.mjs`、`validate-ui-window-layout.mjs` 全部通过。
+
+### B555 验证脚本去重批次
+
+- 动机：B549 抽出的 `scripts/lib/ui-browser.mjs` 与 `validate-taskpane-ui-interactions.mjs` 自带的 harness 完全重复。B549 当时为了不动已通过的脚本而暂缓迁移，本批完成迁移。
+- 改动：`validate-taskpane-ui-interactions.mjs` 改为从共享模块导入 `startStaticServer`、`launchBrowser`、`connectToBrowser`、`evaluate`、`waitFor`、`waitForExit`，删除本地的 11 个 harness 辅助函数共 157 行（446 行降到 294 行），只保留该脚本自己的探针函数；`launchBrowser` 传入原来的 `taskpane-ui-browser` 用户数据目录名，行为不变。
+- 顺带清理：`validate-usage-guide-modeless.mjs` 读取 `validate-taskpane-ui-interactions.mjs` 到 `interactions` 变量却从未使用，属死代码，已删除该行。
+- B555 验证与提交：`validate-taskpane-ui-interactions.mjs`、`validate-ui-window-layout.mjs`、`validate-usage-guide-modeless.mjs`、`validate-encoding.mjs` 全部通过；全仓 harness 函数定义现在只存在于 `scripts/lib/ui-browser.mjs` 一处。
 
 ### 下一批次方向
 

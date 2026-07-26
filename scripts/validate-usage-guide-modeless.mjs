@@ -8,7 +8,6 @@ const taskPane = read("src/RoughPptAddin/TaskPane/RoughTaskPaneControl.cs");
 const controller = read("src/RoughPptAddin/Services/RoughAddInController.cs");
 const guideWindow = read("src/RoughPptAddin/TaskPane/UsageGuideWindow.cs");
 const project = read("src/RoughPptAddin/RoughPptAddin.csproj");
-const interactions = read("scripts/validate-taskpane-ui-interactions.mjs");
 const violations = [];
 
 for (const snippet of [
