@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
@@ -135,7 +135,7 @@ public sealed class RoughTaskPaneControl : UserControl
 		}
 		catch (Exception exception)
 		{
-			AddInLogger.Error("同步顶部风格到任务窗格失败。", exception);
+			PostHostSyncFailure("同步顶部风格到任务窗格", exception);
 		}
 	}
 
@@ -158,7 +158,7 @@ public sealed class RoughTaskPaneControl : UserControl
 		}
 		catch (Exception exception)
 		{
-			AddInLogger.Error("同步顶部特征块参数到任务窗格失败。", exception);
+			PostHostSyncFailure("同步顶部特征块参数到任务窗格", exception);
 		}
 	}
 
@@ -187,7 +187,7 @@ public sealed class RoughTaskPaneControl : UserControl
 		}
 		catch (Exception exception)
 		{
-			AddInLogger.Error("刷新任务窗格素材库失败。", exception);
+			PostHostSyncFailure("刷新任务窗格素材库", exception);
 		}
 	}
 
@@ -205,7 +205,7 @@ public sealed class RoughTaskPaneControl : UserControl
 		}
 		catch (Exception exception)
 		{
-			AddInLogger.Error("定位任务窗格功能区失败。", exception);
+			PostHostSyncFailure("定位任务窗格功能区", exception);
 		}
 	}
 
@@ -997,6 +997,21 @@ public sealed class RoughTaskPaneControl : UserControl
 	{
 		AddInLogger.Error(action + "失败。", ex);
 		PostStatus(action + "失败：" + ex.Message, isError: true);
+	}
+
+	// Ribbon 触发的窗格同步失败原来只写日志，用户看不到任何反馈。
+	// 这里统一走 PostCommandFailure 给出中文状态；反馈本身失败时只记日志，
+	// 不让二次异常从 fire-and-forget 的异步方法里逃出去。
+	private void PostHostSyncFailure(string action, Exception exception)
+	{
+		try
+		{
+			PostCommandFailure(action, exception);
+		}
+		catch (Exception feedbackFailure)
+		{
+			AddInLogger.Error(action + "失败，且向任务窗格反馈失败信息时再次失败。", feedbackFailure);
+		}
 	}
 
 	private void PostZoteroTraceStatus(string text, bool isError)

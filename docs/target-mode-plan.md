@@ -91,12 +91,20 @@
 3. B546-B550（已完成）：PowerShell 中文 BOM 修复；粘性顶栏度量跟随实际高度；新增科研绘图工作台真实浏览器布局验证并补 14 个控件说明；使用说明目录补 10 个章节说明。统一验证 `npm.cmd test` 40 项与 UI 构建全绿。
 4. B551-B555（已完成）：计划压缩；独立窗口布局验证合并并新增形状图库覆盖；任务窗格与形状图库的本机存储写入补齐 try/catch 守卫；交互验证迁移到共享浏览器 harness。统一验证 `npm.cmd test` 40 项与 `npm run build:ui` 全绿、无产物漂移；按“未明确要求时不打包”边界未产出安装包。
 5. B556（已完成）：按维护规则压缩本文件历史流水。
+6. B557（已完成）：Ribbon 触发的四处窗格同步失败改为给出中文用户反馈，不再只写日志。
 
 ### B551-B555 批次结论
 
 - B552：独立窗口布局验证统一为 `validate-ui-window-layout.mjs`，按宿主 WinForms 的 MinimumSize 与默认 Size 取尺寸（工作台 720x560 / 1180x820，形状图库 420x320 / 700x620）。形状图库审计未发现缺陷：210 卡片 12 分组，搜索“菱形”过滤到 2，悬浮说明零缺失。
 - B553 / B554：本机存储写入必须集中到带 try/catch 的 `persistSetting`。读取路径本来就有守卫，写入没有，这个不对称就是缺陷。真实浏览器让 `Storage.prototype.setItem` 始终抛出后复现：`app.mjs` 修复前 6 次未捕获 `QuotaExceededError`，形状图库修复前点击形状后 `#galleryStatus` 为空，即 `setStatus` 与 `postHost` 都没执行、插入静默失效；修复后均为 0 次异常且操作正常。`research-chart-studio.mjs` 的 `saveConfig` 本来就有守卫，未改动。
 - B555：`scripts/lib/ui-browser.mjs` 是全仓唯一的浏览器 harness，`validate-taskpane-ui-interactions.mjs` 已迁移并删除 157 行重复代码。新增需要真实浏览器的验证时从该模块导入，不要再复制。
+
+### B557 宿主同步失败反馈批次
+
+- 排查：先核对计划中记录的 8 个既有 `CS4014`（fire-and-forget 异步调用）是否会造成未观察异常。8 处方法体全部有 try/catch，不存在未观察异常，这一项没有缺陷。
+- 故障：但其中 4 处只调用 `AddInLogger.Error(...)`，没有任何用户可见反馈——`ApplyStyleFromHostAsync`、`ApplyFeatureBlockFromHostAsync`、`FocusSectionAsync`、`RefreshUserAssetsFromHostAsync`。这些都是 Ribbon 触发的用户操作（同步快捷风格、同步特征块参数、定位窗格功能区、刷新素材库），失败时用户只看到“点了没反应”，错误只写进用户不会去看的日志文件。同一个类里已有 `PostCommandFailure(action, ex)`（记日志 + 中文状态）并在 17 处使用，这 4 处是偏离既有约定的异类。
+- 修复：新增 `PostHostSyncFailure(action, exception)` 统一走 `PostCommandFailure`，并把反馈本身包在 try/catch 里——因为这些是 fire-and-forget 调用，二次异常不能逃出去。日志文案保持与原来完全一致（`action + "失败。"`）。
+- B557 验证与提交：`validate-encoding.mjs`、`validate-source-constraints.mjs`、`validate-local-ui-assets.mjs`、`validate-ui-contract.mjs` 通过，`RoughTaskPaneControl.cs` 的 UTF-8 BOM 保持。C# 改动必须实际编译验证：用 VS 2022 BuildTools 的 MSBuild 全量编译得到 0 error、8 个 CS4014（与既有基线一致，未新增警告）；再用 `SignManifests=true` 加本机开发证书完成签名 Release 构建，exit code 0、0 error；最后对新编译出的 DLL 运行 `scripts/verify-ribbon-icons.ps1`，通过（5 组、79 个功能图标）。未运行 `build.ps1`，因为它会调用 PowerPoint 重新生成形状目录。
 
 ### 下一批次方向
 
