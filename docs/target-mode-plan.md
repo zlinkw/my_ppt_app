@@ -87,64 +87,29 @@
 ## 活跃队列
 
 1. B525-B540（已完成）：科研绘图工作台交付全屏、坐标、标注、筛选、配置持久化、SVG 下载和入口中文搜索，图表扩展到 36 种并建立真实 Vega 运行时回归；最终交付 `releases/RoughPptAddin-0.1.786-735227c7/`。
-2. B541-B545（已完成）：授权清理仓内无用文件约 2.5 GB；状态条增加完成状态色；UI 同步过滤运行时残留；搜索补齐形状跨范围救援并显示各范围数量；导航高亮跟随滚动并修正面板映射。统一验证 `npm.cmd test` 39 项与 UI 构建全绿。
-3. B546-B550（已完成）：PowerShell 中文 BOM 修复；计划压缩；粘性顶栏度量跟随实际高度；新增科研绘图工作台真实浏览器布局验证并补 14 个控件说明；使用说明目录补 10 个章节说明。统一验证 `npm.cmd test` 40 项与 UI 构建全绿、无产物漂移。
-4. B551（已完成）：按维护规则再次压缩本文件历史流水。
-5. B552（已完成）：独立窗口布局验证合并为 `validate-ui-window-layout.mjs`，新增形状图库窗口覆盖；该窗口审计未发现缺陷。
-6. B553（已完成）：任务窗格 50 处本机存储写入集中到带 try/catch 的 `persistSetting`，避免存储不可用时异常中断点击处理。
-7. B554（已完成）：形状图库窗口 4 处存储写入补齐同类守卫，修复存储不可用时插入形状彻底失效。
-8. B555（已完成）：任务窗格交互验证迁移到共享浏览器 harness，删除 157 行重复代码并清掉一处未使用读取。
+2. B541-B545（已完成）：授权清理仓内无用文件约 2.5 GB；状态条增加完成状态色；UI 同步过滤运行时残留；搜索补齐形状跨范围救援；导航高亮跟随滚动并修正面板映射。统一验证 `npm.cmd test` 39 项与 UI 构建全绿。
+3. B546-B550（已完成）：PowerShell 中文 BOM 修复；粘性顶栏度量跟随实际高度；新增科研绘图工作台真实浏览器布局验证并补 14 个控件说明；使用说明目录补 10 个章节说明。统一验证 `npm.cmd test` 40 项与 UI 构建全绿。
+4. B551-B555（已完成）：计划压缩；独立窗口布局验证合并并新增形状图库覆盖；任务窗格与形状图库的本机存储写入补齐 try/catch 守卫；交互验证迁移到共享浏览器 harness。统一验证 `npm.cmd test` 40 项与 `npm run build:ui` 全绿、无产物漂移；按“未明确要求时不打包”边界未产出安装包。
+5. B556（已完成）：按维护规则压缩本文件历史流水。
 
-### B546-B550 批次结论
+### B551-B555 批次结论
 
-- B546：含中文的 `.ps1` 必须带 UTF-8 BOM。6 个文件已补齐，其中 `install.ps1`、`install-payload-core.ps1`、`install-prereqs.ps1` 属终端用户安装链路。
-- B547 / B551：按维护规则压缩本文件历史流水。
-- B548：`--sticky-topbar-height` 与 `--panel-scroll-margin` 现由 `ResizeObserver` 跟随 `.topbar` 实际高度。修复前实测状态条展开使顶栏 76→96 px 而变量停在 77 px，定位面板被遮挡 8 px；修复后变量同步 97 px、scroll-margin 109 px，留 13 px 余量。
-- B549：新增 `scripts/lib/ui-browser.mjs` 共享无头浏览器 harness 和工作台布局验证（720x560 与 1180x820 两个真实窗口尺寸），首次运行即查出并修复工作台 14 个控件缺失中文悬浮说明。该脚本已在 B552 并入 `validate-ui-window-layout.mjs`。
-- B550：`index.html` 447 个可见控件悬浮说明零缺失；`help.html` 目录 10 个章节链接原本全部缺失，已补写并加入静态合同（`title` 不得等于链接文字）。
-
-### B552 独立窗口布局验证合并批次
-
-- 目的：`ribbon-shape-gallery.html` 是最后一个没有真实浏览器验证的 UI 面。与其再加第三份近似脚本，把工作台布局验证泛化为按窗口表驱动的 `validate-ui-window-layout.mjs`，同时覆盖科研绘图工作台和形状图库窗口。
-- 窗口尺寸取自宿主 WinForms 定义，验证用户真的能拉到的最窄状态：工作台 `ResearchChartStudioWindow.cs` 的 720x560 与 1180x820，形状图库 `ShapeGalleryWindow.cs` 的 420x320 与 700x620。
-- 检查项：横向溢出、可见元素越界、按钮过小、控件文字裁切、可见控件中文悬浮说明，加上每个窗口的专属检查（工作台 36 图表入口与单选状态；图库卡片数、分组数与卡片横向不越界）。
-- 形状图库审计结论：**未发现缺陷**。两个尺寸下均无横向溢出、无越界元素、无过小按钮、悬浮说明零缺失；210 个形状卡片分 12 组，搜索“菱形”把卡片从 210 过滤到 2。本批只增加覆盖，不改产品代码。
-- B552 验证与提交：`validate-ui-window-layout.mjs` 两个窗口四个尺寸全部通过；旧脚本已删除并从 `npm test` 换成新脚本，仓内无残留引用。
-
-### B553 本机存储写入健壮性批次
-
-- 故障：`app.mjs` 有 50 处 `localStorage.setItem` 全部裸调用，而所有读取路径（`loadJson`、`loadStyleTemplates` 等）都带 try/catch——这种读写不对称就是缺陷所在。WebView2 中本机存储可能被禁用或写满，`setItem` 抛出 `QuotaExceededError` 会中断点击处理的后续逻辑：`rememberRecent` 与 `pinQuickShape` 的 `setItem` 都在 `render()` 和 `postHost(...)` 之前，异常会让界面不重绘、宿主收不到固定常用形状的通知。
-- 真实浏览器复现：在任何脚本执行前改写 `Storage.prototype.setItem` 让它始终抛出，然后点击搜索范围、界面模式、排序和面板折叠。修复前产生 6 次未捕获 `QuotaExceededError`；修复后为 0 次，且范围按钮、排序值、面板折叠态、搜索和形状网格全部照常工作。
-- 修复：新增 `persistSetting(key, value)` 集中写入并捕获异常，首次失败时给一条中文状态提示（该提示本身也隔离在内层 try 里，因为它可能在 `els` 初始化之前被调用）。50 处调用点全部改为经该函数写入，成功路径语义不变。
-- 边界：只改 `app.mjs`。`ribbon-shape-gallery.mjs` 与 `research-chart-studio.mjs` 的写入被 `validate-ribbon-shape-menu.mjs` 和 `validate-research-chart-studio.mjs` 以字面量断言，留待后续批次连同合同一起调整。
-- 回归保护：`validate-ui-contract.mjs` 要求 `persistSetting` 存在、其内部确实用 try/catch 包住 `localStorage.setItem`、保留中文失败反馈，并且整个 `app.mjs` 中 `localStorage.setItem` 只允许出现 1 次（即只在该函数内）。
-- B553 验证与提交：`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-action-wiring.mjs`、`validate-style-panel-sync.mjs`、`validate-taskpane-shape-gallery.mjs`、`validate-ribbon-shape-menu.mjs`、`validate-taskpane-function-icons.mjs`、`validate-source-constraints.mjs`、`validate-simple-connection-layout.mjs`、`validate-taskpane-ui-interactions.mjs`、`validate-ui-window-layout.mjs`、`validate-usage-guide-modeless.mjs`、`validate-taskpane-resource-guards.mjs` 全部通过。
-
-### B554 形状图库存储写入批次
-
-- 复查结论：`research-chart-studio.mjs` 的 `saveConfig` 本来就有 try/catch 和中文失败反馈，无需改动。真正缺守卫的是 `ribbon-shape-gallery.mjs` 的 4 处写入，而且后果比 B553 更重——`insertShape`、`pinQuickShape`、`unpinQuickShape` 都是先写存储，再 `setStatus`，再 `postHost`，写入抛出会让插入和固定动作彻底不发生。
-- 真实浏览器复现：让 `Storage.prototype.setItem` 始终抛出后点击第一个形状卡片。修复前出现 1 次未捕获 `QuotaExceededError`，且 `#galleryStatus` 为空——说明 `setStatus` 与 `postHost` 都没执行，插入静默失效。修复后无未捕获异常，状态显示“已插入：直线”，210 个卡片照常渲染。
-- 修复：与该文件已有的 `loadJson` 对称，新增带 try/catch 的 `persistSetting`，首次失败给一条中文提示，4 处写入全部改为经它写入。
-- 回归保护：`validate-ribbon-shape-menu.mjs` 的两条字面量断言改为 `persistSetting(...)` 形式，并新增要求——`persistSetting` 存在、内部确实用 try/catch 包住 `localStorage.setItem`、保留中文失败反馈，且该文件中 `localStorage.setItem` 只允许出现 1 次。
-- 排查记录：首次探针因为给 `window.chrome.webview` 打了桩导致图库初始化超时，与存储无关；移除桩后复现正常。
-- B554 验证与提交：`validate-ribbon-shape-menu.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-research-chart-studio.mjs`、`validate-ui-window-layout.mjs` 全部通过。
-
-### B555 验证脚本去重批次
-
-- 动机：B549 抽出的 `scripts/lib/ui-browser.mjs` 与 `validate-taskpane-ui-interactions.mjs` 自带的 harness 完全重复。B549 当时为了不动已通过的脚本而暂缓迁移，本批完成迁移。
-- 改动：`validate-taskpane-ui-interactions.mjs` 改为从共享模块导入 `startStaticServer`、`launchBrowser`、`connectToBrowser`、`evaluate`、`waitFor`、`waitForExit`，删除本地的 11 个 harness 辅助函数共 157 行（446 行降到 294 行），只保留该脚本自己的探针函数；`launchBrowser` 传入原来的 `taskpane-ui-browser` 用户数据目录名，行为不变。
-- 顺带清理：`validate-usage-guide-modeless.mjs` 读取 `validate-taskpane-ui-interactions.mjs` 到 `interactions` 变量却从未使用，属死代码，已删除该行。
-- B555 验证与提交：`validate-taskpane-ui-interactions.mjs`、`validate-ui-window-layout.mjs`、`validate-usage-guide-modeless.mjs`、`validate-encoding.mjs` 全部通过；全仓 harness 函数定义现在只存在于 `scripts/lib/ui-browser.mjs` 一处。
+- B552：独立窗口布局验证统一为 `validate-ui-window-layout.mjs`，按宿主 WinForms 的 MinimumSize 与默认 Size 取尺寸（工作台 720x560 / 1180x820，形状图库 420x320 / 700x620）。形状图库审计未发现缺陷：210 卡片 12 分组，搜索“菱形”过滤到 2，悬浮说明零缺失。
+- B553 / B554：本机存储写入必须集中到带 try/catch 的 `persistSetting`。读取路径本来就有守卫，写入没有，这个不对称就是缺陷。真实浏览器让 `Storage.prototype.setItem` 始终抛出后复现：`app.mjs` 修复前 6 次未捕获 `QuotaExceededError`，形状图库修复前点击形状后 `#galleryStatus` 为空，即 `setStatus` 与 `postHost` 都没执行、插入静默失效；修复后均为 0 次异常且操作正常。`research-chart-studio.mjs` 的 `saveConfig` 本来就有守卫，未改动。
+- B555：`scripts/lib/ui-browser.mjs` 是全仓唯一的浏览器 harness，`validate-taskpane-ui-interactions.mjs` 已迁移并删除 157 行重复代码。新增需要真实浏览器的验证时从该模块导入，不要再复制。
 
 ### 下一批次方向
 
 - 继续按 `PROJECT_CONSTRAINTS.md` 5.1 优先做 UI：外观、布局、发现性、首屏密度、图标一致性、状态可读性。
 - 每批只做一个同风险面改动，新增可见控件必须同时补中文文案、tooltip 和对应静态合同。
-- 下一个统一验证节点为 B551-B555；节点前不运行 `npm test`、UI 构建或打包。
-- 四个 UI 页面已全部纳入真实浏览器验证。`validate-taskpane-ui-interactions.mjs` 仍带自己的 harness 副本，后续批次可迁移到 `scripts/lib/ui-browser.mjs`。
+- 下一个统一验证节点为 B556-B560；节点前不运行 `npm test`、UI 构建或打包。
+- 四个 UI 页面已全部纳入真实浏览器验证，harness 已去重到 `scripts/lib/ui-browser.mjs` 单一来源。
 - 用户若要求安装包，需先完成一次统一验证再运行 `npm run package`，只打包、不安装。
 
 ## 近期锚点
+
+- B553-B554：本机存储写入必须经带 try/catch 的 `persistSetting`；裸 `setItem` 抛出会中断同一处理函数里后续的 `render()` 与 `postHost(...)`，让操作静默失效。`app.mjs` 与 `ribbon-shape-gallery.mjs` 各有一处合同锁定该约定。
+- B555：真实浏览器 harness 只有 `scripts/lib/ui-browser.mjs` 一处；新增布局类验证从该模块导入，不再复制。
 
 - B546：Windows PowerShell 5.1 按系统 ANSI 代码页解码无 BOM 脚本，会让中文变乱码甚至吞掉字符串结束引号；含中文的 `.ps1` 必须带 UTF-8 BOM，该约定已写入 `validate-encoding.mjs` 与 `docs/VALIDATION.md`。
 - B545：面板 `data-collapse-key` 与导航项不是一一对应，`zoteroImages` 必须经 `sectionNavPanelAliases` 解析为 `paletteLibrary`；导航高亮由 rAF 合帧的滚动定位维护，合同要求每个面板都能命中真实导航项。
@@ -152,8 +117,6 @@
 - B542：状态色语义固定为空闲灰、进行中蓝紫 `#4754d8`、完成绿 `#1b7a34`、错误红 `#dc2626`，四者必须互不相同。
 - B541：清理授权只以 `docs/manual-cleanup-candidates.md` 为准；删除前必须逐项审核绝对路径位于 `D:\GitRepo\my_ppt_app\` 之下并排除仓库根、`.git` 与 `src/`。`node_modules/` 被验证基线依赖，不删除。
 - B535-B540：科研绘图新图表的验证证据必须来自真实 Vega Lite 编译与 Vega SVG 输出，不得用字符串存在性代替运行时证据。
-- B484-B485：安装入口覆盖 PowerPoint、.NET Framework 4.8、WebView2、VSTO 检测与补齐；彻底卸载清除插件资源但保留 Zotero 共享库和系统运行时。
-- B482-B483：使用说明改为独立非模态窗口，支持边看边操作。
 
 ## 关键里程碑
 
