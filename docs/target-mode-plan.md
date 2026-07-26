@@ -94,6 +94,7 @@
 7. B540（已完成）：增加真实 Vega 编译与 SVG 渲染回归，覆盖本轮八种新图；统一测试、构建和打包已完成。
 8. B541（已完成）：用户授权后按 `docs/manual-cleanup-candidates.md` 执行仓内无用文件清理，并回写处置结论。
 9. B542（已完成）：任务窗格状态条增加“完成”状态色，空闲、进行中、完成和错误成为四个可区分状态。
+10. B543（已完成）：UI 同步脚本过滤并清除运行时 UI 目录中的残留文件，避免旧样式备份被当作运行时资源分发。
 
 ### B541 仓内清理批次
 
@@ -111,6 +112,15 @@
 - 判定边界：含“失败、错误、无法、不支持、超出、拒绝、未找到、不能为空”的文案即使以“已”开头也不视为完成；错误和进行中状态优先级高于完成。
 - 回归保护：`validate-ui-contract.mjs` 新增状态色合同——提取 `isDoneStatusText` 源码并对 4 条完成文案和 6 条非完成文案做行为断言；再按逗号分组解析样式表，取 `.status.ok/.busy/.error` 的最后一条生效 `color` 并要求三者互不相同。
 - B542 验证与提交：`node --check src/RoughPptAddin/ui/app.mjs`、`validate-ui-contract.mjs`、`validate-taskpane-function-icons.mjs`、`validate-encoding.mjs`、`validate-taskpane-ui-interactions.mjs` 全部通过；新合同经反向注入验证——把 `.status.ok` 文字色改成与进行中相同会报“tones not distinct”，删除该规则会报“missing color”。解析器实测生效色为 busy `#4754d8`、error `#dc2626`、ok `#1b7a34`。按五批次协议本批不运行统一测试、UI 构建或打包。
+
+### B543 运行时 UI 资源纯净度批次
+
+- 故障：`scripts/sync-ui-output.mjs` 用 `fs.cpSync(source, target, { recursive: true, force: true })` 整目录复制 `src/RoughPptAddin/ui`，没有任何过滤。中断命令和手工备份留下的残留文件（`styles.css.bak345` 185 KB、`app.mjs).Count`）因此会被复制进 `bin/Release/ui`、`bin/Debug/ui`、`publish/ui`、`dist/RoughPptAddin/publish/ui`，`--include-installed` 时还会进入 `%LOCALAPPDATA%\RoughPptAddin\publish\ui`。旧样式备份进入运行时目录会造成体积浪费和版本混淆。
+- 影响边界：MSI/EXE/ZIP 三件套按 MSBuild 内容项打包，实测 `releases/RoughPptAddin-0.1.786-735227c7/publish/ui/` 不含残留，因此这是开发与本机安装目录的污染，不是已发布安装包缺陷。
+- 修复：`sync-ui-output.mjs` 增加残留文件判定（`*.bak[0-9]*`、`*.orig`、`*.rej`、`*).Count`、`*),`、`tmp_*`、`.tmp-*`、`*.log`、`*.tmp`），复制时用 `cpSync` 的 `filter` 跳过，并在复制后用 `pruneResidue` 清除目标目录内已有的同类残留；清除只在目标目录内递归，并对每个路径重新校验仍在目标根之下。
+- 回归保护：`validate-local-ui-assets.mjs` 校验同步脚本仍保留残留判定、`filter` 接线和 `pruneResidue`，并扫描四个存在的运行时 UI 目录，出现残留文件即失败。
+- 保留：`src/RoughPptAddin/ui/styles.css.bak345`、`app.mjs).Count` 位于源目录且不在本次删除授权范围内，已连同另两个同类残留写入人工清理候选列表。
+- B543 验证与提交：`node --check scripts/sync-ui-output.mjs` 与 `validate-local-ui-assets.mjs` 通过；用等价代码对真实 UI 目录做端到端复制实测——残留判定精确命中 2 个残留并保留全部 20 个正式资源，预置的根目录和 `vendor/` 嵌套残留各 1 个均被清除，`index.html`、`app.mjs`、`styles.css`、`help.html`、`vendor/rough.esm.js`、`vendor/vega.min.js`、`help-assets/taskpane-overview.png`、`build-info.json` 全部存活。因 `sync-ui-output.mjs` 会改写已跟踪的 `build-info.json`，本批未直接运行该脚本，按五批次协议也不运行统一测试、UI 构建或打包。
 
 ### 当前科研绘图增强批次
 

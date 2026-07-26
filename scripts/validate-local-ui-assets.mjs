@@ -53,6 +53,39 @@ for (const root of roots) {
   }
 }
 
+// 运行时 UI 目录不得出现中断命令或手工备份留下的残留文件。
+const residuePatterns = [/\.bak\d*$/i, /\.orig$/i, /\.rej$/i, /\)\.Count$/, /\),$/, /^tmp_/, /^\.tmp-/, /\.log$/i, /\.tmp$/i];
+const isResidueName = name => residuePatterns.some(pattern => pattern.test(name));
+
+const sync = fs.readFileSync("scripts/sync-ui-output.mjs", "utf8");
+for (const snippet of [
+  "const residuePatterns = [",
+  "const isResidueName = name =>",
+  "filter: entry => !isResidueName(path.basename(entry))",
+  "function pruneResidue(dir)"
+]) {
+  if (!sync.includes(snippet)) violations.push(`sync-ui-output.mjs: residue guard missing: ${snippet}`);
+}
+
+const runtimeUiRoots = [
+  "src/RoughPptAddin/bin/Release/ui",
+  "src/RoughPptAddin/bin/Debug/ui",
+  "publish/ui",
+  "dist/RoughPptAddin/publish/ui"
+];
+for (const runtimeRoot of runtimeUiRoots) {
+  if (!fs.existsSync(runtimeRoot)) continue;
+  const stack = [runtimeRoot];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (isResidueName(entry.name)) violations.push(`${runtimeRoot}: residue file must not ship in the runtime UI directory: ${full}`);
+    }
+  }
+}
+
 const checkedFiles = [
   "src/RoughPptAddin/ui/index.html",
   "src/RoughPptAddin/ui/help.html",
