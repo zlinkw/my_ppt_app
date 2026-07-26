@@ -92,6 +92,16 @@
 5. B538（已完成）：增加三元图和雷达图，补齐组成数据与多指标轮廓。
 6. B539（已完成）：增加雨云图和山脊图，补齐高密度分布比较。
 7. B540（已完成）：增加真实 Vega 编译与 SVG 渲染回归，覆盖本轮八种新图；统一测试、构建和打包已完成。
+8. B541（已完成）：用户授权后按 `docs/manual-cleanup-candidates.md` 执行仓内无用文件清理，并回写处置结论。
+
+### B541 仓内清理批次
+
+- 授权与边界：用户明确授权按人工清理候选列表删除，且删除范围不得超过该文档所述条目。删除前逐项审核绝对路径，必须位于 `D:\GitRepo\my_ppt_app\` 之下，并排除仓库根、`.git` 和 `src/`；拼接异常直接拒绝。
+- 删除前审核：`package-run.pid` 内容为 `cleaned` 且记录 PID 未运行；`scripts/verify-deploy-package.ps1` 与 `scripts/verify-native-all.ps1` 通过解析器语法检查；已注册加载项清单指向 `%LOCALAPPDATA%\RoughPptAddin\publish`，不依赖仓内 `publish/`；`sync-ui-output.mjs` 递归重建 `publish/ui` 与 `dist/RoughPptAddin/publish/ui`，`validate-local-ui-assets.mjs` 仅在 `--publish` 下要求 `publish/ui`（`npm test` 未传该参数）；打包脚本输出到 `releases/<版本>/publish`。PowerPoint 与打包进程均未运行。
+- 已删除：`恢复审计报告_20260721.md`、`package-run.pid`、两个 `scripts/*),` 残留、`dist/`、`publish/`、`diagnostics/`、`node_modules/nwsapi/dist/lint.log`，以及 11 个失败或已被取代的 `releases/` 目录，共 19 项、约 2.5 GB。
+- 保留：`node_modules/` 虽在候选列表内但被 `npm test` 与 `npm run build:ui` 直接依赖，删除会打断验证基线，故保留并在候选列表中记录原因。
+- 新增候选：`docs/target-mode-plan.md).Count` 属同类抽取残留但已被 Git 跟踪，不在本次授权范围内，已写入候选列表等待人工审核。
+- B541 验证与提交：`git status --short` 仅显示该次授权删除的唯一跟踪文件；`releases/RoughPptAddin-0.1.786-735227c7/` 与 `releases/RoughPptAddin-0.1.762-e045e31e-r2/` 按记录保留。按五批次协议本批不运行统一测试、UI 构建或打包。
 
 ### 当前科研绘图增强批次
 
