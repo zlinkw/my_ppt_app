@@ -95,6 +95,13 @@
 7. B541-B545 统一验证（已完成）：完整 `npm.cmd test` 39 项与 `npm run build:ui` 全绿且无产物漂移；按“未明确要求时不打包”边界未产出安装包。
 8. B546（已完成）：为 6 个含中文的 PowerShell 脚本补齐 UTF-8 BOM，修复安装链路中文乱码与变量插值失效。
 9. B547（已完成）：按计划维护规则压缩本文件的历史流水。
+10. B548（已完成）：粘性顶栏度量改为跟随顶栏实际高度，修复状态条展开后定位面板被顶栏遮挡。
+
+### B548 粘性顶栏度量批次
+
+- 故障：`updateStickyChromeMetrics` 只在初始化、`resize` 和 `focusPanel` 时运行，但顶栏高度会随状态条展开而变化。真实浏览器实测：空闲时顶栏 76 px、`--sticky-topbar-height` 77 px、`--panel-scroll-margin` 89 px；出现错误状态并展开后顶栏升到 96 px，两个变量仍停在 77 px 和 89 px。此时定位到科研绘图面板，面板顶边落在 89 px 而顶栏底边在 96 px，面板标题被粘性顶栏遮挡 8 px，违反“非顶栏内容不使用 sticky/fixed 遮挡滚动”的约束。
+- 修复：新增 `observeStickyChromeHeight`，用 `ResizeObserver` 监听 `.topbar` 实际高度变化并刷新两个变量；`updateStickyChromeMetrics` 改为只在数值变化时写入，避免多余样式写入与回环；`toggleStatusExpanded` 在没有 `ResizeObserver` 的宿主上作为兜底刷新路径。
+- B548 验证与提交：真实浏览器实测修复后顶栏 96 px 时变量同步为 97 px、scroll-margin 为 109 px，面板顶边落在 109 px、顶栏底边 96 px，留出 13 px 余量且不再遮挡。回归保护加入 `validate-taskpane-ui-interactions.mjs` 的 `stickyChromeMetricProbe`（放在其他交互检查之后，因为它会展开全部面板）；反向验证——移除 `observeStickyChromeHeight()` 调用后该检查立即报“度量未跟随实际高度”和“被粘性顶栏遮挡 1px”。`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-function-icons.mjs`、`validate-taskpane-action-wiring.mjs`、`validate-source-constraints.mjs` 均通过。
 
 ### 下一批次方向
 

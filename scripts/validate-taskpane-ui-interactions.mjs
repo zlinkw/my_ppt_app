@@ -66,6 +66,15 @@ try {
 
   const dropdown = await evaluate(client, dropdownSearchProbe());
   if (!dropdown.filtered) violations.push("形状图库下拉框未按搜索词过滤");
+
+  // 该检查会展开全部面板并追加占位元素，必须放在其他交互检查之后。
+  const sticky = await evaluate(client, stickyChromeMetricProbe());
+  if (!sticky.metricFollowsHeight) {
+    violations.push(`状态条展开后粘性顶栏度量未跟随实际高度 ${JSON.stringify(sticky)}`);
+  }
+  if (sticky.panelHeadOccluded) {
+    violations.push(`状态条展开后定位面板被粘性顶栏遮挡 ${sticky.occludedPx}px ${JSON.stringify(sticky)}`);
+  }
 } finally {
   await client.close().catch(() => {});
   browser.process.kill();
@@ -382,5 +391,56 @@ function chartCurvePreviewProbe() {
       pointCount: coordinates.length,
       dotCount: circles.length
     };
+  })()`;
+}
+
+function stickyChromeMetricProbe() {
+  return `(() => {
+    const de = document.documentElement;
+    const status = document.querySelector('#status');
+    const topbar = document.querySelector('.topbar');
+    if (!status || !topbar) return { metricFollowsHeight: false, reason: 'missing topbar or status' };
+    const readVar = name => parseFloat(getComputedStyle(de).getPropertyValue(name)) || 0;
+    const nextFrames = () => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+
+    status.classList.remove('error', 'expanded', 'long', 'busy');
+    status.textContent = '准备就绪';
+
+    return (async () => {
+      await nextFrames();
+      const idleBar = Math.round(topbar.getBoundingClientRect().height);
+      const idleVar = readVar('--sticky-topbar-height');
+
+      status.classList.add('error', 'long', 'expanded');
+      status.textContent = '读取论文图像库失败：固定数据库路径不存在，请先在 Zotero 中确认共享图库已初始化，然后重新打开任务窗格重试。';
+      for (const panel of document.querySelectorAll('.panel.collapsed, .catalog-panel.collapsed')) panel.classList.remove('collapsed');
+      const filler = document.createElement('div');
+      filler.style.height = '1600px';
+      document.querySelector('.app-content')?.append(filler);
+
+      await nextFrames();
+      await nextFrames();
+      const expandedBar = Math.round(topbar.getBoundingClientRect().height);
+      const expandedVar = readVar('--sticky-topbar-height');
+      const expandedMargin = readVar('--panel-scroll-margin');
+
+      const panel = document.querySelector('[data-collapse-key="charts"]');
+      panel?.scrollIntoView({ block: 'start' });
+      await nextFrames();
+      const barBottom = topbar.getBoundingClientRect().bottom;
+      const panelTop = panel ? panel.getBoundingClientRect().top : 0;
+
+      return {
+        idleBar,
+        idleVar,
+        expandedBar,
+        expandedVar,
+        expandedMargin,
+        grew: expandedBar > idleBar,
+        metricFollowsHeight: expandedBar <= idleBar || (Math.abs(expandedVar - expandedBar) <= 2 && expandedMargin >= expandedBar),
+        occludedPx: Math.round(barBottom - panelTop),
+        panelHeadOccluded: Boolean(panel) && barBottom - panelTop > 1
+      };
+    })();
   })()`;
 }

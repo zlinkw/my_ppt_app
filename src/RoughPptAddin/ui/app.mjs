@@ -1919,9 +1919,24 @@ function updateStickyChromeMetrics() {
     const topbar = document.querySelector(".topbar");
     const top = Math.ceil(topbar?.getBoundingClientRect?.().height || 44);
     const root = document.documentElement;
-    root.style.setProperty("--sticky-topbar-height", `${top}px`);
-    root.style.setProperty("--panel-scroll-margin", `${top + 12}px`);
+    // 只在数值变化时写入，避免多余样式写入以及与 ResizeObserver 形成回环。
+    if (root.style.getPropertyValue("--sticky-topbar-height") !== `${top}px`) {
+      root.style.setProperty("--sticky-topbar-height", `${top}px`);
+      root.style.setProperty("--panel-scroll-margin", `${top + 12}px`);
+    }
   } catch {}
+}
+
+// 顶栏高度会随状态条展开、长文案换行和界面模式变化，度量必须跟随实际高度，
+// 否则 scroll-margin-top 会失准，定位到的面板会被粘性顶栏遮挡。
+function observeStickyChromeHeight() {
+  const topbar = document.querySelector(".topbar");
+  if (!topbar || typeof ResizeObserver !== "function") return false;
+  if (window.__roughStickyChromeObserver) return true;
+  const observer = new ResizeObserver(() => updateStickyChromeMetrics());
+  observer.observe(topbar);
+  window.__roughStickyChromeObserver = observer;
+  return true;
 }
 
 function panelAvailableInCurrentContext(key) {
@@ -6708,6 +6723,8 @@ function toggleStatusExpanded(force) {
   const expanded = typeof force === "boolean" ? force : !els.status.classList.contains("expanded");
   els.status.classList.toggle("expanded", expanded);
   els.status.setAttribute("aria-expanded", String(expanded));
+  // 没有 ResizeObserver 的宿主上，这里是顶栏度量的兜底刷新路径。
+  if (!window.__roughStickyChromeObserver) updateStickyChromeMetrics();
 }
 
 function handleHostMessage(message) {
@@ -8530,6 +8547,7 @@ safeInitStep("功能导航抽屉", () => initSectionNavDrawer());
 safeInitStep("使用说明返回位置", () => initUsageGuideNavigation());
 safeInitStep("粘性顶栏度量", () => {
   updateStickyChromeMetrics();
+  observeStickyChromeHeight();
   if (!window.__roughStickyChromeWired) {
     window.__roughStickyChromeWired = true;
     window.addEventListener("resize", updateStickyChromeMetrics, { passive: true });
