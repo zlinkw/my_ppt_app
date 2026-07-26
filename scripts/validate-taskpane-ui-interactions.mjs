@@ -72,6 +72,33 @@ try {
   const dropdown = await evaluate(client, dropdownSearchProbe());
   if (!dropdown.filtered) violations.push("形状图库下拉框未按搜索词过滤");
 
+  // 假控件合同：排序只影响形状列表，其他搜索范围必须禁用并说明原因。
+  const sortAvailability = await evaluate(client, scopeSortAvailabilityProbe());
+  if (sortAvailability.missing) {
+    violations.push("排序控件缺失，无法验证按范围启用状态");
+  } else {
+    const shapeScopes = new Set(["all", "shape"]);
+    for (const row of sortAvailability.rows) {
+      const shouldBeEnabled = shapeScopes.has(row.scope);
+      if (shouldBeEnabled && row.disabled) {
+        violations.push(`搜索范围 ${row.scope}: 排序应可用但被禁用 ${JSON.stringify(row)}`);
+      }
+      if (!shouldBeEnabled && !row.disabled) {
+        violations.push(`搜索范围 ${row.scope}: 排序对该范围无效，必须禁用而不是留成假控件 ${JSON.stringify(row)}`);
+      }
+      if (!shouldBeEnabled && row.ariaDisabled !== "true") {
+        violations.push(`搜索范围 ${row.scope}: 禁用的排序控件缺少 aria-disabled=true`);
+      }
+      if (!row.titleChinese) violations.push(`搜索范围 ${row.scope}: 排序控件悬浮说明缺少中文`);
+      if (!row.titleExplains) {
+        violations.push(`搜索范围 ${row.scope}: 排序被禁用时必须说明原因 ${JSON.stringify(row)}`);
+      }
+    }
+    if (sortAvailability.rows.length !== 6) {
+      violations.push(`排序可用性检查只覆盖了 ${sortAvailability.rows.length} 个搜索范围，应为 6 个`);
+    }
+  }
+
   // 该检查会展开全部面板并追加占位元素，必须放在其他交互检查之后。
   const sticky = await evaluate(client, stickyChromeMetricProbe());
   if (!sticky.metricFollowsHeight) {
@@ -290,5 +317,36 @@ function stickyChromeMetricProbe() {
         panelHeadOccluded: Boolean(panel) && barBottom - panelTop > 1
       };
     })();
+  })()`;
+}
+
+function scopeSortAvailabilityProbe() {
+  return `(() => {
+    const sort = document.querySelector('#sortMode');
+    const scopeButton = scope => document.querySelector('[data-search-scope="' + scope + '"]');
+    if (!sort) return { missing: true, rows: [] };
+    const hasChinese = text => /[\u3400-\u9fff]/.test(text || '');
+    const rows = [];
+    const order = ['all', 'shape', 'command', 'preset', 'chart', 'asset'];
+    const step = index => {
+      if (index >= order.length) return Promise.resolve();
+      const scope = order[index];
+      scopeButton(scope)?.click();
+      return new Promise(next => setTimeout(() => {
+        rows.push({
+          scope,
+          disabled: sort.disabled,
+          ariaDisabled: sort.getAttribute('aria-disabled'),
+          title: sort.title,
+          titleChinese: hasChinese(sort.title),
+          titleExplains: !sort.disabled || /排序只影响形状列表|不适用/.test(sort.title + ' ' + (sort.getAttribute('aria-label') || ''))
+        });
+        next();
+      }, 260)).then(() => step(index + 1));
+    };
+    return step(0).then(() => {
+      scopeButton('all')?.click();
+      return { missing: false, rows };
+    });
   })()`;
 }

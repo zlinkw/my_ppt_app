@@ -92,6 +92,7 @@
 4. B551-B555（已完成）：计划压缩；独立窗口布局验证合并并新增形状图库覆盖；任务窗格与形状图库的本机存储写入补齐 try/catch 守卫；交互验证迁移到共享浏览器 harness。统一验证 `npm.cmd test` 40 项与 `npm run build:ui` 全绿、无产物漂移；按“未明确要求时不打包”边界未产出安装包。
 5. B556（已完成）：按维护规则压缩本文件历史流水。
 6. B557（已完成）：Ribbon 触发的四处窗格同步失败改为给出中文用户反馈，不再只写日志。
+7. B558（已完成）：为“排序按范围启用”的假控件合同补真实浏览器回归验证。
 
 ### B551-B555 批次结论
 
@@ -105,6 +106,13 @@
 - 故障：但其中 4 处只调用 `AddInLogger.Error(...)`，没有任何用户可见反馈——`ApplyStyleFromHostAsync`、`ApplyFeatureBlockFromHostAsync`、`FocusSectionAsync`、`RefreshUserAssetsFromHostAsync`。这些都是 Ribbon 触发的用户操作（同步快捷风格、同步特征块参数、定位窗格功能区、刷新素材库），失败时用户只看到“点了没反应”，错误只写进用户不会去看的日志文件。同一个类里已有 `PostCommandFailure(action, ex)`（记日志 + 中文状态）并在 17 处使用，这 4 处是偏离既有约定的异类。
 - 修复：新增 `PostHostSyncFailure(action, exception)` 统一走 `PostCommandFailure`，并把反馈本身包在 try/catch 里——因为这些是 fire-and-forget 调用，二次异常不能逃出去。日志文案保持与原来完全一致（`action + "失败。"`）。
 - B557 验证与提交：`validate-encoding.mjs`、`validate-source-constraints.mjs`、`validate-local-ui-assets.mjs`、`validate-ui-contract.mjs` 通过，`RoughTaskPaneControl.cs` 的 UTF-8 BOM 保持。C# 改动必须实际编译验证：用 VS 2022 BuildTools 的 MSBuild 全量编译得到 0 error、8 个 CS4014（与既有基线一致，未新增警告）；再用 `SignManifests=true` 加本机开发证书完成签名 Release 构建，exit code 0、0 error；最后对新编译出的 DLL 运行 `scripts/verify-ribbon-icons.ps1`，通过（5 组、79 个功能图标）。未运行 `build.ps1`，因为它会调用 PowerPoint 重新生成形状目录。
+
+### B558 假控件合同回归批次
+
+- 排查过程：先怀疑排序下拉框在功能/预设/数据/素材范围下是无效的假控件（违反最小验收清单的“是否存在假按钮”）。实际读代码发现 `renderSortModeControl` 已经正确处理——非形状范围下禁用、置 `aria-disabled=true`、并把悬浮说明改成解释为什么不可用。**产品代码没有缺陷。**
+- 真正的缺口是验证覆盖：全仓验证脚本里没有任何一处提到 `sortMode`，这条“无假控件”的不变量完全没有回归保护。
+- 新增：`validate-taskpane-ui-interactions.mjs` 增加 `scopeSortAvailabilityProbe`，在真实浏览器里依次点过 6 个搜索范围，断言 `all`/`shape` 下排序可用，`command`/`preset`/`chart`/`asset` 下必须禁用、带 `aria-disabled=true`、悬浮说明含中文且解释原因，并要求确实覆盖到 6 个范围。
+- B558 验证与提交：`validate-taskpane-ui-interactions.mjs` 通过。反向验证——把 `renderSortModeControl` 里的 `searchScopeAllows("shape")` 改成恒为 `true`（即制造假控件）后，该检查立即在 4 个非形状范围上报错；恢复后重新通过。
 
 ### 下一批次方向
 
