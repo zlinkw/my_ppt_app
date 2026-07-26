@@ -98,6 +98,7 @@
 11. B544（已完成）：搜索空结果补齐形状跨范围救援，并在救援按钮和说明中显示各范围匹配数量。
 12. B545（已完成）：右侧功能导航高亮跟随滚动位置，并修正论文图像面板无法高亮导航项的映射缺口。
 13. B541-B545 统一验证（已完成）：完整 `npm.cmd test` 39 项全部通过，`npm run build:ui` 通过且无产物漂移；按“未明确要求时不打包”边界未运行 `npm run package`。
+14. B546（已完成）：为含中文的 PowerShell 脚本补齐 UTF-8 BOM，修复安装器与验证脚本的中文乱码和变量插值失效。
 
 ### B541 仓内清理批次
 
@@ -149,6 +150,15 @@
 - `npm run build:ui` 通过，四个 vendor 包重新复制后 `git status --short` 为空，无产物漂移。
 - 未打包：`docs/target-mode-plan.md` 目标边界与 `PROJECT_CONSTRAINTS.md` 6.7 均要求“未明确要求时不打包”，本轮用户未要求安装包，因此不产出 ZIP/MSI/EXE，也未安装或启动 PowerPoint。
 - 遗留发现：统一验证输出中 `validate-installer-payload-transaction.ps1` 的中文警告显示为乱码，已作为 B546 处理。
+
+### B546 PowerShell 中文编码批次
+
+- 故障来源：B541-B545 统一验证的输出里 `validate-installer-payload-transaction.ps1` 的中文警告显示为乱码，且 `$resolvedTestRoot` 未被插值，原文被截断成 `避免永久删除�?resolvedTestRoot`。
+- 根因：本机 `powershell` 是 Windows PowerShell 5.1，系统 ANSI 代码页为 `gb2312`。PowerShell 5.1 读取没有 BOM 的脚本时按 ANSI 代码页解码，UTF-8 中文字节会被错读。最小复现确认：同一行中文在无 BOM 时报 `The string is missing the terminator: "`，加 BOM 后正常输出，即该缺陷不只是显示问题，还可能吞掉字符串结束引号导致脚本直接解析失败。
+- 影响面：受影响的是 `install.ps1`、`install-payload-core.ps1`、`install-prereqs.ps1` 三个终端用户安装链路脚本，以及 `validate-installer-payload-transaction.ps1`、`verify-native-convert-selection.ps1`、`verify-zlk-cluster-plot.ps1`。`uninstall.ps1` 与 `uninstall-completely.ps1` 早已带 BOM，说明 BOM 是本仓既有约定。
+- 修复：对 6 个文件按字节前置 `EF BB BF`，写回后逐个核对 UTF-8 解码内容与修改前完全一致，并用 PowerShell 解析器确认 0 个解析错误。
+- 回归保护：`validate-encoding.mjs` 增加规则——扫描范围内任何含中日韩字符的 `.ps1` 必须带 UTF-8 BOM。该规则在编写后立刻多查出 3 个此前遗漏的文件（含终端用户脚本 `install-prereqs.ps1`），已一并修复。
+- B546 验证与提交：`validate-encoding.mjs` 通过；34 个 `.ps1` 中 8 个含中文，8 个均已带 BOM，其余 26 个为纯 ASCII 不受影响。修复后重新解析 `validate-installer-payload-transaction.ps1`，该警告在语法树中是 `ExpandableStringExpressionAst` 且内容为 `测试目录已保留，避免永久删除：$resolvedTestRoot`；重新运行该脚本，实际输出为 `WARNING: 测试目录已保留，避免永久删除：C:\Users\...\RoughPptInstallContract-...`，中文正确且路径已插值。注：经 Bash 管道转发 PowerShell 5.1 输出仍会因控制台代码页显示乱码，那是抓取层现象，与脚本本身无关。
 
 ### 当前科研绘图增强批次
 

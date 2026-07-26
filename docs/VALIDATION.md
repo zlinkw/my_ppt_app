@@ -15,6 +15,7 @@
 - Rough generation handles 20 continuous resize regenerations under the realtime threshold.
 - Batch resize and batch style refresh regenerate every selected Rough group instead of only the last queued shape.
 - All user-visible task pane pages, Ribbon commands, dialogs, statuses, and installer-facing names are Chinese-first.
+- Every `.ps1` script containing Chinese text is saved as UTF-8 with a BOM. Windows PowerShell 5.1 decodes BOM-less files using the system ANSI codepage, which garbles Chinese output and can swallow a closing quote and break parsing.
 - Every custom control, non-native PowerPoint command, ambiguous title, badge, chip, status, or action has a hover `title` tooltip or Office Ribbon `screentip`/`supertip`.
 - End-user ZIP/MSI/EXE installers call the shared runtime installer path and never install Visual Studio Build Tools.
 - End-user ZIP/MSI/EXE installers support overwrite installation for updating an already installed build.

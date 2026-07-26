@@ -16,6 +16,9 @@ function walk(entry) {
   });
 }
 
+const cjkPattern = /[㐀-鿿豈-﫿]/;
+const hasUtf8Bom = buffer => buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf;
+
 const violations = [];
 for (const file of roots.flatMap(walk).filter(file => filePattern.test(file))) {
   const normalized = file.replaceAll("\\", "/");
@@ -23,6 +26,11 @@ for (const file of roots.flatMap(walk).filter(file => filePattern.test(file))) {
   const buffer = fs.readFileSync(file);
   const text = buffer.toString("utf8");
   if (mojibakePattern.test(text)) violations.push(`${file}: mojibake marker found`);
+  // Windows PowerShell 5.1 按系统 ANSI 代码页读取没有 BOM 的脚本，中文会变成乱码，
+  // 甚至可能吞掉字符串结束引号导致脚本解析失败。含中文的 .ps1 必须带 UTF-8 BOM。
+  if (/\.ps1$/i.test(file) && cjkPattern.test(text) && !hasUtf8Bom(buffer)) {
+    violations.push(`${file}: PowerShell script contains Chinese text but has no UTF-8 BOM; Windows PowerShell 5.1 would decode it as the system ANSI codepage`);
+  }
   if (text.includes("\u0000")) violations.push(`${file}: contains NUL bytes`);
 }
 
