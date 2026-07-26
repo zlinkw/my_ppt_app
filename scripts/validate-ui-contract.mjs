@@ -734,6 +734,41 @@ if (!app.includes("const rescueSummary = [")) {
   violations.push("app.mjs: search empty state must summarise which other scopes have results");
 }
 
+// 定位准确性：右侧导航高亮必须跟随滚动位置，并把面板 key 解析成实际存在的导航项。
+for (const snippet of [
+  "const sectionNavPanelAliases = Object.freeze({",
+  "zoteroImages: \"paletteLibrary\"",
+  "function sectionNavKeyForPanel(panelKey)",
+  "const resolved = sectionNavKeyForPanel(key)",
+  "function currentScrolledPanelKey(panels, anchor)",
+  "function syncSectionNavToScroll()",
+  "function scheduleSectionNavScrollSync()",
+  'window.addEventListener("scroll", scheduleSectionNavScrollSync, { passive: true })',
+  "window.requestAnimationFrame(run)"
+]) {
+  if (!app.includes(snippet)) violations.push(`app.mjs: section nav scroll tracking missing: ${snippet}`);
+}
+const aliasBody = app.match(/const sectionNavPanelAliases = Object\.freeze\(\{([\s\S]*?)\n\}\);/)?.[1] ?? "";
+const aliasPairs = [...aliasBody.matchAll(/(\w+):\s*"(\w+)"/g)].map(match => [match[1], match[2]]);
+if (!aliasPairs.length) violations.push("app.mjs: section nav panel aliases must map at least one panel to its rail entry");
+for (const [panelKey, railKey] of aliasPairs) {
+  if (!index.includes(`data-collapse-key="${panelKey}"`)) {
+    violations.push(`app.mjs: section nav alias source panel does not exist in index.html: ${panelKey}`);
+  }
+  if (!index.includes(`data-section-nav="${railKey}"`)) {
+    violations.push(`app.mjs: section nav alias target rail entry does not exist in index.html: ${railKey}`);
+  }
+}
+// 每个面板都必须能高亮出一个真实存在的导航项，否则滚动到该面板时导航会整体失去高亮。
+const railKeys = new Set([...index.matchAll(/data-section-nav="(\w+)"/g)].map(match => match[1]));
+const aliasMap = new Map(aliasPairs);
+for (const panelKey of new Set([...index.matchAll(/data-collapse-key="(\w+)"/g)].map(match => match[1]))) {
+  const resolved = aliasMap.get(panelKey) ?? panelKey;
+  if (!railKeys.has(resolved)) {
+    violations.push(`app.mjs: panel ${panelKey} resolves to missing rail entry ${resolved}; add a data-section-nav entry or a sectionNavPanelAliases mapping`);
+  }
+}
+
 const ribbon = fs.readFileSync("src/RoughPptAddin/Ribbon/RoughRibbon.cs", "utf8");
 for (const snippet of [
   "openPaperPresetPane",

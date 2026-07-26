@@ -96,6 +96,7 @@
 9. B542（已完成）：任务窗格状态条增加“完成”状态色，空闲、进行中、完成和错误成为四个可区分状态。
 10. B543（已完成）：UI 同步脚本过滤并清除运行时 UI 目录中的残留文件，避免旧样式备份被当作运行时资源分发。
 11. B544（已完成）：搜索空结果补齐形状跨范围救援，并在救援按钮和说明中显示各范围匹配数量。
+12. B545（已完成）：右侧功能导航高亮跟随滚动位置，并修正论文图像面板无法高亮导航项的映射缺口。
 
 ### B541 仓内清理批次
 
@@ -131,6 +132,15 @@
 - 保护区：救援按钮只切换范围并定位，不插入形状、不执行删除或分享；已有的功能、预设、数据、素材救援路径和 `switchToCommandResults`、`switchToPaperPresetResults` 行为不变。
 - 回归保护：`validate-ui-contract.mjs` 要求五个 `crossScope*Matches` 均已定义且被调用，五个救援按钮文案都带 `${...Rescue.length}` 数量插值，并要求空状态保留 `rescueSummary` 逐范围汇总。
 - B544 验证与提交：`node --check src/RoughPptAddin/ui/app.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-function-icons.mjs`、`validate-taskpane-ui-interactions.mjs` 全部通过。行为实测从 `app.mjs` 提取真实函数并对 203 项真实形状目录求值：功能范围搜“菱形”得 1 个救援结果，素材范围搜 `diamond` 得 1 个，预设范围搜“箭头”得 30 个；形状范围和全部范围均返回 0（已在范围内不重复救援），空白词和无匹配词均返回 0。按五批次协议本批不运行统一测试、UI 构建或打包。
+
+### B545 导航定位准确性批次
+
+- 故障：`markSectionNavActive` 只在点击导航、跳转和 `focusPanel` 时被调用，没有任何滚动跟随。完整模式下右侧功能导航是粘性侧栏，会一直停留在可视区，因此用户点击“风格”后继续滚动到“素材”，高亮仍指向“风格”，导航持续给出错误的当前位置。
+- 故障：`focusPanel` 传入的是面板 `data-collapse-key`，但“论文图像与配色库”面板的 key 是 `zoteroImages`，导航里并没有该项（对应入口是 `paletteLibrary`）。定位到该面板时 `markSectionNavActive("zoteroImages")` 匹配不到任何按钮，导航会整体失去高亮。
+- 修复：新增 `sectionNavPanelAliases` 把 `zoteroImages` 解析为 `paletteLibrary`，`markSectionNavActive` 统一经 `sectionNavKeyForPanel` 解析，全部既有调用点无需改动。新增 `currentScrolledPanelKey` 纯函数按粘性顶栏高度加 12 px 的锚点做滚动定位，取最后一个顶边已越过锚点的可见面板，没有则回落到第一个可见面板；`syncSectionNavToScroll` 与 rAF 合帧的 `scheduleSectionNavScrollSync` 绑定 passive 的 scroll 和 resize。
+- 保护区：只更新 `active` 类和 `aria-current`，不改布局、不新增 sticky/fixed、不触发滚动或任何命令；隐藏面板（简洁模式下 `display: none`，矩形宽高为 0）一律跳过。
+- 回归保护：`validate-ui-contract.mjs` 校验别名表、解析函数、滚动定位函数、passive scroll 接线和 rAF 合帧均在位；并遍历 `index.html` 全部 `data-collapse-key`，要求每个面板解析后都能命中一个真实存在的 `data-section-nav`，同时要求别名两端在 `index.html` 中都存在。
+- B545 验证与提交：`node --check src/RoughPptAddin/ui/app.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-function-icons.mjs`、`validate-taskpane-ui-interactions.mjs`、`validate-source-constraints.mjs`、`validate-style-panel-sync.mjs` 全部通过。行为实测从 `app.mjs` 提取真实函数跑 11 条断言全部通过：顶部、滚动进入风格、滚动进入科研绘图、锚点上方留空回落、隐藏面板跳过、全部在视口下方返回空，以及四条别名解析。新合同经反向验证——移除别名后 `zoteroImages` 立即被报为无法命中导航项。按五批次协议本批不运行统一测试、UI 构建或打包。
 
 ### 当前科研绘图增强批次
 

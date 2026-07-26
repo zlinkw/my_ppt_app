@@ -1631,12 +1631,62 @@ function activateSectionNav(key) {
   focusLater("#jumpToShapes");
 }
 
+// 面板 collapse-key 与右侧导航项不是一一对应：论文图像与配色库面板在导航中的入口是“配色”。
+const sectionNavPanelAliases = Object.freeze({
+  zoteroImages: "paletteLibrary"
+});
+
+function sectionNavKeyForPanel(panelKey) {
+  const key = String(panelKey ?? "");
+  return sectionNavPanelAliases[key] ?? key;
+}
+
 function markSectionNavActive(key) {
+  const resolved = sectionNavKeyForPanel(key);
   for (const button of els.sectionNavButtons ?? []) {
-    const active = button.dataset.sectionNav === key;
+    const active = button.dataset.sectionNav === resolved;
     button.classList.toggle("active", active);
     button.setAttribute("aria-current", active ? "true" : "false");
   }
+}
+
+// 滚动定位：导航高亮必须跟随当前阅读位置，否则粘性侧栏会一直指向上一次点击的面板。
+function currentScrolledPanelKey(panels, anchor) {
+  let fallback = "";
+  let current = "";
+  for (const panel of panels) {
+    const rect = panel.getBoundingClientRect?.();
+    if (!rect || (rect.width <= 0 && rect.height <= 0)) continue;
+    if (rect.bottom <= anchor) continue;
+    if (rect.top > window.innerHeight) continue;
+    if (!fallback) fallback = panel.dataset.collapseKey || "";
+    if (rect.top <= anchor + 4) current = panel.dataset.collapseKey || "";
+  }
+  return current || fallback;
+}
+
+function syncSectionNavToScroll() {
+  if (!els.sectionNavButtons?.length) return;
+  const panels = Array.from(document.querySelectorAll("[data-collapse-key]"));
+  if (!panels.length) return;
+  const topbar = document.querySelector(".topbar");
+  const anchor = Math.ceil(topbar?.getBoundingClientRect?.().height || 44) + 12;
+  const key = currentScrolledPanelKey(panels, anchor);
+  if (key) markSectionNavActive(key);
+}
+
+let sectionNavScrollHandle = 0;
+function scheduleSectionNavScrollSync() {
+  if (sectionNavScrollHandle) return;
+  const run = () => {
+    sectionNavScrollHandle = 0;
+    syncSectionNavToScroll();
+  };
+  if (typeof window.requestAnimationFrame === "function") {
+    sectionNavScrollHandle = window.requestAnimationFrame(run);
+    return;
+  }
+  sectionNavScrollHandle = window.setTimeout(run, 32);
 }
 
 function activateStarterAction(action) {
@@ -8484,6 +8534,15 @@ safeInitStep("粘性顶栏度量", () => {
     window.__roughStickyChromeWired = true;
     window.addEventListener("resize", updateStickyChromeMetrics, { passive: true });
   }
+});
+
+safeInitStep("导航滚动定位", () => {
+  if (!window.__roughSectionNavScrollWired) {
+    window.__roughSectionNavScrollWired = true;
+    window.addEventListener("scroll", scheduleSectionNavScrollSync, { passive: true });
+    window.addEventListener("resize", scheduleSectionNavScrollSync, { passive: true });
+  }
+  syncSectionNavToScroll();
 });
 
 safeInitStep("工作流导航", () => initWorkflowNavigation());
