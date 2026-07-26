@@ -55,6 +55,21 @@ function loadJson(key, fallback) {
   }
 }
 
+// 与 loadJson 对称：本机存储被禁用或写满时写入会抛出，
+// 而这些写入都发生在 setStatus 与 postHost 之前，异常会让插入和固定操作彻底丢失。
+function persistSetting(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    if (!persistSetting.reported) {
+      persistSetting.reported = true;
+      setStatus("偏好无法写入本机存储，最近使用和快速插入只在本窗口生效。");
+    }
+    return false;
+  }
+}
+
 function recentGalleryEnums() {
   if (state.recent.length) return state.recent;
   return [
@@ -291,7 +306,7 @@ function tracePath(ctx, path, yOffset = 0) {
 function insertShape(item) {
   if (!item?.enumName) return;
   state.recent = [item.enumName, ...state.recent.filter(value => value !== item.enumName)].slice(0, 12);
-  localStorage.setItem("roughPptRecentShapes", JSON.stringify(state.recent));
+  persistSetting("roughPptRecentShapes", JSON.stringify(state.recent));
   setStatus(`已插入：${displayName(item)}`);
   postHost({ type: "insertShape", enumName: item.enumName });
 }
@@ -299,7 +314,7 @@ function insertShape(item) {
 function pinQuickShape(item) {
   if (!item?.enumName) return;
   state.favorites = [item.enumName, ...state.favorites.filter(value => value !== item.enumName)].slice(0, 12);
-  localStorage.setItem("roughPptFavoriteShapes", JSON.stringify(state.favorites));
+  persistSetting("roughPptFavoriteShapes", JSON.stringify(state.favorites));
   renderIconDropdown(els.shapeDropdown, insertShape);
   setStatus(`已添加到快速插入：${displayName(item)}`);
   postHost({ type: "pinQuickShape", enumName: item.enumName });
@@ -308,7 +323,7 @@ function pinQuickShape(item) {
 function unpinQuickShape(item) {
   if (!item?.enumName) return;
   state.favorites = state.favorites.filter(value => value !== item.enumName);
-  localStorage.setItem("roughPptFavoriteShapes", JSON.stringify(state.favorites));
+  persistSetting("roughPptFavoriteShapes", JSON.stringify(state.favorites));
   renderIconDropdown(els.shapeDropdown, insertShape);
   setStatus(`已从快速插入移除：${displayName(item)}`);
   postHost({ type: "unpinQuickShape", enumName: item.enumName });
@@ -375,7 +390,7 @@ if (window.chrome?.webview) {
       state.favorites = (message.shapes ?? [])
         .map(item => typeof item === "string" ? item : item?.enumName)
         .filter(Boolean);
-      localStorage.setItem("roughPptFavoriteShapes", JSON.stringify(state.favorites));
+      persistSetting("roughPptFavoriteShapes", JSON.stringify(state.favorites));
       renderIconDropdown(els.shapeDropdown, insertShape);
     }
   });

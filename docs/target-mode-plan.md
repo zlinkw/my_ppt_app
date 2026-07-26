@@ -92,6 +92,7 @@
 4. B551（已完成）：按维护规则再次压缩本文件历史流水。
 5. B552（已完成）：独立窗口布局验证合并为 `validate-ui-window-layout.mjs`，新增形状图库窗口覆盖；该窗口审计未发现缺陷。
 6. B553（已完成）：任务窗格 50 处本机存储写入集中到带 try/catch 的 `persistSetting`，避免存储不可用时异常中断点击处理。
+7. B554（已完成）：形状图库窗口 4 处存储写入补齐同类守卫，修复存储不可用时插入形状彻底失效。
 
 ### B546-B550 批次结论
 
@@ -117,6 +118,15 @@
 - 边界：只改 `app.mjs`。`ribbon-shape-gallery.mjs` 与 `research-chart-studio.mjs` 的写入被 `validate-ribbon-shape-menu.mjs` 和 `validate-research-chart-studio.mjs` 以字面量断言，留待后续批次连同合同一起调整。
 - 回归保护：`validate-ui-contract.mjs` 要求 `persistSetting` 存在、其内部确实用 try/catch 包住 `localStorage.setItem`、保留中文失败反馈，并且整个 `app.mjs` 中 `localStorage.setItem` 只允许出现 1 次（即只在该函数内）。
 - B553 验证与提交：`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-action-wiring.mjs`、`validate-style-panel-sync.mjs`、`validate-taskpane-shape-gallery.mjs`、`validate-ribbon-shape-menu.mjs`、`validate-taskpane-function-icons.mjs`、`validate-source-constraints.mjs`、`validate-simple-connection-layout.mjs`、`validate-taskpane-ui-interactions.mjs`、`validate-ui-window-layout.mjs`、`validate-usage-guide-modeless.mjs`、`validate-taskpane-resource-guards.mjs` 全部通过。
+
+### B554 形状图库存储写入批次
+
+- 复查结论：`research-chart-studio.mjs` 的 `saveConfig` 本来就有 try/catch 和中文失败反馈，无需改动。真正缺守卫的是 `ribbon-shape-gallery.mjs` 的 4 处写入，而且后果比 B553 更重——`insertShape`、`pinQuickShape`、`unpinQuickShape` 都是先写存储，再 `setStatus`，再 `postHost`，写入抛出会让插入和固定动作彻底不发生。
+- 真实浏览器复现：让 `Storage.prototype.setItem` 始终抛出后点击第一个形状卡片。修复前出现 1 次未捕获 `QuotaExceededError`，且 `#galleryStatus` 为空——说明 `setStatus` 与 `postHost` 都没执行，插入静默失效。修复后无未捕获异常，状态显示“已插入：直线”，210 个卡片照常渲染。
+- 修复：与该文件已有的 `loadJson` 对称，新增带 try/catch 的 `persistSetting`，首次失败给一条中文提示，4 处写入全部改为经它写入。
+- 回归保护：`validate-ribbon-shape-menu.mjs` 的两条字面量断言改为 `persistSetting(...)` 形式，并新增要求——`persistSetting` 存在、内部确实用 try/catch 包住 `localStorage.setItem`、保留中文失败反馈，且该文件中 `localStorage.setItem` 只允许出现 1 次。
+- 排查记录：首次探针因为给 `window.chrome.webview` 打了桩导致图库初始化超时，与存储无关；移除桩后复现正常。
+- B554 验证与提交：`validate-ribbon-shape-menu.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-research-chart-studio.mjs`、`validate-ui-window-layout.mjs` 全部通过。
 
 ### 下一批次方向
 

@@ -87,8 +87,8 @@ for (const snippet of [
   "function iconVisiblePaths(drawable)",
   "path.role !== roles.innerFillBoundary",
   "message.type === \"quickShapes\"",
-  "localStorage.setItem(\"roughPptRecentShapes\"",
-  "localStorage.setItem(\"roughPptFavoriteShapes\"",
+  "persistSetting(\"roughPptRecentShapes\"",
+  "persistSetting(\"roughPptFavoriteShapes\"",
   "setStatus(`已添加到快速插入：${displayName(item)}`)",
   "renderedCount === 0 && state.query.trim()",
   "renderGalleryEmptyState",
@@ -131,6 +131,23 @@ if ((catalog.items ?? []).filter(item => item.insertable !== false).length < 202
 }
 if (!allNative.includes("scripts\\verify-ribbon-shape-menu.ps1")) {
   violations.push("native verification suite must include Ribbon shape gallery smoke test");
+}
+
+// 插入和固定操作的存储写入排在 setStatus 与 postHost 之前，写入抛出会让操作彻底丢失。
+for (const snippet of [
+  "function persistSetting(key, value)",
+  "persistSetting.reported",
+  "偏好无法写入本机存储"
+]) {
+  if (!gallery.includes(snippet)) violations.push(`ribbon-shape-gallery.mjs guarded storage write missing: ${snippet}`);
+}
+const galleryPersist = gallery.match(/function persistSetting\(key, value\) \{[\s\S]*?\n\}/)?.[0] ?? "";
+if (!/try\s*\{[\s\S]*localStorage\.setItem\(key, value\)[\s\S]*\}\s*catch/.test(galleryPersist)) {
+  violations.push("ribbon-shape-gallery.mjs persistSetting must wrap localStorage.setItem in try/catch");
+}
+const galleryDirectWrites = [...gallery.matchAll(/localStorage\.setItem\(/g)].length;
+if (galleryDirectWrites !== 1) {
+  violations.push(`ribbon-shape-gallery.mjs localStorage.setItem must only appear inside persistSetting, found ${galleryDirectWrites}`);
 }
 
 if (violations.length) {
