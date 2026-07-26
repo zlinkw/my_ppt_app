@@ -96,12 +96,21 @@
 8. B546（已完成）：为 6 个含中文的 PowerShell 脚本补齐 UTF-8 BOM，修复安装链路中文乱码与变量插值失效。
 9. B547（已完成）：按计划维护规则压缩本文件的历史流水。
 10. B548（已完成）：粘性顶栏度量改为跟随顶栏实际高度，修复状态条展开后定位面板被顶栏遮挡。
+11. B549（已完成）：新增科研绘图工作台真实浏览器布局验证，并补齐它遗漏的 14 个控件中文悬浮说明。
 
 ### B548 粘性顶栏度量批次
 
 - 故障：`updateStickyChromeMetrics` 只在初始化、`resize` 和 `focusPanel` 时运行，但顶栏高度会随状态条展开而变化。真实浏览器实测：空闲时顶栏 76 px、`--sticky-topbar-height` 77 px、`--panel-scroll-margin` 89 px；出现错误状态并展开后顶栏升到 96 px，两个变量仍停在 77 px 和 89 px。此时定位到科研绘图面板，面板顶边落在 89 px 而顶栏底边在 96 px，面板标题被粘性顶栏遮挡 8 px，违反“非顶栏内容不使用 sticky/fixed 遮挡滚动”的约束。
 - 修复：新增 `observeStickyChromeHeight`，用 `ResizeObserver` 监听 `.topbar` 实际高度变化并刷新两个变量；`updateStickyChromeMetrics` 改为只在数值变化时写入，避免多余样式写入与回环；`toggleStatusExpanded` 在没有 `ResizeObserver` 的宿主上作为兜底刷新路径。
 - B548 验证与提交：真实浏览器实测修复后顶栏 96 px 时变量同步为 97 px、scroll-margin 为 109 px，面板顶边落在 109 px、顶栏底边 96 px，留出 13 px 余量且不再遮挡。回归保护加入 `validate-taskpane-ui-interactions.mjs` 的 `stickyChromeMetricProbe`（放在其他交互检查之后，因为它会展开全部面板）；反向验证——移除 `observeStickyChromeHeight()` 调用后该检查立即报“度量未跟随实际高度”和“被粘性顶栏遮挡 1px”。`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-function-icons.mjs`、`validate-taskpane-action-wiring.mjs`、`validate-source-constraints.mjs` 均通过。
+
+### B549 科研绘图工作台布局验证批次
+
+- 覆盖缺口：科研绘图工作台是最新也最大的 UI 面（`research-chart-studio.html` 244 行、JS 1788 行、36 种图表），但此前只有字符串级静态合同和 Vega 运行时检查，没有任何真实浏览器布局验证；`validate-taskpane-ui-interactions.mjs` 的浏览器 harness 只加载 `index.html`。
+- 新增：`scripts/lib/ui-browser.mjs` 抽出可复用的无头浏览器与本地静态服务（只服务 `src/RoughPptAddin/ui`，不访问外部网络）；`scripts/validate-research-chart-studio-layout.mjs` 按 `ResearchChartStudioWindow.cs` 的真实窗口尺寸 720x560（MinimumSize）和 1180x820（默认）加载工作台，检查横向溢出、可见元素越界、按钮过小、控件文字裁切、可见控件中文悬浮说明、36 个图表入口的可见性与横向不越界，以及单选状态只有一个 `aria-checked=true`。为不影响已通过的 `validate-taskpane-ui-interactions.mjs`，本批不改动该脚本的自带 harness。
+- 首次运行即查出真实缺陷：14 个可见控件没有任何悬浮说明——`xReverse`、`yReverse`、`chartWidth`、`chartHeight`、`fontSize`、`lineWidth`、`markSize`、`markOpacity`、`showErrorBand`、`showLegend`、`showGrid`、`includeZero`、`showLabels`、`smoothLine`，违反“所有非 PPT 原生、意义不明确的控件都必须有中文悬浮说明”。相邻的坐标范围与标注输入框早已带 `title`，属明显遗漏。
+- 修复：为 14 个控件补中文 `title`，措辞与相邻已有说明保持一致，只加属性不改结构、不改布局。
+- B549 验证与提交：`validate-research-chart-studio-layout.mjs` 修复后在两个窗口尺寸下全部通过（无横向溢出、无越界元素、无过小按钮、无裁切文字、36 个图表入口全部可见且单选正确）；`validate-research-chart-studio.mjs`、`validate-research-chart-runtime.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-local-ui-assets.mjs` 均通过。新验证已接入 `npm test`（紧随 `validate-research-chart-runtime.mjs`）。
 
 ### 下一批次方向
 

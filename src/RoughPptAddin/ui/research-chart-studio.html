@@ -164,20 +164,20 @@ Ours,0.887,0.015,B</textarea>
           <label><span>Y 最大值</span><input id="yDomainMax" type="number" step="any" placeholder="自动" title="设置 Y 轴可视范围上限"></label>
         </div>
         <div class="field-grid">
-          <label class="toggle-row"><input id="xReverse" type="checkbox"><span>反转 X 轴</span></label>
-          <label class="toggle-row"><input id="yReverse" type="checkbox"><span>反转 Y 轴</span></label>
+          <label class="toggle-row"><input id="xReverse" type="checkbox" title="反转 X 轴方向，让分类或数值从相反一端开始"><span>反转 X 轴</span></label>
+          <label class="toggle-row"><input id="yReverse" type="checkbox" title="反转 Y 轴方向，常用于排名类图表把第一名放在顶部"><span>反转 Y 轴</span></label>
         </div>
       </section>
 
       <section class="control-section">
         <div class="section-heading"><h2>画布与标记</h2></div>
         <div class="number-grid">
-          <label><span>宽度</span><input id="chartWidth" type="number" min="360" max="1600" step="20" value="760"></label>
-          <label><span>高度</span><input id="chartHeight" type="number" min="260" max="1200" step="20" value="480"></label>
-          <label><span>字号</span><input id="fontSize" type="number" min="8" max="28" step="1" value="13"></label>
-          <label><span>线宽</span><input id="lineWidth" type="number" min="1" max="8" step="0.5" value="2"></label>
-          <label><span>点大小</span><input id="markSize" type="number" min="10" max="500" step="10" value="90"></label>
-          <label><span>透明度</span><input id="markOpacity" type="number" min="0.1" max="1" step="0.1" value="0.9"></label>
+          <label><span>宽度</span><input id="chartWidth" type="number" min="360" max="1600" step="20" value="760" title="设置导出 SVG 的画布宽度，单位为磅"></label>
+          <label><span>高度</span><input id="chartHeight" type="number" min="260" max="1200" step="20" value="480" title="设置导出 SVG 的画布高度，单位为磅"></label>
+          <label><span>字号</span><input id="fontSize" type="number" min="8" max="28" step="1" value="13" title="设置坐标轴、图例和标注的基础字号"></label>
+          <label><span>线宽</span><input id="lineWidth" type="number" min="1" max="8" step="0.5" value="2" title="设置折线、参考线和描边的线宽"></label>
+          <label><span>点大小</span><input id="markSize" type="number" min="10" max="500" step="10" value="90" title="设置散点、气泡和观测点的点大小"></label>
+          <label><span>透明度</span><input id="markOpacity" type="number" min="0.1" max="1" step="0.1" value="0.9" title="设置标记的不透明度，数值越小越透明"></label>
         </div>
       </section>
 
@@ -198,7 +198,7 @@ Ours,0.887,0.015,B</textarea>
           <label><span>注释 X</span><input id="annotationX" type="text" placeholder="分类或数值" title="设置注释所在的 X 分类或数值"></label>
           <label><span>注释 Y</span><input id="annotationY" type="number" step="any" placeholder="数值" title="设置注释所在的 Y 数值"></label>
           <label><span>标注颜色</span><input id="annotationColor" type="color" value="#b42318" title="设置参考线、参考区间和注释颜色"></label>
-          <label class="toggle-row"><input id="showErrorBand" type="checkbox"><span>显示误差带</span></label>
+          <label class="toggle-row"><input id="showErrorBand" type="checkbox" title="在支持的图表上按误差字段绘制误差带或误差棒"><span>显示误差带</span></label>
         </div>
       </section>
 
@@ -219,11 +219,11 @@ Ours,0.887,0.015,B</textarea>
 
       <section class="control-section options-section">
         <div class="section-heading"><h2>显示</h2></div>
-        <label class="toggle-row"><input id="showLegend" type="checkbox" checked><span>显示图例</span></label>
-        <label class="toggle-row"><input id="showGrid" type="checkbox" checked><span>显示网格线</span></label>
-        <label class="toggle-row"><input id="includeZero" type="checkbox" checked><span>数值轴包含零</span></label>
-        <label class="toggle-row"><input id="showLabels" type="checkbox"><span>显示数据标签</span></label>
-        <label class="toggle-row"><input id="smoothLine" type="checkbox"><span>平滑折线</span></label>
+        <label class="toggle-row"><input id="showLegend" type="checkbox" checked title="显示或隐藏颜色字段对应的图例"><span>显示图例</span></label>
+        <label class="toggle-row"><input id="showGrid" type="checkbox" checked title="显示或隐藏坐标轴网格线"><span>显示网格线</span></label>
+        <label class="toggle-row"><input id="includeZero" type="checkbox" checked title="让数值轴范围强制包含零，避免夸大差异"><span>数值轴包含零</span></label>
+        <label class="toggle-row"><input id="showLabels" type="checkbox" title="在标记旁显示数值标签"><span>显示数据标签</span></label>
+        <label class="toggle-row"><input id="smoothLine" type="checkbox" title="把折线渲染为平滑曲线"><span>平滑折线</span></label>
         <button id="resetStyleButton" class="compact-button full-width" type="button" title="恢复科研绘图默认样式">恢复默认样式</button>
       </section>
 
