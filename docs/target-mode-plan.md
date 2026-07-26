@@ -97,6 +97,7 @@
 9. B547（已完成）：按计划维护规则压缩本文件的历史流水。
 10. B548（已完成）：粘性顶栏度量改为跟随顶栏实际高度，修复状态条展开后定位面板被顶栏遮挡。
 11. B549（已完成）：新增科研绘图工作台真实浏览器布局验证，并补齐它遗漏的 14 个控件中文悬浮说明。
+12. B550（已完成）：使用说明目录的 10 个章节链接补齐中文悬浮说明，并加入静态合同。
 
 ### B548 粘性顶栏度量批次
 
@@ -111,6 +112,14 @@
 - 首次运行即查出真实缺陷：14 个可见控件没有任何悬浮说明——`xReverse`、`yReverse`、`chartWidth`、`chartHeight`、`fontSize`、`lineWidth`、`markSize`、`markOpacity`、`showErrorBand`、`showLegend`、`showGrid`、`includeZero`、`showLabels`、`smoothLine`，违反“所有非 PPT 原生、意义不明确的控件都必须有中文悬浮说明”。相邻的坐标范围与标注输入框早已带 `title`，属明显遗漏。
 - 修复：为 14 个控件补中文 `title`，措辞与相邻已有说明保持一致，只加属性不改结构、不改布局。
 - B549 验证与提交：`validate-research-chart-studio-layout.mjs` 修复后在两个窗口尺寸下全部通过（无横向溢出、无越界元素、无过小按钮、无裁切文字、36 个图表入口全部可见且单选正确）；`validate-research-chart-studio.mjs`、`validate-research-chart-runtime.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-local-ui-assets.mjs` 均通过。新验证已接入 `npm test`（紧随 `validate-research-chart-runtime.mjs`）。
+
+### B550 使用说明目录悬浮说明批次
+
+- 审计方法：复用 B549 新增的 `scripts/lib/ui-browser.mjs`，在真实浏览器里对 `index.html` 和 `help.html` 做可见控件悬浮说明普查。
+- 审计结果：`index.html` 在 420 px 和 900 px 下共 447 个可见控件，缺失悬浮说明 0 个、缺中文 0 个，既有静态合同覆盖到位。`help.html` 的 12 个控件中有 10 个缺失——目录里的全部章节链接（快速开始、入口总览、手绘图形、风格与重绘、特征块、科研绘图、论文套件、素材与配色、外部联动、兼容与排障）都没有 `title`，只有外层 `nav` 有一个笼统说明。
+- 修复：为 10 个章节链接补写中文 `title`，内容说明该章节涵盖什么，而不是重复链接文字，用户点击前就能判断该去哪一节。
+- 回归保护：`validate-usage-guide-modeless.mjs` 增加目录合同——至少 10 个章节链接，每个都必须有含中文的 `title`，且 `title` 不得与链接文字相同（避免用重复文案敷衍通过）。
+- B550 验证与提交：真实浏览器复审 `help.html` 在两个宽度下缺失均归零；`validate-usage-guide-modeless.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs` 通过；新合同经反向验证——删除某个 `title` 报“no tooltip”，把 `title` 改成与链接文字相同报“tooltip equals label”。
 
 ### 下一批次方向
 

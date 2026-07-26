@@ -70,6 +70,27 @@ for (const snippet of [
   if (!app.includes(snippet)) violations.push(`UI runtime regression missing: ${snippet}`);
 }
 
+// 使用说明目录是自定义控件，每个章节链接都必须有中文悬浮说明，
+// 让用户在点击前就知道该章节讲什么。
+const help = read("src/RoughPptAddin/ui/help.html");
+const guideNav = help.match(/<nav class="guide-nav"[\s\S]*?<\/nav>/)?.[0] ?? "";
+if (!guideNav) {
+  violations.push("help.html missing guide-nav table of contents");
+} else {
+  const links = [...guideNav.matchAll(/<a\s([^>]*)>([^<]*)<\/a>/g)];
+  if (links.length < 10) violations.push(`help.html guide-nav must keep at least 10 section links, found ${links.length}`);
+  for (const [, attributes, label] of links) {
+    const title = attributes.match(/title="([^"]*)"/)?.[1] ?? "";
+    if (!title.trim()) {
+      violations.push(`help.html guide-nav link lacks a Chinese tooltip: ${label.trim()}`);
+    } else if (!/[㐀-鿿]/.test(title)) {
+      violations.push(`help.html guide-nav tooltip lacks Chinese text: ${label.trim()} => ${title}`);
+    } else if (title.trim() === label.trim()) {
+      violations.push(`help.html guide-nav tooltip must add information beyond the label: ${label.trim()}`);
+    }
+  }
+}
+
 if (violations.length) {
   throw new Error(`usage guide modeless validation failed:\n${violations.join("\n")}`);
 }
