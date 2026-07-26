@@ -90,6 +90,8 @@
 2. B541-B545（已完成）：授权清理仓内无用文件约 2.5 GB；状态条增加完成状态色；UI 同步过滤运行时残留；搜索补齐形状跨范围救援并显示各范围数量；导航高亮跟随滚动并修正面板映射。统一验证 `npm.cmd test` 39 项与 UI 构建全绿。
 3. B546-B550（已完成）：PowerShell 中文 BOM 修复；计划压缩；粘性顶栏度量跟随实际高度；新增科研绘图工作台真实浏览器布局验证并补 14 个控件说明；使用说明目录补 10 个章节说明。统一验证 `npm.cmd test` 40 项与 UI 构建全绿、无产物漂移。
 4. B551（已完成）：按维护规则再次压缩本文件历史流水。
+5. B552（已完成）：独立窗口布局验证合并为 `validate-ui-window-layout.mjs`，新增形状图库窗口覆盖；该窗口审计未发现缺陷。
+6. B553（已完成）：任务窗格 50 处本机存储写入集中到带 try/catch 的 `persistSetting`，避免存储不可用时异常中断点击处理。
 
 ### B546-B550 批次结论
 
@@ -106,6 +108,15 @@
 - 检查项：横向溢出、可见元素越界、按钮过小、控件文字裁切、可见控件中文悬浮说明，加上每个窗口的专属检查（工作台 36 图表入口与单选状态；图库卡片数、分组数与卡片横向不越界）。
 - 形状图库审计结论：**未发现缺陷**。两个尺寸下均无横向溢出、无越界元素、无过小按钮、悬浮说明零缺失；210 个形状卡片分 12 组，搜索“菱形”把卡片从 210 过滤到 2。本批只增加覆盖，不改产品代码。
 - B552 验证与提交：`validate-ui-window-layout.mjs` 两个窗口四个尺寸全部通过；旧脚本已删除并从 `npm test` 换成新脚本，仓内无残留引用。
+
+### B553 本机存储写入健壮性批次
+
+- 故障：`app.mjs` 有 50 处 `localStorage.setItem` 全部裸调用，而所有读取路径（`loadJson`、`loadStyleTemplates` 等）都带 try/catch——这种读写不对称就是缺陷所在。WebView2 中本机存储可能被禁用或写满，`setItem` 抛出 `QuotaExceededError` 会中断点击处理的后续逻辑：`rememberRecent` 与 `pinQuickShape` 的 `setItem` 都在 `render()` 和 `postHost(...)` 之前，异常会让界面不重绘、宿主收不到固定常用形状的通知。
+- 真实浏览器复现：在任何脚本执行前改写 `Storage.prototype.setItem` 让它始终抛出，然后点击搜索范围、界面模式、排序和面板折叠。修复前产生 6 次未捕获 `QuotaExceededError`；修复后为 0 次，且范围按钮、排序值、面板折叠态、搜索和形状网格全部照常工作。
+- 修复：新增 `persistSetting(key, value)` 集中写入并捕获异常，首次失败时给一条中文状态提示（该提示本身也隔离在内层 try 里，因为它可能在 `els` 初始化之前被调用）。50 处调用点全部改为经该函数写入，成功路径语义不变。
+- 边界：只改 `app.mjs`。`ribbon-shape-gallery.mjs` 与 `research-chart-studio.mjs` 的写入被 `validate-ribbon-shape-menu.mjs` 和 `validate-research-chart-studio.mjs` 以字面量断言，留待后续批次连同合同一起调整。
+- 回归保护：`validate-ui-contract.mjs` 要求 `persistSetting` 存在、其内部确实用 try/catch 包住 `localStorage.setItem`、保留中文失败反馈，并且整个 `app.mjs` 中 `localStorage.setItem` 只允许出现 1 次（即只在该函数内）。
+- B553 验证与提交：`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-action-wiring.mjs`、`validate-style-panel-sync.mjs`、`validate-taskpane-shape-gallery.mjs`、`validate-ribbon-shape-menu.mjs`、`validate-taskpane-function-icons.mjs`、`validate-source-constraints.mjs`、`validate-simple-connection-layout.mjs`、`validate-taskpane-ui-interactions.mjs`、`validate-ui-window-layout.mjs`、`validate-usage-guide-modeless.mjs`、`validate-taskpane-resource-guards.mjs` 全部通过。
 
 ### 下一批次方向
 

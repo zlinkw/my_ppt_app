@@ -708,6 +708,26 @@ if (new Set(statusToneColors.values()).size !== statusToneColors.size) {
   violations.push(`styles.css: status tones must stay visually distinct: ${[...statusToneColors].map(pair => pair.join("=")).join(", ")}`);
 }
 
+// 健壮性：本机存储写入可能抛出（被禁用或写满），必须集中到带 try/catch 的
+// persistSetting，否则异常会中断点击处理的后续逻辑（重渲染、postHost 通知等）。
+for (const snippet of [
+  "function persistSetting(key, value)",
+  "persistSetting.reported",
+  "界面偏好无法写入本机存储"
+]) {
+  if (!app.includes(snippet)) violations.push(`app.mjs: guarded storage write contract missing: ${snippet}`);
+}
+const persistSource = app.match(/function persistSetting\(key, value\) \{[\s\S]*?\n\}/)?.[0] ?? "";
+if (!persistSource) {
+  violations.push("app.mjs: persistSetting source could not be extracted");
+} else if (!/try\s*\{[\s\S]*localStorage\.setItem\(key, value\)[\s\S]*\}\s*catch/.test(persistSource)) {
+  violations.push("app.mjs: persistSetting must wrap localStorage.setItem in try/catch");
+}
+const directWrites = [...app.matchAll(/localStorage\.setItem\(/g)].length;
+if (directWrites !== 1) {
+  violations.push(`app.mjs: localStorage.setItem must only appear inside persistSetting, found ${directWrites} occurrences`);
+}
+
 // 发现性：搜索空结果时，每个非当前范围都必须能被跨范围救援，并显示匹配数量。
 for (const matcher of [
   "crossScopeShapeMatches",

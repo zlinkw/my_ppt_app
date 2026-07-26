@@ -264,8 +264,26 @@ function loadStyleTemplates() {
   }
 }
 
+// 本机存储可能被禁用或写满，写入失败时界面必须继续可用，只是偏好不再持久化。
+// 读取路径本来就有 try/catch，写入路径必须对称处理。
+function persistSetting(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    // 这里可能在 els 初始化之前被调用，所以反馈本身也要隔离。
+    try {
+      if (!persistSetting.reported && els?.status) {
+        persistSetting.reported = true;
+        setStatus("界面偏好无法写入本机存储，本次设置只在当前窗口生效。", true);
+      }
+    } catch {}
+    return false;
+  }
+}
+
 function saveUserStyleTemplates(templates) {
-  localStorage.setItem("roughPptStyleTemplates", JSON.stringify(templates.filter(template => !template.builtIn)));
+  persistSetting("roughPptStyleTemplates", JSON.stringify(templates.filter(template => !template.builtIn)));
 }
 
 function pickStyleParams(params) {
@@ -1478,7 +1496,7 @@ function ensureShapeSearchScope(clearWhenNoShapeMatch = false) {
     return;
   }
   state.searchScope = "shape";
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   renderSearchScopeControls();
   renderSortModeControl();
 }
@@ -1486,7 +1504,7 @@ function ensureShapeSearchScope(clearWhenNoShapeMatch = false) {
 function resetPaperPresetCategory(persist = true) {
   if (state.paperPresetCategory === "all") return false;
   state.paperPresetCategory = "all";
-  if (persist) localStorage.setItem("roughPptPaperPresetCategory", state.paperPresetCategory);
+  if (persist) persistSetting("roughPptPaperPresetCategory", state.paperPresetCategory);
   return true;
 }
 
@@ -1497,7 +1515,7 @@ function ensurePresetSearchScope(clearQuery = false, resetCategory = false) {
     if (els.search) els.search.value = "";
   }
   if (resetCategory) resetPaperPresetCategory();
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   render();
 }
 
@@ -1525,7 +1543,7 @@ function setSectionNavCollapsed(collapsed, { persist = true } = {}) {
   els.sectionNavToggle.setAttribute("aria-expanded", String(!collapsed));
   els.sectionNavToggle.textContent = collapsed ? "功能" : "收起";
   els.sectionNavToggle.title = collapsed ? "展开功能导航" : "收起功能导航";
-  if (persist) localStorage.setItem("roughPptSectionNavCollapsed", String(collapsed));
+  if (persist) persistSetting("roughPptSectionNavCollapsed", String(collapsed));
 }
 
 function initSectionNavDrawer() {
@@ -1797,7 +1815,7 @@ function applyStarterPaperTemplate() {
     return;
   }
   state.selectedStyleTemplateId = template.id;
-  localStorage.setItem("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
+  persistSetting("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
   if (els.styleTemplateSelect) els.styleTemplateSelect.value = template.id;
   updateStyleTemplatePreviewActive();
   if (els.renameStyleTemplate) {
@@ -1827,7 +1845,7 @@ function openQuickInsertAndFocus() {
 function focusGlobalSearch() {
   state.searchScope = "all";
   state.query = "";
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   if (els.search) els.search.value = "";
   render();
   window.setTimeout(() => {
@@ -1852,7 +1870,7 @@ function activateCommandShortcut(commandId) {
     state.searchScope = searchScopeForCommand(command);
     state.query = queryForCommandActivation(command);
   }
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   if (els.search) els.search.value = state.query;
   render();
   window.setTimeout(() => {
@@ -1876,7 +1894,7 @@ function activatePathShortcut(commandId, pathLabel = "") {
     state.searchScope = searchScopeForCommand(command);
     state.query = queryForCommandActivation(command);
   }
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   if (els.search) els.search.value = state.query;
   render();
   window.setTimeout(() => {
@@ -1902,7 +1920,7 @@ function applyPaperPresetCommandState(command) {
   state.query = queryForCommandActivation(command);
   if (command?.paperPresetCategory) {
     state.paperPresetCategory = command.paperPresetCategory;
-    localStorage.setItem("roughPptPaperPresetCategory", state.paperPresetCategory);
+    persistSetting("roughPptPaperPresetCategory", state.paperPresetCategory);
   } else {
     resetPaperPresetCategory();
   }
@@ -1973,7 +1991,7 @@ function focusPanel(key, focusSelf = true) {
     setSimpleActivePanel(panel.dataset.collapseKey);
   } else if (toggle && panel.classList.contains("collapsed")) {
     setPanelCollapsed(panel, toggle, false);
-    localStorage.setItem(`roughPptCollapsed:${key}`, "false");
+    persistSetting(`roughPptCollapsed:${key}`, "false");
   }
   updateStickyChromeMetrics();
   safeScrollIntoView(panel, { behavior: "smooth", block: "start" });
@@ -2025,7 +2043,7 @@ function focusControl(item) {
         state.searchScope = "shape";
         state.query = item.shapeQuery;
         if (item.shapeCategory && categoryOrder.includes(item.shapeCategory)) state.category = item.shapeCategory;
-        localStorage.setItem("roughPptSearchScope", state.searchScope);
+        persistSetting("roughPptSearchScope", state.searchScope);
         if (els.search) els.search.value = item.shapeQuery;
         render();
       }
@@ -2202,7 +2220,7 @@ function commandCenterItems() {
 function rememberCommand(commandId) {
   if (!commandId) return;
   state.recentCommands = [commandId, ...state.recentCommands.filter(id => id !== commandId)].slice(0, 8);
-  localStorage.setItem("roughPptRecentCommands", JSON.stringify(state.recentCommands));
+  persistSetting("roughPptRecentCommands", JSON.stringify(state.recentCommands));
 }
 
 function commandMatchScore(item, query) {
@@ -2269,7 +2287,7 @@ function activateCommandResult(command) {
   rememberCommand(command.id);
   if (command.panel === "paperPresets") {
     applyPaperPresetCommandState(command);
-    localStorage.setItem("roughPptSearchScope", state.searchScope);
+    persistSetting("roughPptSearchScope", state.searchScope);
     if (els.search) els.search.value = state.query;
     render();
     window.setTimeout(() => {
@@ -2413,11 +2431,11 @@ function applySearchSuggestion(suggestion) {
   state.searchScope = suggestion.scope || "all";
   if (state.searchScope === "preset" && suggestion.paperPresetCategory) {
     state.paperPresetCategory = suggestion.paperPresetCategory;
-    localStorage.setItem("roughPptPaperPresetCategory", state.paperPresetCategory);
+    persistSetting("roughPptPaperPresetCategory", state.paperPresetCategory);
   } else if (state.searchScope === "preset") {
     resetPaperPresetCategory();
   }
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   render();
   els.search?.focus({ preventScroll: true });
   setStatus(suggestion.clearQuery ? `已打开：${suggestion.label}` : `已搜索：${suggestion.label}`);
@@ -2479,7 +2497,7 @@ function renderSearchEmpty(items = filteredItems()) {
       shape.title = `切换到形状范围并显示匹配的 ${shapeRescue.length} 个 PPT 原生形状手绘版，不会直接插入形状`;
       shape.addEventListener("click", () => {
         state.searchScope = "shape";
-        localStorage.setItem("roughPptSearchScope", state.searchScope);
+        persistSetting("roughPptSearchScope", state.searchScope);
         render();
         setStatus(`已切换到形状范围，匹配 ${shapeRescue.length} 个形状。`);
         window.setTimeout(() => document.querySelector("#shapeGrid .shape-card")?.focus({ preventScroll: true }), 260);
@@ -2509,7 +2527,7 @@ function renderSearchEmpty(items = filteredItems()) {
       chart.title = `切换到数据范围并显示匹配的 ${chartRescue.length} 个已导入科研绘图数据集，不会直接插入图表`;
       chart.addEventListener("click", () => {
         state.searchScope = "chart";
-        localStorage.setItem("roughPptSearchScope", state.searchScope);
+        persistSetting("roughPptSearchScope", state.searchScope);
         render();
         setStatus(`已切换到数据范围，匹配 ${chartRescue.length} 个数据集。`);
         window.setTimeout(() => document.querySelector("#zlkChartResults .chart-dataset-card")?.focus({ preventScroll: true }), 260);
@@ -2523,7 +2541,7 @@ function renderSearchEmpty(items = filteredItems()) {
       asset.title = `切换到素材范围并显示匹配的 ${assetRescue.length} 个我的素材，不会直接插入或删除`;
       asset.addEventListener("click", () => {
         state.searchScope = "asset";
-        localStorage.setItem("roughPptSearchScope", state.searchScope);
+        persistSetting("roughPptSearchScope", state.searchScope);
         render();
         setStatus(`已切换到素材范围，匹配 ${assetRescue.length} 个素材。`);
         window.setTimeout(() => document.querySelector("#userAssets .asset-card")?.focus({ preventScroll: true }), 260);
@@ -2548,7 +2566,7 @@ function renderSearchEmpty(items = filteredItems()) {
 
 function switchToCommandResults(command = null, focusResult = false) {
   state.searchScope = "command";
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   render();
   focusElementRepeatedly(firstVisibleCommandButton, focusResult);
   window.setTimeout(() => {
@@ -2565,7 +2583,7 @@ function switchToCommandResults(command = null, focusResult = false) {
 function switchToPaperPresetResults(focusResult = false) {
   state.searchScope = "preset";
   resetPaperPresetCategory();
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   render();
   focusElementRepeatedly(firstVisiblePaperPresetCard, focusResult);
   window.setTimeout(() => {
@@ -2719,7 +2737,7 @@ function locateFirstCommandFromSearch(focusOnly = false) {
   if (!command) return false;
   if (!searchScopeAllows("command")) {
     state.searchScope = "command";
-    localStorage.setItem("roughPptSearchScope", state.searchScope);
+    persistSetting("roughPptSearchScope", state.searchScope);
     render();
     window.setTimeout(() => {
       if (focusOnly) {
@@ -3290,7 +3308,7 @@ function toggleFavoritePaperPreset(preset) {
     state.favoritePaperPresets = [preset.id, ...state.favoritePaperPresets.filter(id => id !== preset.id)].slice(0, 16);
     setStatus(`已固定常用论文预设：${preset.title}`);
   }
-  localStorage.setItem("roughPptFavoritePaperPresets", JSON.stringify(state.favoritePaperPresets));
+  persistSetting("roughPptFavoritePaperPresets", JSON.stringify(state.favoritePaperPresets));
   renderPaperPresetFilters();
   renderPaperPresets();
 }
@@ -3298,7 +3316,7 @@ function toggleFavoritePaperPreset(preset) {
 function rememberRecentPaperPreset(preset) {
   if (!preset?.id) return;
   state.recentPaperPresets = [preset.id, ...state.recentPaperPresets.filter(id => id !== preset.id)].slice(0, 12);
-  localStorage.setItem("roughPptRecentPaperPresets", JSON.stringify(state.recentPaperPresets));
+  persistSetting("roughPptRecentPaperPresets", JSON.stringify(state.recentPaperPresets));
 }
 
 function paperPresetEmptyInfo(categoryId) {
@@ -3410,7 +3428,7 @@ function renderPaperPresetFilters() {
     button.append(label, badge);
     button.addEventListener("click", () => {
       state.paperPresetCategory = category.id;
-      localStorage.setItem("roughPptPaperPresetCategory", state.paperPresetCategory);
+      persistSetting("roughPptPaperPresetCategory", state.paperPresetCategory);
       resetResourceRenderWindows("preset");
       renderPaperPresetFilters();
       renderPaperPresets();
@@ -3452,9 +3470,9 @@ function renderPaperPresets() {
       state.query = "";
       if (els.search) els.search.value = "";
       state.paperPresetCategory = emptyInfo.targetCategory;
-      localStorage.setItem("roughPptPaperPresetCategory", state.paperPresetCategory);
+      persistSetting("roughPptPaperPresetCategory", state.paperPresetCategory);
       state.searchScope = "preset";
-      localStorage.setItem("roughPptSearchScope", state.searchScope);
+      persistSetting("roughPptSearchScope", state.searchScope);
       render();
       els.paperPresetGrid?.focus({ preventScroll: true });
       setStatus(emptyInfo.targetCategory === "recommended" ? "已显示推荐论文图预设。" : "已显示全部论文图预设。");
@@ -3468,9 +3486,9 @@ function renderPaperPresets() {
       state.query = "";
       if (els.search) els.search.value = "";
       state.paperPresetCategory = "all";
-      localStorage.setItem("roughPptPaperPresetCategory", state.paperPresetCategory);
+      persistSetting("roughPptPaperPresetCategory", state.paperPresetCategory);
       state.searchScope = "preset";
-      localStorage.setItem("roughPptSearchScope", state.searchScope);
+      persistSetting("roughPptSearchScope", state.searchScope);
       render();
       setStatus("已显示全部论文图预设。");
     });
@@ -3750,7 +3768,7 @@ function setSimpleActivePanel(key, { persist = true } = {}) {
     if (!panel || !button) continue;
     setPanelCollapsed(panel, button, panelKey !== activeKey);
   }
-  if (persist) localStorage.setItem("roughPptSimpleActivePanel", activeKey || "none");
+  if (persist) persistSetting("roughPptSimpleActivePanel", activeKey || "none");
 }
 
 function applySimplePanelLayout() {
@@ -3823,7 +3841,7 @@ function applyUiMode(mode = state.uiMode, { persist = true } = {}) {
     els.uiModeFull.classList.toggle("is-active", next === "full");
     els.uiModeFull.setAttribute("aria-pressed", String(next === "full"));
   }
-  if (persist) localStorage.setItem("roughPptUiMode", next);
+  if (persist) persistSetting("roughPptUiMode", next);
   syncStyleSectionsForUiMode(next);
   if (next === "simple") applySimplePanelLayout();
   else restoreFullPanelLayout();
@@ -4002,7 +4020,7 @@ function renderChartPresetStrip() {
     btn.append(thumb, title, summary);
     btn.addEventListener("click", () => {
       state.selectedChartPresetId = preset.id;
-      localStorage.setItem("roughPptChartPresetId", preset.id);
+      persistSetting("roughPptChartPresetId", preset.id);
       renderChartPresetStrip();
       renderChartPresetPreview();
       setStatus("已选择科研图预设：" + preset.title);
@@ -4165,7 +4183,7 @@ function renderChartImportPanel() {
     scopeBtn.title = "把搜索范围切换到数据，只查看科研绘图导入结果";
     scopeBtn.addEventListener("click", () => {
       state.searchScope = "chart";
-      localStorage.setItem("roughPptSearchScope", state.searchScope);
+      persistSetting("roughPptSearchScope", state.searchScope);
       render();
       setStatus("已切换到数据搜索范围。");
     });
@@ -5173,7 +5191,7 @@ async function handleZlkChartFiles(fileList) {
   resetResourceRenderWindows("chart");
   state.chartImportError = errors[0] || "";
   state.searchScope = "chart";
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   render();
   focusPanel("charts");
   const points = imported.reduce((sum, dataset) => sum + (dataset.points?.length ?? 0), 0);
@@ -5358,7 +5376,7 @@ async function normalizeZlkChartFilesForHost(request, files) {
   resetResourceRenderWindows("chart");
   state.chartImportError = errors[0] || "";
   state.searchScope = "chart";
-  localStorage.setItem("roughPptSearchScope", state.searchScope);
+  persistSetting("roughPptSearchScope", state.searchScope);
   state.zlkAutomationStatus = `已归一化外部请求：${imported.length} 个文件，准备绘图。`;
   render();
   return {
@@ -5806,7 +5824,7 @@ function drawPreviewShape(ctx, x, y, width, height, index) {
 
 function rememberRecent(enumName) {
   state.recent = [enumName, ...state.recent.filter(item => item !== enumName)].slice(0, 12);
-  localStorage.setItem("roughPptRecentShapes", JSON.stringify(state.recent));
+  persistSetting("roughPptRecentShapes", JSON.stringify(state.recent));
   render();
 }
 
@@ -5854,7 +5872,7 @@ function pinQuickShape(enumName) {
   state.quickShapes = [enumName, ...effectiveQuickShapes().filter(item => item !== enumName)].slice(0, 12);
   state.quickShapesLoaded = true;
   state.favorites = [...state.quickShapes];
-  localStorage.setItem("roughPptFavoriteShapes", JSON.stringify(state.favorites));
+  persistSetting("roughPptFavoriteShapes", JSON.stringify(state.favorites));
   render();
   postHost({ type: "pinQuickShape", enumName });
 }
@@ -5878,7 +5896,7 @@ function unpinQuickShape(enumName) {
   state.quickShapes = effectiveQuickShapes().filter(item => item !== enumName);
   state.quickShapesLoaded = true;
   state.favorites = [...state.quickShapes];
-  localStorage.setItem("roughPptFavoriteShapes", JSON.stringify(state.favorites));
+  persistSetting("roughPptFavoriteShapes", JSON.stringify(state.favorites));
   render();
   postHost({ type: "unpinQuickShape", enumName });
 }
@@ -6182,7 +6200,7 @@ function featureDirectionText(direction, delta) {
 function saveFeatureBlockDefault() {
   const feature = sanitizeFeatureBlockDefault(readFeatureBlockControls());
   state.featureBlock = { ...feature };
-  localStorage.setItem("roughPptFeatureBlockDefaults", JSON.stringify(feature));
+  persistSetting("roughPptFeatureBlockDefaults", JSON.stringify(feature));
   postHost({ type: "updateFeatureBlockPreset", feature });
   postHost({ type: "saveFeatureBlockDefault", feature });
   setStatus("已保存当前特征块参数为默认。");
@@ -6765,7 +6783,7 @@ function handleHostMessage(message) {
       .filter(Boolean);
     state.quickShapesLoaded = true;
     state.favorites = [...state.quickShapes];
-    localStorage.setItem("roughPptFavoriteShapes", JSON.stringify(state.favorites));
+    persistSetting("roughPptFavoriteShapes", JSON.stringify(state.favorites));
     for (const item of shapes) {
       if (item?.enumName && item?.dataUrl) state.shapeIcons[item.enumName] = item.dataUrl;
     }
@@ -6869,7 +6887,7 @@ function handleHostMessage(message) {
     state.params = normalized;
     state.insertParams = normalizeStyle(normalized, baseStyleParams);
     state.selectedStyleTemplateId = "";
-    localStorage.setItem("roughPptSelectedStyleTemplate", "");
+    persistSetting("roughPptSelectedStyleTemplate", "");
     applyParamsToControls(normalized);
     if (message.status) setStatus(message.status);
   }
@@ -7708,7 +7726,7 @@ function renderStyleTemplates() {
   }
   syncStyleTemplateBarState(currentId ?? "");
   state.selectedStyleTemplateId = els.styleTemplateSelect.value;
-  localStorage.setItem("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
+  persistSetting("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
   const template = selectedStyleTemplate();
   if (els.saveStyleTemplate) {
     const label = els.saveStyleTemplate.querySelector("[data-style-template-save-label]");
@@ -7785,7 +7803,7 @@ function renderStyleTemplatePreview() {
     card.append(swatch, label, meta);
     card.addEventListener("click", () => {
       state.selectedStyleTemplateId = template.id;
-      localStorage.setItem("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
+      persistSetting("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
       if (els.styleTemplateSelect) els.styleTemplateSelect.value = template.id;
       updateStyleTemplatePreviewActive();
       if (els.renameStyleTemplate) {
@@ -7872,7 +7890,7 @@ function redrawSelectionFromCurrentStyle(status = "正在按当前风格参数�
 
 function clearStyleTemplateSelection() {
   state.selectedStyleTemplateId = "";
-  localStorage.setItem("roughPptSelectedStyleTemplate", "");
+  persistSetting("roughPptSelectedStyleTemplate", "");
   if (els.styleTemplateSelect) els.styleTemplateSelect.value = "";
   if (els.renameStyleTemplate) {
     els.renameStyleTemplate.disabled = true;
@@ -7885,7 +7903,7 @@ function selectStyleTemplate(templateId) {
   const template = state.styleTemplates.find(item => item.id === templateId);
   if (!template) return false;
   state.selectedStyleTemplateId = template.id;
-  localStorage.setItem("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
+  persistSetting("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
   if (els.styleTemplateSelect) els.styleTemplateSelect.value = template.id;
   updateStyleTemplatePreviewActive();
   if (els.renameStyleTemplate) {
@@ -8145,13 +8163,13 @@ function initCollapsiblePanels() {
       if (state.uiMode === "simple" && simpleWorkflowPanelKeys.includes(key)) {
         if (next) {
           setPanelCollapsed(section, button, true);
-          localStorage.setItem("roughPptSimpleActivePanel", "none");
+          persistSetting("roughPptSimpleActivePanel", "none");
         } else {
           setSimpleActivePanel(key);
         }
       } else {
         setPanelCollapsed(section, button, next);
-        localStorage.setItem(`roughPptCollapsed:${key}`, String(next));
+        persistSetting(`roughPptCollapsed:${key}`, String(next));
       }
     });
   }
@@ -8208,7 +8226,7 @@ function wireStyleTemplates() {
   renderStyleTemplates();
   els.styleTemplateSelect?.addEventListener("change", () => {
     state.selectedStyleTemplateId = els.styleTemplateSelect.value;
-    localStorage.setItem("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
+    persistSetting("roughPptSelectedStyleTemplate", state.selectedStyleTemplateId);
     renderStyleTemplates();
     if (state.selectedStyleTemplateId) applySelectedStyleTemplate();
     else {
@@ -8241,7 +8259,7 @@ els.search.addEventListener("keydown", event => {
 for (const button of els.searchScopeButtons ?? []) {
   button.addEventListener("click", () => {
     state.searchScope = button.dataset.searchScope || "all";
-    localStorage.setItem("roughPptSearchScope", state.searchScope);
+    persistSetting("roughPptSearchScope", state.searchScope);
     resetResourceRenderWindows("chart");
     render();
     setStatus(`已切换搜索范围：${searchScopeLabel()}`);
@@ -8250,7 +8268,7 @@ for (const button of els.searchScopeButtons ?? []) {
 els.sortMode.value = state.sortMode;
 els.sortMode.addEventListener("change", () => {
   state.sortMode = els.sortMode.value;
-  localStorage.setItem("roughPptSortMode", state.sortMode);
+  persistSetting("roughPptSortMode", state.sortMode);
   render();
 });
 els.galleryToggle.addEventListener("click", toggleShapeDropdown);
