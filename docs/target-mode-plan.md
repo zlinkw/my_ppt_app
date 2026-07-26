@@ -97,6 +97,7 @@
 10. B543（已完成）：UI 同步脚本过滤并清除运行时 UI 目录中的残留文件，避免旧样式备份被当作运行时资源分发。
 11. B544（已完成）：搜索空结果补齐形状跨范围救援，并在救援按钮和说明中显示各范围匹配数量。
 12. B545（已完成）：右侧功能导航高亮跟随滚动位置，并修正论文图像面板无法高亮导航项的映射缺口。
+13. B541-B545 统一验证（已完成）：完整 `npm.cmd test` 39 项全部通过，`npm run build:ui` 通过且无产物漂移；按“未明确要求时不打包”边界未运行 `npm run package`。
 
 ### B541 仓内清理批次
 
@@ -141,6 +142,13 @@
 - 保护区：只更新 `active` 类和 `aria-current`，不改布局、不新增 sticky/fixed、不触发滚动或任何命令；隐藏面板（简洁模式下 `display: none`，矩形宽高为 0）一律跳过。
 - 回归保护：`validate-ui-contract.mjs` 校验别名表、解析函数、滚动定位函数、passive scroll 接线和 rAF 合帧均在位；并遍历 `index.html` 全部 `data-collapse-key`，要求每个面板解析后都能命中一个真实存在的 `data-section-nav`，同时要求别名两端在 `index.html` 中都存在。
 - B545 验证与提交：`node --check src/RoughPptAddin/ui/app.mjs`、`validate-ui-contract.mjs`、`validate-encoding.mjs`、`validate-taskpane-function-icons.mjs`、`validate-taskpane-ui-interactions.mjs`、`validate-source-constraints.mjs`、`validate-style-panel-sync.mjs` 全部通过。行为实测从 `app.mjs` 提取真实函数跑 11 条断言全部通过：顶部、滚动进入风格、滚动进入科研绘图、锚点上方留空回落、隐藏面板跳过、全部在视口下方返回空，以及四条别名解析。新合同经反向验证——移除别名后 `zoteroImages` 立即被报为无法命中导航项。按五批次协议本批不运行统一测试、UI 构建或打包。
+
+### B541-B545 统一验证记录
+
+- 完整 `npm.cmd test` 全绿：203 形状目录、202 精确可插入形状、Rough 实时生成 200 次 p95 0.7 ms、87 个源文件约束、UI 合同、科研绘图 36 图静态合同与 8 图真实 SVG 运行时、任务窗格交互、133 个 Ribbon 控件、202 项形状图库、安装器版本单调性、彻底卸载、安装器运行时前置和安装载荷事务共 39 项检查全部通过。
+- `npm run build:ui` 通过，四个 vendor 包重新复制后 `git status --short` 为空，无产物漂移。
+- 未打包：`docs/target-mode-plan.md` 目标边界与 `PROJECT_CONSTRAINTS.md` 6.7 均要求“未明确要求时不打包”，本轮用户未要求安装包，因此不产出 ZIP/MSI/EXE，也未安装或启动 PowerPoint。
+- 遗留发现：统一验证输出中 `validate-installer-payload-transaction.ps1` 的中文警告显示为乱码，已作为 B546 处理。
 
 ### 当前科研绘图增强批次
 
