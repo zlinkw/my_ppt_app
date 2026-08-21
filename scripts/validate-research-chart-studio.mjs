@@ -103,6 +103,17 @@ for (const snippet of [
 for (const snippet of ["CHART_CATEGORIES", "filterChartTypeButtons", "aria-hidden", "显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图入口发现性合同缺少：${snippet}`);
 }
+for (const snippet of [
+  "function syncRadioTabIndexes(group)",
+  "function moveRadioSelection(group, current, key)",
+  "function bindRadioKeyboard(group, select)",
+  "button.tabIndex = button === focusable ? 0 : -1;",
+  'if (key === "Home") return radios[0];',
+  'bindRadioKeyboard(els.chartTypeGrid, button => setChartType(button.dataset.chartType));',
+  'bindRadioKeyboard(els.paletteList, button => setPalette(button.dataset.palette));'
+]) {
+  if (!app.includes(snippet)) throw new Error(`科研绘图单选键盘导航合同缺少：${snippet}`);
+}
 for (const snippet of ["scaleSpec", "axisKeyElements", "domainMin", "domainMax", "xReverse", "yReverse", "xTickFormat", "yTickFormat"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图坐标控制合同缺少：${snippet}`);
 }

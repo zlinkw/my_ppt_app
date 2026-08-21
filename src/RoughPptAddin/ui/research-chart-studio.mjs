@@ -273,6 +273,46 @@ function filterChartTypeButtons() {
     if (show) visible += 1;
   });
   if (els.chartSearchSummary) els.chartSearchSummary.textContent = `显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表`;
+  syncRadioTabIndexes(els.chartTypeGrid);
+}
+
+function visibleRadioButtons(group) {
+  return [...group.querySelectorAll("[role=\"radio\"]")].filter(button => !button.hidden);
+}
+
+function syncRadioTabIndexes(group) {
+  const radios = [...group.querySelectorAll("[role=\"radio\"]")];
+  const visible = radios.filter(button => !button.hidden);
+  const focusable = visible.find(button => button.getAttribute("aria-checked") === "true") ||
+    visible.find(button => button === document.activeElement) ||
+    visible[0];
+  radios.forEach(button => {
+    button.tabIndex = button === focusable ? 0 : -1;
+  });
+}
+
+function moveRadioSelection(group, current, key) {
+  const radios = visibleRadioButtons(group);
+  if (!radios.length) return null;
+  const index = radios.indexOf(current);
+  if (key === "Home") return radios[0];
+  if (key === "End") return radios.at(-1);
+  if (key === "ArrowRight" || key === "ArrowDown") return radios[(index + 1) % radios.length] ?? null;
+  if (key === "ArrowLeft" || key === "ArrowUp") return radios[(index - 1 + radios.length) % radios.length] ?? null;
+  return null;
+}
+
+function bindRadioKeyboard(group, select) {
+  group?.addEventListener("keydown", event => {
+    const radio = event.target.closest("[role=\"radio\"]");
+    if (!radio || !group.contains(radio)) return;
+    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const target = moveRadioSelection(group, radio, event.key);
+    if (!target) return;
+    target.focus();
+    select(target);
+  });
 }
 
 function toggleFullscreen() {
@@ -1633,6 +1673,7 @@ function setChartType(chartType, render = true) {
     button.setAttribute("aria-checked", active ? "true" : "false");
   });
   els.currentChartType.textContent = CHART_LABELS[chartType];
+  syncRadioTabIndexes(els.chartTypeGrid);
   if (render) scheduleRender(0);
 }
 
@@ -1644,6 +1685,7 @@ function setPalette(palette, render = true) {
     button.classList.toggle("active", active);
     button.setAttribute("aria-checked", active ? "true" : "false");
   });
+  syncRadioTabIndexes(els.paletteList);
   if (render) scheduleRender();
 }
 
@@ -1709,7 +1751,9 @@ function bindEvents() {
   els.chartTypeGrid.querySelectorAll("[data-chart-type]").forEach(button => button.addEventListener("click", () => setChartType(button.dataset.chartType)));
   els.chartSearch?.addEventListener("input", filterChartTypeButtons);
   els.chartCategory?.addEventListener("change", filterChartTypeButtons);
+  bindRadioKeyboard(els.chartTypeGrid, button => setChartType(button.dataset.chartType));
   els.paletteList.querySelectorAll("[data-palette]").forEach(button => button.addEventListener("click", () => setPalette(button.dataset.palette)));
+  bindRadioKeyboard(els.paletteList, button => setPalette(button.dataset.palette));
 
   els.filterField.addEventListener("change", applyFilterAndRender);
   els.filterMode.addEventListener("change", applyFilterAndRender);
