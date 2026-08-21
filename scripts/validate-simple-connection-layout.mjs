@@ -10,10 +10,20 @@ for (const obsolete of ["simpleConnectionZlk", "simpleConnectionZotero", "simple
   }
 }
 
-if (!html.includes('id="simpleModeActions" class="simple-mode-actions workflow-actions"')) {
-  throw new Error("简洁模式操作区未复用快捷工作台按钮布局。");
+if (html.includes('id="simpleModeActions"')) {
+  throw new Error("完整模式切换必须复用快捷工作台容器，不得保留独立操作区。");
 }
 if (!html.includes('id="simpleModeFullSwitch"')) throw new Error("完整模式切换按钮被误删。");
-if (!css.includes("body.ux-simple .simple-mode-actions")) throw new Error("缺少简洁模式操作区显示规则。");
+const workflowStart = html.indexOf('class="workflow-actions"');
+const featureButton = html.indexOf('id="jumpToFeature"');
+const fullSwitch = html.indexOf('id="simpleModeFullSwitch"');
+const moreDisclosure = html.indexOf('class="workflow-more workflow-quickfind"');
+if (workflowStart < 0 || featureButton < 0 || fullSwitch < 0 || moreDisclosure < 0 ||
+    !(workflowStart < featureButton && featureButton < fullSwitch && fullSwitch < moreDisclosure)) {
+  throw new Error("完整模式切换按钮未纳入简洁模式快捷工作台顺序。");
+}
+if (!css.includes('body.ux-simple[data-selection-kind="none"] .workflow-actions')) {
+  throw new Error("缺少简洁模式快捷工作台两列密度规则。");
+}
 
 console.log("simple mode action layout contract ok");
