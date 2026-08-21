@@ -10279,3 +10279,32 @@ body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button {
   min-height: 32px !important;
   padding: 6px 8px !important;
 }
+
+/* B566: narrow panes give long status text its own readable row. */
+@media (max-width: 640px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "brand"
+      "actions"
+      "status"
+      "build";
+  }
+
+  .topbar .brand { grid-column: 1 !important; grid-row: 1 !important; }
+  .topbar .topbar-actions { grid-column: 1 !important; grid-row: 2 !important; justify-self: start; }
+  body.ux-simple .topbar .status,
+  .topbar .status { grid-column: 1 !important; grid-row: 3 !important; }
+  body.ux-simple .topbar .build-info,
+  .topbar .build-info { grid-column: 1 !important; grid-row: 4 !important; }
+
+  .topbar .topbar-actions {
+    justify-content: flex-start;
+  }
+
+  .topbar .build-info {
+    width: auto;
+    max-width: none;
+    justify-self: start;
+  }
+}

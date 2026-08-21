@@ -89,7 +89,7 @@
 1. B525-B555（已完成）：科研绘图工作台扩展到 36 种图表并建立真实 Vega 回归；完成授权清理、状态色、搜索救援、导航高亮、BOM、顶栏度量、独立窗口布局、存储守卫和共享浏览器 harness。统一测试与 UI 构建通过。
 2. B556-B560（已完成）：压缩计划历史；宿主同步失败给出中文反馈；排序假控件获得真实浏览器合同；简洁模式工作台改为紧凑两列；科研绘图默认三栏、窄窗控制先行、预览顶部对齐。B561-B563 纠偏后统一 `npm.cmd test` 与 UI 构建全绿。
 3. B561-B565（已完成）：适配 SimpleExperiment 新端点、`simple_cluster` 路径和旧 ZLK 兼容路径；刷新使用说明真实截图；修复同源 SVG 预览超高容器留白并让布局合同检查可见预览。统一 `npm.cmd test` 与 UI 构建全绿。
-4. B566（待执行）：继续 UI 审计，优先处理剩余的可验证外观、尺寸或功能反馈缺口。
+4. B566（已完成）：修复窄窗顶栏状态与版本按钮同排挤压，让长状态独占可读行。
 
 ### 下一批次方向
 
@@ -111,6 +111,8 @@
 - B546：Windows PowerShell 5.1 按系统 ANSI 代码页解码无 BOM 脚本，会让中文变乱码甚至吞掉字符串结束引号；含中文的 `.ps1` 必须带 UTF-8 BOM，该约定已写入 `validate-encoding.mjs` 与 `docs/VALIDATION.md`。
 - B545：面板 `data-collapse-key` 与导航项不是一一对应，`zoteroImages` 必须经 `sectionNavPanelAliases` 解析为 `paletteLibrary`；导航高亮由 rAF 合帧的滚动定位维护，合同要求每个面板都能命中真实导航项。
 - B535-B540：科研绘图新图表的验证证据必须来自真实 Vega Lite 编译与 Vega SVG 输出，不得用字符串存在性代替运行时证据。
+- B566：420px 级任务窗格顶栏顺序应为品牌、操作、完整状态、版本检测；长状态不得和版本按钮争抢同一行。
+- B566 验证与提交：真实浏览器验证 320/420px 顶栏四行流式排布，状态占满可用行且版本按钮在下方；`validate-taskpane-ui-interactions.mjs`、`validate-ui-contract.mjs`、`validate-local-ui-assets.mjs` 通过。代码与本批计划同提交。
 
 ## 关键里程碑
 

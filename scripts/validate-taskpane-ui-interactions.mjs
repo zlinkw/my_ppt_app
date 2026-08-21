@@ -56,6 +56,12 @@ try {
     if (!workflowDensity.twoColumns || !workflowDensity.compact || !workflowDensity.readable || !workflowDensity.bounded) {
       violations.push(`${width}px: 简洁模式工作台按钮密度异常 ${JSON.stringify(workflowDensity)}`);
     }
+    if (width <= 420) {
+      const topbarFlow = await evaluate(client, narrowTopbarFlowProbe());
+      if (!topbarFlow.statusFullRow || !topbarFlow.buildBelowStatus || topbarFlow.horizontalOverlap) {
+        violations.push(`${width}px: 窄窗顶栏长状态与版本按钮布局异常 ${JSON.stringify(topbarFlow)}`);
+      }
+    }
     const curve = await evaluate(client, chartCurvePreviewProbe());
     if (!curve.continuous || !curve.inBounds) violations.push(`${width}px: 科研图曲线预览断裂或越界 ${JSON.stringify(curve)}`);
   }
@@ -289,6 +295,27 @@ function chartCurvePreviewProbe() {
       inBounds: coordinates.length > 0 && coordinates.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 100 && y >= 0 && y <= 60),
       pointCount: coordinates.length,
       dotCount: circles.length
+    };
+  })()`;
+}
+
+function narrowTopbarFlowProbe() {
+  return `(() => {
+    const rect = selector => document.querySelector(selector)?.getBoundingClientRect();
+    const brand = rect('.topbar .brand');
+    const actions = rect('.topbar .topbar-actions');
+    const status = rect('.topbar .status');
+    const build = rect('.topbar .build-info');
+    return {
+      brandTop: Math.round(brand?.top ?? -1),
+      actionsBottom: Math.round(actions?.bottom ?? -1),
+      statusTop: Math.round(status?.top ?? -1),
+      statusBottom: Math.round(status?.bottom ?? -1),
+      buildTop: Math.round(build?.top ?? -1),
+      statusWidthRatio: status ? Number((status.width / innerWidth).toFixed(3)) : 0,
+      statusFullRow: Boolean(status && status.width >= innerWidth * 0.85),
+      buildBelowStatus: Boolean(build && status && build.top >= status.bottom - 1),
+      horizontalOverlap: Boolean(status && build && build.top < status.bottom - 1 && build.left < status.right - 1)
     };
   })()`;
 }
