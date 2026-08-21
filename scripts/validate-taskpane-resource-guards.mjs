@@ -59,6 +59,15 @@ for (const snippet of [
   requireIncludes(app, snippet, "app.mjs missing feature block default validation");
 }
 
+for (const snippet of [
+  "const styleParamRules = Object.freeze({",
+  'roughSource: { type: "enum", values: ["native", "roughjs", "excalidraw", "drawio", "d2", "tldraw"] },',
+  "result[name] = rule.values.includes(value) ? value : baseStyleParams[name];",
+  "result[name] = \"min\" in rule ? Math.min(rule.max, Math.max(rule.min, rounded)) : rounded;"
+]) {
+  requireIncludes(app, snippet, "app.mjs missing style template parameter validation");
+}
+
 requirePattern(app, /els\.search\.addEventListener\("input",\s*\(\)\s*=>\s*\{[\s\S]*?state\.query\s*=\s*els\.search\.value;[\s\S]*?resetResourceRenderWindows\((?:"chart"|\[[^\]]*"chart"[^\]]*\])\);[\s\S]*?scheduleRender\(\);/, "search input must schedule one render per frame");
 requirePattern(app, /els\.search\.addEventListener\("keydown",\s*event\s*=>\s*\{\s*flushScheduledRender\(\);/, "keyboard command handling must flush pending search render first");
 requireIncludes(app, "function requestZoteroImages(force = false)", "Zotero image requests must support forced reloads");

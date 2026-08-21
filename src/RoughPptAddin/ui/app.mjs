@@ -156,6 +156,49 @@ const baseStyleParams = Object.freeze({
   arrowheadWidthPt: 10
 });
 
+const styleParamRules = Object.freeze({
+  stroke: { type: "color" },
+  strokeWidthPt: { type: "number", min: 1, max: 8 },
+  strokeTransparency: { type: "number", min: 0, max: 1 },
+  roughness: { type: "number", min: 0.2, max: 4 },
+  bowing: { type: "number", min: 0, max: 4 },
+  edgeJitterPt: { type: "number", min: 0.2, max: 4 },
+  maxRandomnessOffset: { type: "number", min: 0.2, max: 4 },
+  strokePasses: { type: "number", min: 1, max: 4, integer: true },
+  curveSampling: { type: "number", min: 0.5, max: 2.5 },
+  fragmentStrokeDensity: { type: "number", min: 0, max: 3 },
+  roughEngine: { type: "enum", values: ["nativeWarp", "roughJs"] },
+  roughSource: { type: "enum", values: ["native", "roughjs", "excalidraw", "drawio", "d2", "tldraw"] },
+  fillSource: { type: "enum", values: ["auto", "roughjs", "excalidraw", "drawio", "d2", "tldraw", "brush", "native"] },
+  fillMode: { type: "enum", values: ["none", "solid"] },
+  fillColor: { type: "color" },
+  fillTransparency: { type: "number", min: 0, max: 1 },
+  fillStyle: { type: "enum", values: ["none", "hachure", "cross-hatch", "zigzag", "dots", "dashed", "zigzag-line", "solid", "brush"] },
+  brushWidthPt: { type: "number", min: 1, max: 24 },
+  brushDensity: { type: "number", min: 0.3, max: 2.5 },
+  brushAngleDeg: { type: "number", min: -90, max: 90 },
+  brushJitterPt: { type: "number", min: 0, max: 4 },
+  brushOverlap: { type: "number", min: 0, max: 0.9 },
+  dashStyle: { type: "enum", values: ["solid", "dash", "dot", "dash-dot"] },
+  arrowheadStyle: { type: "enum", values: ["rough", "none", "triangle", "open", "stealth"] },
+  arrowheadPosition: { type: "enum", values: ["end", "start", "both"] },
+  arrowheadLengthPt: { type: "number", min: 4, max: 40 },
+  arrowheadWidthPt: { type: "number", min: 4, max: 32 },
+  tldrawOffsetPt: { type: "number", min: 0, max: 4 },
+  preserveVertices: { type: "boolean" },
+  disableMultiStroke: { type: "boolean" },
+  disableMultiStrokeFill: { type: "boolean" },
+  curveFitting: { type: "number", min: 0.5, max: 1 },
+  hachureGap: { type: "number", min: -1, max: 40 },
+  nestedLayers: { type: "number", min: 2, max: 5, integer: true },
+  nestedOverlap: { type: "number", min: 0, max: 1 },
+  nestedGapPt: { type: "number", min: 1, max: 12 },
+  nestedJitterPt: { type: "number", min: 0, max: 3 },
+  nestedDirection: { type: "enum", values: ["leftDownToRightUp", "leftUpToRightDown"] },
+  seed: { type: "number", integer: true },
+  roughMode: { type: "enum", values: ["classic", "nested"] }
+});
+
 const builtInStyleTemplates = Object.freeze([
   {
     id: "builtin-gentle",
@@ -314,9 +357,32 @@ function saveUserStyleTemplates(templates) {
 }
 
 function pickStyleParams(params) {
+  const source = params && typeof params === "object" ? params : {};
   const result = {};
   for (const name of styleParamNames) {
-    if (name in params) result[name] = params[name];
+    const rule = styleParamRules[name];
+    const value = source[name];
+    if (rule.type === "enum") {
+      result[name] = rule.values.includes(value) ? value : baseStyleParams[name];
+      continue;
+    }
+    if (rule.type === "color") {
+      result[name] = typeof value === "string" && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)
+        ? value
+        : baseStyleParams[name];
+      continue;
+    }
+    if (rule.type === "boolean") {
+      result[name] = typeof value === "boolean" ? value : baseStyleParams[name];
+      continue;
+    }
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      result[name] = baseStyleParams[name];
+      continue;
+    }
+    const rounded = rule.integer ? Math.round(parsed) : parsed;
+    result[name] = "min" in rule ? Math.min(rule.max, Math.max(rule.min, rounded)) : rounded;
   }
   return result;
 }
