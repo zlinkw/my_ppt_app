@@ -96,6 +96,7 @@
 8. B559（已完成）：压缩简洁模式首屏工作台按钮，消除窄窗下的整行大按钮。
 9. B560（已完成）：修正科研绘图默认与窄窗布局，让控制项先于预览可达，并消除预览区大片空白。
 10. B561（已完成）：修复 B556-B560 统一验证暴露的 SimpleExperiment 端点漂移；保留旧 ZLK 端点兼容。
+11. B562（已完成）：同步自动化合同，锁定新端点、旧兼容端点和 discovery 双路径声明。
 
 ### B551-B555 批次结论
 
@@ -132,6 +133,7 @@
 - `npm.cmd test` 在 `validate-external-plugin-compat.mjs` 失败；外部 SimpleExperiment 基线已把绘图端点改为 `/api/simple-experiment/plot`，默认轻量结果路径改为 `simple_cluster/results/statistics.json` 与 `paper/tables/simple_results_table.csv`。
 - 这是外部协议重命名后的真实兼容断裂，不是测试误报；当前插件只接受旧端点，会导致新 SimpleExperiment 调用 404。B561 先补双端点接收和 discovery 声明，再重新执行统一验证。
 - B561 验证与提交：`validate-external-plugin-compat.mjs`、`validate-source-constraints.mjs` 通过；签名 Release MSBuild 编译通过，0 错误、8 个既有 `CS4014` 和本机 VS18 的 1 个既有 `MSB3277` 引用冲突警告。代码与本批计划同提交。
+- B562 纠偏：B561 后 `npm.cmd test` 暴露 `validate-automation-contract.mjs` 仍锁旧 discovery 路径。已更新合同，要求 `/api/simple-experiment/plot` 与 `/api/zlk-cluster/plot` 同时存在；`validate-automation-contract.mjs` 通过。代码与本批计划同提交。
 
 ### 下一批次方向
 
