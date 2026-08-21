@@ -23,11 +23,14 @@ const windows = [
       { width: 1180, height: 820, label: "默认窗口" }
     ],
     extraProbe: chartTypeProbe,
-    checkExtra(result, push) {
+    checkExtra(result, push, viewport) {
       if (result.total < 36) push(`图表类型入口只有 ${result.total} 个，应至少 36 个`);
       if (result.overflowing.length) push(`图表类型入口横向越出容器 ${result.overflowing.slice(0, 6).join(", ")}`);
       if (!result.gridReachable) push("图表类型列表既未完整显示也未提供滚动");
       if (result.checkedCount !== 1) push(`图表类型单选状态异常，aria-checked=true 的入口有 ${result.checkedCount} 个`);
+      if (viewport.width >= 1121 && result.layoutColumns !== 3) push(`默认科研绘图窗口应为三栏，实际 ${result.layoutColumns} 栏`);
+      if (viewport.width <= 780 && !result.controlFirst) push("窄窗科研绘图必须先显示数据和图表控制，再显示预览");
+      if (result.previewTopGap > 32) push(`科研绘图预览顶部空白异常：${result.previewTopGap}px`);
     }
   },
   {
@@ -87,7 +90,7 @@ try {
       if (tooltips.nonChinese.length) push(`悬浮说明缺少中文 ${tooltips.nonChinese.join(", ")}`);
 
       const extra = await evaluate(client, target.extraProbe());
-      target.checkExtra(extra, push);
+      target.checkExtra(extra, push, viewport);
     }
   }
 } finally {
@@ -174,10 +177,22 @@ function tooltipProbe() {
 function chartTypeProbe() {
   return `(() => {
     const grid = document.querySelector('#chartTypeGrid');
-    if (!grid) return { total: 0, overflowing: ['chartTypeGrid missing'], gridReachable: false, checkedCount: 0 };
+    const layout = document.querySelector('.studio-layout');
+    const control = document.querySelector('.control-panel');
+    const preview = document.querySelector('.preview-panel');
+    const previewWrap = document.querySelector('#svgPreviewWrap');
+    const chartPreview = document.querySelector('#chartPreview');
+    if (!grid || !layout || !control || !preview || !previewWrap || !chartPreview) {
+      return { total: grid ? grid.querySelectorAll('[data-chart-type]').length : 0, overflowing: ['research layout surface missing'], gridReachable: false, checkedCount: 0 };
+    }
     const buttons = [...grid.querySelectorAll('[data-chart-type]')];
     const gridRect = grid.getBoundingClientRect();
     const style = getComputedStyle(grid);
+    const layoutStyle = getComputedStyle(layout);
+    const controlRect = control.getBoundingClientRect();
+    const previewRect = preview.getBoundingClientRect();
+    const wrapRect = previewWrap.getBoundingClientRect();
+    const chartRect = chartPreview.getBoundingClientRect();
     const gridReachable = /(auto|scroll)/.test(style.overflowY + ' ' + style.overflowX) ||
       grid.scrollHeight <= grid.clientHeight + 2;
     const overflowing = buttons.filter(button => {
@@ -189,7 +204,10 @@ function chartTypeProbe() {
       total: buttons.length,
       overflowing,
       gridReachable,
-      checkedCount: buttons.filter(button => button.getAttribute('aria-checked') === 'true').length
+      checkedCount: buttons.filter(button => button.getAttribute('aria-checked') === 'true').length,
+      layoutColumns: layoutStyle.gridTemplateColumns.split(' ').length,
+      controlFirst: controlRect.top <= previewRect.top,
+      previewTopGap: Math.round(chartRect.top - wrapRect.top)
     };
   })()`;
 }

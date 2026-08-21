@@ -141,7 +141,7 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
 .render-state { padding: 2px 7px; border: 1px solid var(--line); border-radius: 999px; background: #fff; }
 .render-state.ready { border-color: #b7dec8; background: #edf8f1; color: var(--success); }
 .render-state.error { border-color: #f3b8b2; background: #fff1f0; color: var(--danger); }
-.svg-preview-wrap { position: relative; min-width: 0; min-height: 430px; display: grid; place-items: center; overflow: auto; padding: 18px; border: 1px solid var(--line-strong); background: #fff; }
+.svg-preview-wrap { position: relative; min-width: 0; min-height: 430px; display: grid; place-items: start center; overflow: auto; padding: 14px; border: 1px solid var(--line-strong); background: #fff; }
 .chart-preview { min-width: 0; max-width: 100%; display: grid; place-items: center; }
 .chart-preview .vega-embed { max-width: 100%; }
 .chart-preview svg { display: block; max-width: 100%; height: auto; }
@@ -172,7 +172,7 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
 .website-list small { display: none; }
 .compatibility-note { margin: 0; color: var(--muted); font-size: 10px; }
 
-@media (max-width: 1180px) {
+@media (max-width: 1120px) {
   .studio-layout { grid-template-columns: minmax(286px, 326px) minmax(420px, 1fr); }
   .style-panel { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; border-top: 1px solid var(--line); border-left: 0; }
   .style-panel .control-section { margin: 0; padding: 0 14px 0 0; border-right: 1px solid var(--line); border-bottom: 0; }
@@ -184,8 +184,8 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
   .header-actions { width: 100%; justify-content: flex-start; }
   .studio-layout { grid-template-columns: minmax(0, 1fr); }
   .control-panel { border-right: 0; border-bottom: 1px solid var(--line); }
-  .preview-panel { grid-row: 1; min-height: 520px; }
-  .control-panel { grid-row: 2; }
+  .control-panel { grid-row: 1; }
+  .preview-panel { grid-row: 2; min-height: 520px; }
   .style-panel { grid-row: 3; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
