@@ -50,8 +50,12 @@ try {
     if (!readable.dragReady) violations.push(`${width}px: 横向轨道未启用鼠标拖动滚动`);
     if (!readable.cardsReadable) violations.push(`${width}px: 科研图预设卡片文字被裁切或压缩`);
     const simpleModeActions = await evaluate(client, simpleModeActionsProbe());
-    if (!simpleModeActions.bounded || simpleModeActions.height > 60) violations.push(`${width}px: 简洁模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
+    if (!simpleModeActions.bounded || simpleModeActions.height > 80) violations.push(`${width}px: 简洁模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
     if (!simpleModeActions.horizontalText) violations.push(`${width}px: 完整模式按钮文字未保持横排 ${JSON.stringify(simpleModeActions)}`);
+    const workflowDensity = await evaluate(client, simpleWorkflowDensityProbe());
+    if (!workflowDensity.twoColumns || !workflowDensity.compact || !workflowDensity.readable || !workflowDensity.bounded) {
+      violations.push(`${width}px: 简洁模式工作台按钮密度异常 ${JSON.stringify(workflowDensity)}`);
+    }
     const curve = await evaluate(client, chartCurvePreviewProbe());
     if (!curve.continuous || !curve.inBounds) violations.push(`${width}px: 科研图曲线预览断裂或越界 ${JSON.stringify(curve)}`);
   }
@@ -233,7 +237,7 @@ function horizontalControlProbe() {
 function simpleModeActionsProbe() {
   return `(() => {
     document.querySelector('#uiModeSimple')?.click();
-    const actions = document.querySelector('#simpleModeActions');
+    const actions = document.querySelector('.workflow-actions');
     const fullSwitch = document.querySelector('#simpleModeFullSwitch');
     const rect = actions?.getBoundingClientRect();
     const buttonRect = fullSwitch?.getBoundingClientRect();
@@ -245,6 +249,26 @@ function simpleModeActionsProbe() {
       height: Math.round(rect?.height ?? 0),
       horizontalText: Boolean(label && style?.writingMode === 'horizontal-tb' && label.getBoundingClientRect().height < 24),
       buttonWidth: Math.round(buttonRect?.width ?? 0)
+    };
+  })()`;
+}
+
+function simpleWorkflowDensityProbe() {
+  return `(() => {
+    const buttons = [...document.querySelectorAll('.workflow-actions button, #simpleModeActions button')].filter(button => {
+      const style = getComputedStyle(button);
+      const rect = button.getBoundingClientRect();
+      return style.display !== 'none' && rect.width > 0 && rect.height > 0;
+    });
+    const rects = buttons.map(button => button.getBoundingClientRect());
+    const columns = new Set(rects.map(rect => Math.round(rect.left))).size;
+    return {
+      count: buttons.length,
+      columns,
+      twoColumns: buttons.length === 4 && columns === 2,
+      compact: rects.every(rect => rect.height <= 48),
+      readable: buttons.every(button => button.scrollWidth <= button.clientWidth + 1 && button.scrollHeight <= button.clientHeight + 1),
+      bounded: rects.every(rect => rect.left >= -1 && rect.right <= innerWidth + 1)
     };
   })()`;
 }

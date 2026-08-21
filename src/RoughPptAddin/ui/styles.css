@@ -10254,3 +10254,28 @@ body.ux-simple .topbar .status:not(.expanded) {
   background: #e3f4e9;
   color: #14682b;
 }
+
+/* B559: compact simple-mode paths stay scannable without oversized rows. */
+body.ux-simple[data-selection-kind="none"] .workflow-actions,
+body.ux-simple[data-selection-kind="feature"] .workflow-actions,
+body.ux-simple[data-selection-kind="none"] .simple-mode-actions,
+body.ux-simple[data-selection-kind="feature"] .simple-mode-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  align-items: stretch;
+}
+
+body.ux-simple .workflow-actions-label {
+  display: none !important;
+}
+
+body.ux-simple[data-selection-kind="none"] .workflow-actions > button,
+body.ux-simple[data-selection-kind="feature"] .workflow-actions > button,
+body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button,
+body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px !important;
+  padding: 6px 8px !important;
+}
