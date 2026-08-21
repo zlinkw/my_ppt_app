@@ -40,15 +40,15 @@
 ### ZLK Cluster
 
 - discovery：`%LOCALAPPDATA%\RoughPptAddin\automation.json`、`automation.token`。
-- endpoint：`GET /health`、`POST /api/zlk-cluster/plot`，仅允许 `127.0.0.1` / `localhost`。
+- endpoint：`GET /health`、`POST /api/simple-experiment/plot`，并保留旧兼容端点 `POST /api/zlk-cluster/plot`；仅允许 `127.0.0.1` / `localhost`。
 - token header：`Authorization: Bearer`、`X-Rough-Ppt-Token`、`X-RoughPpt-Automation-Token`。
 - `schemaVersion=1`；未知字段忽略，未来只接受 optional additive extensions。
 - `target.presentationPath` 为空则新建；已打开则复用追加；存在未打开则打开追加；不存在且 `createIfMissing=true` 则新建保存；不得关闭已有 PPT 或退出 PowerPoint。
 - 结果必须经 `zlk-cluster-result-importer.mjs` 归一化，再用 PPT 原生 shape、line、text、table 绘制。
-- 默认优先聚合结果：`zlk_cluster/results/statistics.json`、`paper/tables/zlk_results_table.csv`；单 seed/raw result 仅用于发现、追踪和审计。
+- 默认优先当前 SimpleExperiment 聚合结果：`simple_cluster/results/statistics.json`、`paper/tables/simple_results_table.csv`；旧项目兼容 `zlk_cluster/results/statistics.json` 与旧论文表。单 seed/raw result 仅用于发现、追踪和审计。
 - Markdown 摘要只生成 PPT 原生文本表格摘要页；存在同名 JSON 时优先 JSON。
 - Agent runtime cache、事件 journal、Worker queue 属于 Agent 全局态；PPT 不扫描 `ZLK_AGENT_STATE_DIR`。
-- PPT 绘图审计、归档 manifest、删除墓碑和文件传输状态必须落在当前项目 `zlk_cluster/`。
+- PPT 绘图审计、归档 manifest、删除墓碑和文件传输状态必须落在当前项目 `simple_cluster/`；旧项目只读兼容 `zlk_cluster/`。
 - UI 的 pre-key 快路径、trace cache、summary 单飞和 operation 刷新作用域不得改变绘图证据策略或请求语义。
 
 ### Zotero Image Saver
@@ -86,76 +86,28 @@
 
 ## 活跃队列
 
-1. B525-B540（已完成）：科研绘图工作台交付全屏、坐标、标注、筛选、配置持久化、SVG 下载和入口中文搜索，图表扩展到 36 种并建立真实 Vega 运行时回归；最终交付 `releases/RoughPptAddin-0.1.786-735227c7/`。
-2. B541-B545（已完成）：授权清理仓内无用文件约 2.5 GB；状态条增加完成状态色；UI 同步过滤运行时残留；搜索补齐形状跨范围救援；导航高亮跟随滚动并修正面板映射。统一验证 `npm.cmd test` 39 项与 UI 构建全绿。
-3. B546-B550（已完成）：PowerShell 中文 BOM 修复；粘性顶栏度量跟随实际高度；新增科研绘图工作台真实浏览器布局验证并补 14 个控件说明；使用说明目录补 10 个章节说明。统一验证 `npm.cmd test` 40 项与 UI 构建全绿。
-4. B551-B555（已完成）：计划压缩；独立窗口布局验证合并并新增形状图库覆盖；任务窗格与形状图库的本机存储写入补齐 try/catch 守卫；交互验证迁移到共享浏览器 harness。统一验证 `npm.cmd test` 40 项与 `npm run build:ui` 全绿、无产物漂移；按“未明确要求时不打包”边界未产出安装包。
-5. B556（已完成）：按维护规则压缩本文件历史流水。
-6. B557（已完成）：Ribbon 触发的四处窗格同步失败改为给出中文用户反馈，不再只写日志。
-7. B558（已完成）：为“排序按范围启用”的假控件合同补真实浏览器回归验证。
-8. B559（已完成）：压缩简洁模式首屏工作台按钮，消除窄窗下的整行大按钮。
-9. B560（已完成）：修正科研绘图默认与窄窗布局，让控制项先于预览可达，并消除预览区大片空白。
-10. B561（已完成）：修复 B556-B560 统一验证暴露的 SimpleExperiment 端点漂移；保留旧 ZLK 端点兼容。
-11. B562（已完成）：同步自动化合同，锁定新端点、旧兼容端点和 discovery 双路径声明。
-12. B563（已完成）：同步简洁模式布局合同，锁定完整模式切换并入快捷工作台后的两列密度。
-
-### B551-B555 批次结论
-
-- B552：独立窗口布局验证统一为 `validate-ui-window-layout.mjs`，按宿主 WinForms 的 MinimumSize 与默认 Size 取尺寸（工作台 720x560 / 1180x820，形状图库 420x320 / 700x620）。形状图库审计未发现缺陷：210 卡片 12 分组，搜索“菱形”过滤到 2，悬浮说明零缺失。
-- B553 / B554：本机存储写入必须集中到带 try/catch 的 `persistSetting`。读取路径本来就有守卫，写入没有，这个不对称就是缺陷。真实浏览器让 `Storage.prototype.setItem` 始终抛出后复现：`app.mjs` 修复前 6 次未捕获 `QuotaExceededError`，形状图库修复前点击形状后 `#galleryStatus` 为空，即 `setStatus` 与 `postHost` 都没执行、插入静默失效；修复后均为 0 次异常且操作正常。`research-chart-studio.mjs` 的 `saveConfig` 本来就有守卫，未改动。
-- B555：`scripts/lib/ui-browser.mjs` 是全仓唯一的浏览器 harness，`validate-taskpane-ui-interactions.mjs` 已迁移并删除 157 行重复代码。新增需要真实浏览器的验证时从该模块导入，不要再复制。
-
-### B557 宿主同步失败反馈批次
-
-- 排查：先核对计划中记录的 8 个既有 `CS4014`（fire-and-forget 异步调用）是否会造成未观察异常。8 处方法体全部有 try/catch，不存在未观察异常，这一项没有缺陷。
-- 故障：但其中 4 处只调用 `AddInLogger.Error(...)`，没有任何用户可见反馈——`ApplyStyleFromHostAsync`、`ApplyFeatureBlockFromHostAsync`、`FocusSectionAsync`、`RefreshUserAssetsFromHostAsync`。这些都是 Ribbon 触发的用户操作（同步快捷风格、同步特征块参数、定位窗格功能区、刷新素材库），失败时用户只看到“点了没反应”，错误只写进用户不会去看的日志文件。同一个类里已有 `PostCommandFailure(action, ex)`（记日志 + 中文状态）并在 17 处使用，这 4 处是偏离既有约定的异类。
-- 修复：新增 `PostHostSyncFailure(action, exception)` 统一走 `PostCommandFailure`，并把反馈本身包在 try/catch 里——因为这些是 fire-and-forget 调用，二次异常不能逃出去。日志文案保持与原来完全一致（`action + "失败。"`）。
-- B557 验证与提交：`validate-encoding.mjs`、`validate-source-constraints.mjs`、`validate-local-ui-assets.mjs`、`validate-ui-contract.mjs` 通过，`RoughTaskPaneControl.cs` 的 UTF-8 BOM 保持。C# 改动必须实际编译验证：用 VS 2022 BuildTools 的 MSBuild 全量编译得到 0 error、8 个 CS4014（与既有基线一致，未新增警告）；再用 `SignManifests=true` 加本机开发证书完成签名 Release 构建，exit code 0、0 error；最后对新编译出的 DLL 运行 `scripts/verify-ribbon-icons.ps1`，通过（5 组、79 个功能图标）。未运行 `build.ps1`，因为它会调用 PowerPoint 重新生成形状目录。
-
-### B558 假控件合同回归批次
-
-- 排查过程：先怀疑排序下拉框在功能/预设/数据/素材范围下是无效的假控件（违反最小验收清单的“是否存在假按钮”）。实际读代码发现 `renderSortModeControl` 已经正确处理——非形状范围下禁用、置 `aria-disabled=true`、并把悬浮说明改成解释为什么不可用。**产品代码没有缺陷。**
-- 真正的缺口是验证覆盖：全仓验证脚本里没有任何一处提到 `sortMode`，这条“无假控件”的不变量完全没有回归保护。
-- 新增：`validate-taskpane-ui-interactions.mjs` 增加 `scopeSortAvailabilityProbe`，在真实浏览器里依次点过 6 个搜索范围，断言 `all`/`shape` 下排序可用，`command`/`preset`/`chart`/`asset` 下必须禁用、带 `aria-disabled=true`、悬浮说明含中文且解释原因，并要求确实覆盖到 6 个范围。
-- B558 验证与提交：`validate-taskpane-ui-interactions.mjs` 通过。反向验证——把 `renderSortModeControl` 里的 `searchScopeAllows("shape")` 改成恒为 `true`（即制造假控件）后，该检查立即在 4 个非形状范围上报错；恢复后重新通过。
-
-### B559-B560 UI 密度与科研绘图布局批次
-
-- 视觉审计：真实浏览器截图显示简洁模式在 420px 下四个主入口变成整行高按钮，首屏密度低；科研绘图 1180px 默认窗口因断点落入两列，样式面板被推到下方；780px 以下预览排在控制面板前，用户必须滚过大幅图表才能改字段；预览容器纵向居中造成图表上方大片空白。
-- B559 范围：只调整任务窗格简洁模式 `.workflow-actions` 的最终密度和按钮几何；不改入口、命令语义、Ribbon 归属或完整模式信息架构。
-- B559 回归：420px 下四个可见入口必须两列排布；按钮高度不超过 48px；文字不得裁切；现有交互、tooltip 和假控件合同继续通过。
-- B559 验证与提交：真实浏览器验证 320/420/720px 下科研绘图、论文预设、素材库和完整模式均为两列、高度 32px 且文字完整；`validate-taskpane-ui-interactions.mjs`、`validate-ui-contract.mjs`、`validate-taskpane-function-icons.mjs`、`validate-local-ui-assets.mjs` 通过；代码与本批计划同提交。
-- B560 范围：只调整科研绘图工作台 CSS 断点、行序和预览对齐；不改变 Vega 规格、数据链路、SVG 安全校验或宿主桥接。
-- B560 回归：1180px 默认窗口保持三栏；720x560 最小窗口先显示数据和图表选择，再显示预览；预览从可用空间顶部开始而非纵向居中；无横向溢出、裁切文字或缺失 tooltip。
-- B560 验证与提交：真实浏览器验证 720x560 控制面板先于预览，1180x820 保持三栏，预览顶距不超过 32px；`validate-ui-window-layout.mjs` 与 `validate-research-chart-studio.mjs` 通过。代码与本批计划同提交。
-
-### B556-B560 统一验证失败记录
-
-- `npm.cmd test` 在 `validate-external-plugin-compat.mjs` 失败；外部 SimpleExperiment 基线已把绘图端点改为 `/api/simple-experiment/plot`，默认轻量结果路径改为 `simple_cluster/results/statistics.json` 与 `paper/tables/simple_results_table.csv`。
-- 这是外部协议重命名后的真实兼容断裂，不是测试误报；当前插件只接受旧端点，会导致新 SimpleExperiment 调用 404。B561 先补双端点接收和 discovery 声明，再重新执行统一验证。
-- B561 验证与提交：`validate-external-plugin-compat.mjs`、`validate-source-constraints.mjs` 通过；签名 Release MSBuild 编译通过，0 错误、8 个既有 `CS4014` 和本机 VS18 的 1 个既有 `MSB3277` 引用冲突警告。代码与本批计划同提交。
-- B562 纠偏：B561 后 `npm.cmd test` 暴露 `validate-automation-contract.mjs` 仍锁旧 discovery 路径。已更新合同，要求 `/api/simple-experiment/plot` 与 `/api/zlk-cluster/plot` 同时存在；`validate-automation-contract.mjs` 通过。代码与本批计划同提交。
-- B563 纠偏：继续统一验证暴露 `validate-simple-connection-layout.mjs` 仍要求已合并的独立操作区。合同改为禁止独立 `#simpleModeActions`，要求完整模式切换位于快捷工作台内且简洁模式有两列密度规则；`validate-simple-connection-layout.mjs` 通过。代码与本批计划同提交。
-- B556-B560 复验：B561-B563 纠偏后，完整 `npm.cmd test` 与 `npm.cmd run build:ui` 全绿；无产物漂移。按“未明确要求时不打包”边界未产出安装包。
+1. B525-B555（已完成）：科研绘图工作台扩展到 36 种图表并建立真实 Vega 回归；完成授权清理、状态色、搜索救援、导航高亮、BOM、顶栏度量、独立窗口布局、存储守卫和共享浏览器 harness。统一测试与 UI 构建通过。
+2. B556-B560（已完成）：压缩计划历史；宿主同步失败给出中文反馈；排序假控件获得真实浏览器合同；简洁模式工作台改为紧凑两列；科研绘图默认三栏、窄窗控制先行、预览顶部对齐。B561-B563 纠偏后统一 `npm.cmd test` 与 UI 构建全绿。
+3. B561-B563（已完成）：适配 SimpleExperiment 新端点和 `simple_cluster` 轻量结果路径，保留旧 ZLK 端点与旧项目路径兼容；同步 discovery 双路径和简洁工作台合同。
+4. B564（待执行）：继续 UI 审计，优先处理图标一致性、控件尺寸或布局密度的下一个可验证缺陷。
 
 ### 下一批次方向
 
 - 继续按 `PROJECT_CONSTRAINTS.md` 5.1 优先做 UI：外观、布局、发现性、首屏密度、图标一致性、状态可读性。
 - 每批只做一个同风险面改动，新增可见控件必须同时补中文文案、tooltip 和对应静态合同。
-- 下一个统一验证节点为 B556-B560；节点前不运行 `npm test`、UI 构建或打包。
+- 下一个统一验证节点为 B561-B565；节点前不运行 `npm test`、UI 构建或打包。
 - 四个 UI 页面已全部纳入真实浏览器验证，harness 已去重到 `scripts/lib/ui-browser.mjs` 单一来源。
 - 用户若要求安装包，需先完成一次统一验证再运行 `npm run package`，只打包、不安装。
 
 ## 近期锚点
 
+- B561-B563：SimpleExperiment 绘图使用 `/api/simple-experiment/plot` 与 `simple_cluster` 路径；旧 ZLK 端点和旧项目路径仅作兼容。discovery 必须同时声明双路径。
+- B559：简洁模式快捷工作台的四个入口必须保持两列紧凑密度；完整模式切换并入同一容器，不得恢复独立整行操作区。
+- B560：科研绘图 1180px 默认窗口保持三栏；780px 以下控制面板先于预览；预览内容从顶部开始，不得留下大片纵向空白。
 - B553-B554：本机存储写入必须经带 try/catch 的 `persistSetting`；裸 `setItem` 抛出会中断同一处理函数里后续的 `render()` 与 `postHost(...)`，让操作静默失效。`app.mjs` 与 `ribbon-shape-gallery.mjs` 各有一处合同锁定该约定。
 - B555：真实浏览器 harness 只有 `scripts/lib/ui-browser.mjs` 一处；新增布局类验证从该模块导入，不再复制。
-
 - B546：Windows PowerShell 5.1 按系统 ANSI 代码页解码无 BOM 脚本，会让中文变乱码甚至吞掉字符串结束引号；含中文的 `.ps1` 必须带 UTF-8 BOM，该约定已写入 `validate-encoding.mjs` 与 `docs/VALIDATION.md`。
 - B545：面板 `data-collapse-key` 与导航项不是一一对应，`zoteroImages` 必须经 `sectionNavPanelAliases` 解析为 `paletteLibrary`；导航高亮由 rAF 合帧的滚动定位维护，合同要求每个面板都能命中真实导航项。
-- B543：`src/RoughPptAddin/ui` 是整目录复制到运行时目录的，任何残留文件都会被带走；同步脚本负责过滤与清除，合同扫描四个运行时 UI 目录。
-- B542：状态色语义固定为空闲灰、进行中蓝紫 `#4754d8`、完成绿 `#1b7a34`、错误红 `#dc2626`，四者必须互不相同。
-- B541：清理授权只以 `docs/manual-cleanup-candidates.md` 为准；删除前必须逐项审核绝对路径位于 `D:\GitRepo\my_ppt_app\` 之下并排除仓库根、`.git` 与 `src/`。`node_modules/` 被验证基线依赖，不删除。
 - B535-B540：科研绘图新图表的验证证据必须来自真实 Vega Lite 编译与 Vega SVG 输出，不得用字符串存在性代替运行时证据。
 
 ## 关键里程碑
