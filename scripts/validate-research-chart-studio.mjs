@@ -43,6 +43,7 @@ for (const snippet of [
   'id="filterField"',
   'id="filterMode"',
   'id="filterValue"',
+  'id="filterValue" type="text" placeholder="筛选值（留空显示全部）" aria-label="筛选值"',
   'id="saveConfigButton"',
   'id="loadConfigButton"',
   'id="fullscreenButton"',

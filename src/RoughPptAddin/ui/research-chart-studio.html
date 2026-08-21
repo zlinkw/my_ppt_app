@@ -45,7 +45,7 @@ Ours,0.887,0.015,B</textarea>
           <label><span>筛选字段</span><select id="filterField" title="只绘制满足条件的数据行"><option value="">全部数据</option></select></label>
           <label><span>筛选方式</span><select id="filterMode" title="选择文本或数值筛选方式"><option value="contains">包含</option><option value="equals">等于</option><option value="notEquals">不等于</option><option value="greater">大于</option><option value="less">小于</option></select></label>
         </div>
-        <input id="filterValue" type="text" placeholder="筛选值（留空显示全部）" title="输入筛选值，图表会实时更新">
+        <input id="filterValue" type="text" placeholder="筛选值（留空显示全部）" aria-label="筛选值" title="输入筛选值，图表会实时更新">
         <div class="data-actions config-actions">
           <button id="saveConfigButton" class="compact-button" type="button" title="保存当前图表和样式配置到本机">保存配置</button>
           <button id="loadConfigButton" class="compact-button quiet" type="button" title="恢复本机保存的图表和样式配置">恢复配置</button>
