@@ -136,6 +136,7 @@
 - B561 验证与提交：`validate-external-plugin-compat.mjs`、`validate-source-constraints.mjs` 通过；签名 Release MSBuild 编译通过，0 错误、8 个既有 `CS4014` 和本机 VS18 的 1 个既有 `MSB3277` 引用冲突警告。代码与本批计划同提交。
 - B562 纠偏：B561 后 `npm.cmd test` 暴露 `validate-automation-contract.mjs` 仍锁旧 discovery 路径。已更新合同，要求 `/api/simple-experiment/plot` 与 `/api/zlk-cluster/plot` 同时存在；`validate-automation-contract.mjs` 通过。代码与本批计划同提交。
 - B563 纠偏：继续统一验证暴露 `validate-simple-connection-layout.mjs` 仍要求已合并的独立操作区。合同改为禁止独立 `#simpleModeActions`，要求完整模式切换位于快捷工作台内且简洁模式有两列密度规则；`validate-simple-connection-layout.mjs` 通过。代码与本批计划同提交。
+- B556-B560 复验：B561-B563 纠偏后，完整 `npm.cmd test` 与 `npm.cmd run build:ui` 全绿；无产物漂移。按“未明确要求时不打包”边界未产出安装包。
 
 ### 下一批次方向
 
