@@ -178,7 +178,8 @@ public sealed class AutomationServer : IDisposable
 				}).ConfigureAwait(continueOnCapturedContext: false);
 				return;
 			}
-			if (string.Equals(path, "/api/zlk-cluster/plot", StringComparison.OrdinalIgnoreCase))
+			if (string.Equals(path, "/api/simple-experiment/plot", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(path, "/api/zlk-cluster/plot", StringComparison.OrdinalIgnoreCase))
 			{
 				if (!string.Equals(context.Request.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
 				{
@@ -321,7 +322,8 @@ public sealed class AutomationServer : IDisposable
 			["endpoint"] = endpoint,
 			["baseUrl"] = endpoint,
 			["healthPath"] = "/health",
-			["plotPath"] = "/api/zlk-cluster/plot",
+			["plotPath"] = "/api/simple-experiment/plot",
+			["legacyPlotPath"] = "/api/zlk-cluster/plot",
 			["tokenPath"] = TokenPath,
 			["tokenHeaders"] = new string[3] { "Authorization: Bearer", "X-Rough-Ppt-Token", "X-RoughPpt-Automation-Token" },
 			["service"] = ServiceName,

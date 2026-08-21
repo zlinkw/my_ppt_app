@@ -83,7 +83,7 @@ function validateZlkClusterOrchestrator() {
     "automation.json",
     "automation.token",
     "/health",
-    "/api/zlk-cluster/plot",
+    "/api/simple-experiment/plot",
     "Authorization",
     "X-RoughPpt-Automation-Token",
     "X-Rough-Ppt-Token",
@@ -96,8 +96,8 @@ function validateZlkClusterOrchestrator() {
     requireIncludes(bridge, snippet, `external ZLK PptPlotBridge.ts drift: missing ${snippet}`);
   }
   for (const snippet of [
-    "zlk_cluster/results/statistics.json",
-    "paper/tables/zlk_results_table.csv",
+    "simple_cluster/results/statistics.json",
+    "paper/tables/simple_results_table.csv",
     "原始数据集",
     "checkpoint",
     "不通过绘图契约传输"
@@ -106,6 +106,7 @@ function validateZlkClusterOrchestrator() {
   }
 
   for (const snippet of [
+    "/api/simple-experiment/plot",
     "/api/zlk-cluster/plot",
     "/health",
     "Authorization",

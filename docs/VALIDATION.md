@@ -21,7 +21,7 @@
 - End-user ZIP/MSI/EXE installers call the shared runtime installer path and never install Visual Studio Build Tools.
 - End-user ZIP/MSI/EXE installers support overwrite installation for updating an already installed build.
 - ZLK 集群自动绘图服务只监听 `127.0.0.1`，发现文件为 `%LOCALAPPDATA%\RoughPptAddin\automation.json`，令牌文件为 `%LOCALAPPDATA%\RoughPptAddin\automation.token`，所有请求必须带 `X-Rough-Ppt-Token`。
-- ZLK 自动绘图必须复用 `zlk-cluster-result-importer.mjs` 归一化数据，并通过 `insertZlkChart` host message 插入 PPT 原生可编辑图表对象。
+- ZLK 自动绘图必须复用 `zlk-cluster-result-importer.mjs` 归一化数据，通过 `/api/simple-experiment/plot` 或旧兼容端点 `/api/zlk-cluster/plot` 接收请求，并经 `insertZlkChart` host message 插入 PPT 原生可编辑图表对象。
 - ZLK 自动绘图源文件读取必须有数量、单文件大小和总字节上限，目录与通配符扫描必须使用惰性枚举，超限时返回中文错误。
 - ZLK 自动绘图同一时刻只能执行一个 PPT 绘图请求；并发请求必须快速返回中文 `409` 忙碌错误，不能排队阻塞 PowerPoint UI。
 - 外部插件兼容必须由 `validate-external-plugin-compat.mjs` 持续核对；本地存在 `zlk-cluster-orchestrator` 或 `my_img_manager` 时验证冻结协议，外部仓缺失时只跳过外部核对。

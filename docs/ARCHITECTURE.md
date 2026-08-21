@@ -26,7 +26,7 @@ This preserves common PowerPoint operations such as drag, align, resize, rotate,
 
 PowerPoint 加载 VSTO 后启动本机自动绘图服务，只监听 `127.0.0.1`。发现文件写入 `%LOCALAPPDATA%\RoughPptAddin\automation.json`，令牌写入 `%LOCALAPPDATA%\RoughPptAddin\automation.token`，外部请求可同时携带冻结的三种 token header。discovery 公开 `schemaVersion`、服务和进程身份、固定路径及 token header 清单；`/health` 公开 `ready`、`busy`、服务和进程身份及 additive capabilities，便于 SimpleExperiment 区分未启动、忙碌和协议不兼容。
 
-`POST /api/zlk-cluster/plot` 只接收轻量绘图请求。C# 读取请求指定的结果文件后投递给 WebView，WebView 复用 `zlk-cluster-result-importer.mjs` 完成格式探测、字段归一化和图表推荐，再通过 `insertZlkChart` host message 交回 C#。`PptZlkChartRenderer` 使用 PowerPoint 原生 `Shape`、`Line`、`Textbox` 和 `Group` 绘制结果，禁止把 ZLK 图表做成图片、SVG 或 Canvas 截图。
+`POST /api/simple-experiment/plot` 只接收轻量绘图请求；旧版继续使用兼容端点 `/api/zlk-cluster/plot`。C# 读取请求指定的结果文件后投递给 WebView，WebView 复用 `zlk-cluster-result-importer.mjs` 完成格式探测、字段归一化和图表推荐，再通过 `insertZlkChart` host message 交回 C#。`PptZlkChartRenderer` 使用 PowerPoint 原生 `Shape`、`Line`、`Textbox` 和 `Group` 绘制结果，禁止把 ZLK 图表做成图片、SVG 或 Canvas 截图。
 
 服务按 `requestId` 缓存最近 32 个成功响应。SimpleExperiment 在响应丢失后用相同请求内容和 `requestId` 重试时直接得到 `replayed=true` 的原结果，不会重复创建幻灯片；同一 `requestId` 对应不同内容时返回中文 `409`。正在执行的相同请求提示稍后重试，其它并发请求仍快速返回忙碌状态，不进入 PowerPoint UI 队列。
 
@@ -34,7 +34,7 @@ PowerPoint 加载 VSTO 后启动本机自动绘图服务，只监听 `127.0.0.1`
 
 ZLK runtime 的 Agent cache、事件 journal 和 Worker command queue 属于 Agent runtime state；文件传输状态、归档 manifest、删除墓碑和 PPT 绘图审计请求属于项目态，必须在当前项目 `zlk_cluster/` 内落盘。PPT 插件只读取请求内显式传入的项目内轻量文件，不从 `ZLK_AGENT_STATE_DIR` 扫描结果或审计文件。
 
-ZLK 结果区前端可缓存 trace view model 的统计摘要以降低重复渲染成本，但 PPT 绘图入口仍必须默认指向 `zlk_cluster/results/statistics.json` 或论文表格 CSV。单条 trace 的原始 `resultPath` 不应成为默认 PPT 数值图来源。
+ZLK 结果区前端可缓存 trace view model 的统计摘要以降低重复渲染成本，但 PPT 绘图入口仍必须默认指向当前 SimpleExperiment 的 `simple_cluster/results/statistics.json`、论文表格 CSV，或旧项目的 `zlk_cluster/results/statistics.json` 与论文表格 CSV。单条 trace 的原始 `resultPath` 不应成为默认 PPT 数值图来源。
 
 外部 ZLK WebView 可在 section pre-key 未变时跳过稳定签名计算，以减少高频状态刷新开销；该优化不得影响 PPT 绘图请求、配置草稿、强制刷新或结果证据来源策略。
 

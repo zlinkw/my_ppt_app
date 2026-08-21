@@ -95,6 +95,7 @@
 7. B558（已完成）：为“排序按范围启用”的假控件合同补真实浏览器回归验证。
 8. B559（已完成）：压缩简洁模式首屏工作台按钮，消除窄窗下的整行大按钮。
 9. B560（已完成）：修正科研绘图默认与窄窗布局，让控制项先于预览可达，并消除预览区大片空白。
+10. B561（已完成）：修复 B556-B560 统一验证暴露的 SimpleExperiment 端点漂移；保留旧 ZLK 端点兼容。
 
 ### B551-B555 批次结论
 
@@ -125,6 +126,12 @@
 - B560 范围：只调整科研绘图工作台 CSS 断点、行序和预览对齐；不改变 Vega 规格、数据链路、SVG 安全校验或宿主桥接。
 - B560 回归：1180px 默认窗口保持三栏；720x560 最小窗口先显示数据和图表选择，再显示预览；预览从可用空间顶部开始而非纵向居中；无横向溢出、裁切文字或缺失 tooltip。
 - B560 验证与提交：真实浏览器验证 720x560 控制面板先于预览，1180x820 保持三栏，预览顶距不超过 32px；`validate-ui-window-layout.mjs` 与 `validate-research-chart-studio.mjs` 通过。代码与本批计划同提交。
+
+### B556-B560 统一验证失败记录
+
+- `npm.cmd test` 在 `validate-external-plugin-compat.mjs` 失败；外部 SimpleExperiment 基线已把绘图端点改为 `/api/simple-experiment/plot`，默认轻量结果路径改为 `simple_cluster/results/statistics.json` 与 `paper/tables/simple_results_table.csv`。
+- 这是外部协议重命名后的真实兼容断裂，不是测试误报；当前插件只接受旧端点，会导致新 SimpleExperiment 调用 404。B561 先补双端点接收和 discovery 声明，再重新执行统一验证。
+- B561 验证与提交：`validate-external-plugin-compat.mjs`、`validate-source-constraints.mjs` 通过；签名 Release MSBuild 编译通过，0 错误、8 个既有 `CS4014` 和本机 VS18 的 1 个既有 `MSB3277` 引用冲突警告。代码与本批计划同提交。
 
 ### 下一批次方向
 
