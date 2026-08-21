@@ -43,6 +43,9 @@ for (const snippet of [
 if (!app.includes("完整形状目录读取失败，当前只显示常用形状兜底")) {
   violations.push("app.mjs missing catalog fallback user feedback");
 }
+for (const snippet of ["Array.isArray(catalog.items)", 'throw new Error("形状目录为空")', "state.catalogDegraded = false", "state.catalogDegraded = true"]) {
+  if (!app.includes(snippet)) violations.push(`app.mjs missing robust catalog validation: ${snippet}`);
+}
 if (!app.includes("state.catalogDegraded = true") || !app.includes("if (state.catalogDegraded) {")) {
   violations.push("app.mjs must preserve catalog fallback feedback after initialization status updates");
 }

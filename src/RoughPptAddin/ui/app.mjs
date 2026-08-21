@@ -1277,11 +1277,14 @@ function recentGalleryEnums() {
 }
 
 async function loadCatalog() {
-  const response = await fetch("./autoshape-catalog.json").catch(() => null);
-  if (response?.ok) {
+  try {
+    const response = await fetch("./autoshape-catalog.json");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const catalog = await response.json();
-    state.catalog = catalog.items ?? [];
-  } else {
+    state.catalog = Array.isArray(catalog.items) ? catalog.items : [];
+    if (!state.catalog.length) throw new Error("形状目录为空");
+    state.catalogDegraded = false;
+  } catch {
     state.catalog = [
       { enumName: "msoShapeLine", displayName: "Line", displayNameZh: "直线", category: "lines", fidelity: "exact" },
       { enumName: "msoShapeRightArrow", displayName: "Right Arrow", displayNameZh: "右箭头", category: "arrows", fidelity: "exact" },
