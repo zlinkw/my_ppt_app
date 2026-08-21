@@ -175,13 +175,14 @@ function tooltipProbe() {
 }
 
 function chartTypeProbe() {
-  return `(() => {
+  return `(() => { try {
     const grid = document.querySelector('#chartTypeGrid');
     const layout = document.querySelector('.studio-layout');
     const control = document.querySelector('.control-panel');
     const preview = document.querySelector('.preview-panel');
     const previewWrap = document.querySelector('#svgPreviewWrap');
     const chartPreview = document.querySelector('#chartPreview');
+    const importedPreview = document.querySelector('#svgPreview');
     if (!grid || !layout || !control || !preview || !previewWrap || !chartPreview) {
       return { total: grid ? grid.querySelectorAll('[data-chart-type]').length : 0, overflowing: ['research layout surface missing'], gridReachable: false, checkedCount: 0 };
     }
@@ -193,6 +194,8 @@ function chartTypeProbe() {
     const previewRect = preview.getBoundingClientRect();
     const wrapRect = previewWrap.getBoundingClientRect();
     const chartRect = chartPreview.getBoundingClientRect();
+    const importedRect = importedPreview ? importedPreview.getBoundingClientRect() : { width: 0, height: 0, top: 0 };
+    const contentRect = importedPreview && !importedPreview.hidden && importedRect.width > 0 && importedRect.height > 0 ? importedRect : chartRect;
     const gridReachable = /(auto|scroll)/.test(style.overflowY + ' ' + style.overflowX) ||
       grid.scrollHeight <= grid.clientHeight + 2;
     const overflowing = buttons.filter(button => {
@@ -207,8 +210,10 @@ function chartTypeProbe() {
       checkedCount: buttons.filter(button => button.getAttribute('aria-checked') === 'true').length,
       layoutColumns: layoutStyle.gridTemplateColumns.split(' ').length,
       controlFirst: controlRect.top <= previewRect.top,
-      previewTopGap: Math.round(chartRect.top - wrapRect.top)
+      previewTopGap: Math.round(contentRect.top - wrapRect.top),
+      importPreviewVisible: Boolean(importedPreview && !importedPreview.hidden && importedPreview.getBoundingClientRect().height > 0)
     };
+  } catch (error) { return { probeError: String(error), stack: error?.stack }; }
   })()`;
 }
 

@@ -145,7 +145,7 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
 .chart-preview { min-width: 0; max-width: 100%; display: grid; place-items: center; }
 .chart-preview .vega-embed { max-width: 100%; }
 .chart-preview svg { display: block; max-width: 100%; height: auto; }
-.svg-preview-wrap img { display: block; width: 100%; height: 100%; max-width: 100%; max-height: calc(100vh - 160px); object-fit: contain; }
+.svg-preview-wrap img { display: block; width: 100%; height: auto; max-width: 100%; max-height: min(100%, calc(100vh - 160px)); object-fit: contain; margin-inline: auto; }
 .svg-preview-wrap img[hidden], .empty-state[hidden], .chart-preview[hidden] { display: none !important; }
 .empty-state { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); pointer-events: none; }
 .studio-status { min-height: 28px; padding: 9px 2px 0; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
