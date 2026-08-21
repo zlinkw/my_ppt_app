@@ -3,7 +3,8 @@ import { buildChartRecommendations, importZlkClusterResultFile, supportedZlkClus
 
 function loadRecent() {
   try {
-    return JSON.parse(localStorage.getItem("roughPptRecentShapes") || "[]");
+    const values = JSON.parse(localStorage.getItem("roughPptRecentShapes") || "[]");
+    return Array.isArray(values) ? values.filter(value => typeof value === "string") : [];
   } catch {
     return [];
   }
@@ -11,7 +12,8 @@ function loadRecent() {
 
 function loadFavorites() {
   try {
-    return JSON.parse(localStorage.getItem("roughPptFavoriteShapes") || "[]");
+    const values = JSON.parse(localStorage.getItem("roughPptFavoriteShapes") || "[]");
+    return Array.isArray(values) ? values.filter(value => typeof value === "string") : [];
   } catch {
     return [];
   }
