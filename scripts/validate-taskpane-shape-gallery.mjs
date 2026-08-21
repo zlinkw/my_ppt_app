@@ -59,7 +59,14 @@ for (const snippet of [
   "形状目录不可用。",
   "未读取到形状目录"
 ]) {
-  if (!galleryApp.includes(snippet)) violations.push(`ribbon-shape-gallery.mjs missing catalog failure feedback: ${snippet}`);
+if (!galleryApp.includes(snippet)) violations.push(`ribbon-shape-gallery.mjs missing catalog failure feedback: ${snippet}`);
+}
+for (const snippet of [
+  "function loadJson(key, fallback)",
+  "if (Array.isArray(fallback))",
+  "return Array.isArray(value) ? value.filter(item => typeof item === \"string\") : fallback;"
+]) {
+  if (!galleryApp.includes(snippet)) violations.push(`ribbon-shape-gallery.mjs missing preference validation: ${snippet}`);
 }
 if (app.includes("button.title = `${group.title} - ${displayName(item)}")) {
   violations.push("app.mjs shape dropdown hover text must be only the shape name");

@@ -49,7 +49,11 @@ const galleryGroups = [
 
 function loadJson(key, fallback) {
   try {
-    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+    const value = JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+    if (Array.isArray(fallback)) {
+      return Array.isArray(value) ? value.filter(item => typeof item === "string") : fallback;
+    }
+    return value;
   } catch {
     return fallback;
   }
