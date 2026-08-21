@@ -86,9 +86,14 @@ function recentGalleryEnums() {
 
 async function loadCatalog() {
   const response = await fetch("./autoshape-catalog.json").catch(() => null);
-  if (response?.ok) {
+  try {
+    if (!response?.ok) throw new Error(`HTTP ${response?.status ?? "network"}`);
     const catalog = await response.json();
-    state.catalog = catalog.items ?? [];
+    state.catalog = Array.isArray(catalog.items) ? catalog.items : [];
+    if (!state.catalog.length) throw new Error("目录为空");
+  } catch {
+    state.catalog = [];
+    setStatus("形状目录读取失败，请重新打开窗口；若重复出现请重新安装插件。");
   }
 }
 
@@ -122,6 +127,13 @@ function renderIconDropdown(container, onClick) {
   }
   if (renderedCount === 0 && state.query.trim()) {
     container.append(renderGalleryEmptyState());
+  }
+  if (!renderedCount && !container.querySelector(".gallery-empty")) {
+    const empty = document.createElement("p");
+    empty.className = "gallery-empty";
+    empty.textContent = "形状目录不可用。";
+    empty.title = "未读取到形状目录；请重新打开窗口或重新安装插件。";
+    container.append(empty);
   }
 }
 

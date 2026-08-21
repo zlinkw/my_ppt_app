@@ -40,6 +40,18 @@ for (const snippet of [
 ]) {
   if (!app.includes(snippet)) violations.push(`app.mjs missing ${snippet}`);
 }
+if (!app.includes("完整形状目录读取失败，当前只显示常用形状兜底")) {
+  violations.push("app.mjs missing catalog fallback user feedback");
+}
+
+const galleryApp = fs.readFileSync("src/RoughPptAddin/ui/ribbon-shape-gallery.mjs", "utf8");
+for (const snippet of [
+  "形状目录读取失败，请重新打开窗口",
+  "形状目录不可用。",
+  "未读取到形状目录"
+]) {
+  if (!galleryApp.includes(snippet)) violations.push(`ribbon-shape-gallery.mjs missing catalog failure feedback: ${snippet}`);
+}
 if (app.includes("button.title = `${group.title} - ${displayName(item)}")) {
   violations.push("app.mjs shape dropdown hover text must be only the shape name");
 }

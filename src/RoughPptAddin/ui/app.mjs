@@ -1284,9 +1284,10 @@ async function loadCatalog() {
     state.catalog = [
       { enumName: "msoShapeLine", displayName: "Line", displayNameZh: "直线", category: "lines", fidelity: "exact" },
       { enumName: "msoShapeRightArrow", displayName: "Right Arrow", displayNameZh: "右箭头", category: "arrows", fidelity: "exact" },
-      { enumName: "msoShapeRectangle", displayName: "Rectangle", displayNameZh: "矩形", category: "rectangles", fidelity: "exact" },
-      { enumName: "msoShapeOval", displayName: "Oval", displayNameZh: "椭圆", category: "basic", fidelity: "exact" }
+    { enumName: "msoShapeRectangle", displayName: "Rectangle", displayNameZh: "矩形", category: "rectangles", fidelity: "exact" },
+    { enumName: "msoShapeOval", displayName: "Oval", displayNameZh: "椭圆", category: "basic", fidelity: "exact" }
     ];
+    setStatus("完整形状目录读取失败，当前只显示常用形状兜底；重启任务窗格可重试。");
   }
 }
 
