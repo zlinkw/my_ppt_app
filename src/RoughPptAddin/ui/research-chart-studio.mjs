@@ -262,6 +262,7 @@ function filterChartTypeButtons() {
   const query = String(els.chartSearch?.value || "").trim().toLocaleLowerCase("zh-CN");
   const category = els.chartCategory?.value || "all";
   let visible = 0;
+  const visibleButtons = [];
   els.chartTypeGrid?.querySelectorAll("[data-chart-type]").forEach(button => {
     const chartType = button.dataset.chartType;
     const label = String(CHART_LABELS[chartType] || button.textContent || "").toLocaleLowerCase("zh-CN");
@@ -270,8 +271,14 @@ function filterChartTypeButtons() {
     const show = matchesQuery && matchesCategory;
     button.hidden = !show;
     button.setAttribute("aria-hidden", show ? "false" : "true");
-    if (show) visible += 1;
+    if (show) {
+      visible += 1;
+      visibleButtons.push(button);
+    }
   });
+  if (visibleButtons.length && !visibleButtons.some(button => button.getAttribute("aria-checked") === "true")) {
+    setChartType(visibleButtons[0].dataset.chartType);
+  }
   if (els.chartSearchSummary) els.chartSearchSummary.textContent = `显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表`;
   syncRadioTabIndexes(els.chartTypeGrid);
 }

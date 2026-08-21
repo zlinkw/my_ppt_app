@@ -103,6 +103,9 @@ for (const snippet of [
 for (const snippet of ["CHART_CATEGORIES", "filterChartTypeButtons", "aria-hidden", "显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表"]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图入口发现性合同缺少：${snippet}`);
 }
+if (!app.includes("if (visibleButtons.length && !visibleButtons.some(button => button.getAttribute(\"aria-checked\") === \"true\"))")) {
+  throw new Error("科研绘图筛选合同缺少可见选中项保护。");
+}
 for (const snippet of [
   "function syncRadioTabIndexes(group)",
   "function moveRadioSelection(group, current, key)",

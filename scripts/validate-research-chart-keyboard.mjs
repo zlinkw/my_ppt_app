@@ -45,6 +45,28 @@ try {
     return groups;
   })()`);
   if (tabStops.some(count => count !== 1)) violations.push(`每个单选组必须只有一个 roving tabindex：${JSON.stringify(tabStops)}`);
+
+  await evaluate(client, `(() => {
+    document.querySelector('#chartSearch').value = '雷达';
+    document.querySelector('#chartSearch').dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await delay(180);
+  const filteredSelection = await evaluate(client, `(() => ({
+    visibleChecked: [...document.querySelectorAll('#chartTypeGrid [role="radio"]')]
+      .filter(button => !button.hidden)
+      .map(button => ({ type: button.dataset.chartType, checked: button.getAttribute('aria-checked') })),
+    hiddenChecked: [...document.querySelectorAll('#chartTypeGrid [role="radio"][hidden][aria-checked="true"]')].length,
+    label: document.querySelector('#currentChartType').textContent
+  }))()`);
+  if (
+    filteredSelection.visibleChecked.length !== 1 ||
+    filteredSelection.visibleChecked[0].type !== "radar" ||
+    filteredSelection.visibleChecked[0].checked !== "true" ||
+    filteredSelection.hiddenChecked !== 0 ||
+    filteredSelection.label !== "雷达图"
+  ) {
+    violations.push(`筛选隐藏当前图表后未保持可见选中项：${JSON.stringify(filteredSelection)}`);
+  }
 } finally {
   await client.close().catch(() => {});
   browser.process.kill();
