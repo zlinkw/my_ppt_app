@@ -247,8 +247,33 @@ function loadFeatureBlockDefault() {
 }
 
 function sanitizeFeatureBlockDefault(feature) {
+  const source = feature && typeof feature === "object" ? feature : {};
+  const boundedNumber = (key, fallback, min, max, integer = false) => {
+    const value = Number(source[key]);
+    if (!Number.isFinite(value)) return fallback;
+    const clamped = Math.min(max, Math.max(min, integer ? Math.round(value) : value));
+    return integer ? Math.max(min, clamped) : clamped;
+  };
+  const allowedValue = (key, fallback, allowed) => allowed.includes(source[key]) ? source[key] : fallback;
+  const colorValue = (key, fallback) => /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(source[key]) ? source[key] : fallback;
   return {
-    ...feature,
+    mode: allowedValue("mode", "3d", ["3d", "2d"]),
+    visualStyle: allowedValue("visualStyle", "plain", ["plain", "rough"]),
+    countX: boundedNumber("countX", 3, 1, 32, true),
+    countY: boundedNumber("countY", 3, 1, 24, true),
+    countZ: boundedNumber("countZ", 3, 1, 16, true),
+    blockWidthPt: boundedNumber("blockWidthPt", 24, 6, 80),
+    blockHeightPt: boundedNumber("blockHeightPt", 20, 6, 80),
+    blockDepthPt: boundedNumber("blockDepthPt", 12, 2, 48),
+    gapPt: boundedNumber("gapPt", 0, 0, 16),
+    roundness: boundedNumber("roundness", 0, 0, 0.5),
+    startColor: colorValue("startColor", "#f8b6c8"),
+    endColor: colorValue("endColor", "#c97a96"),
+    strokeColor: colorValue("strokeColor", "#000000"),
+    strokeWidthPt: boundedNumber("strokeWidthPt", 0.8, 0.25, 6),
+    gradientDirection: allowedValue("gradientDirection", "x", ["x", "y", "z", "diag"]),
+    gradientReverse: source.gradientReverse === true,
+    gradientAmount: boundedNumber("gradientAmount", 1, 0.1, 4),
     editDirection: "",
     editDelta: 0
   };

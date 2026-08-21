@@ -49,6 +49,16 @@ for (const snippet of [
   requireIncludes(app, snippet, "app.mjs missing shape preference validation");
 }
 
+for (const snippet of [
+  'allowedValue("mode", "3d", ["3d", "2d"])',
+  'boundedNumber("countX", 3, 1, 32, true)',
+  'boundedNumber("gapPt", 0, 0, 16)',
+  'colorValue("strokeColor", "#000000")',
+  "source.gradientReverse === true"
+]) {
+  requireIncludes(app, snippet, "app.mjs missing feature block default validation");
+}
+
 requirePattern(app, /els\.search\.addEventListener\("input",\s*\(\)\s*=>\s*\{[\s\S]*?state\.query\s*=\s*els\.search\.value;[\s\S]*?resetResourceRenderWindows\((?:"chart"|\[[^\]]*"chart"[^\]]*\])\);[\s\S]*?scheduleRender\(\);/, "search input must schedule one render per frame");
 requirePattern(app, /els\.search\.addEventListener\("keydown",\s*event\s*=>\s*\{\s*flushScheduledRender\(\);/, "keyboard command handling must flush pending search render first");
 requireIncludes(app, "function requestZoteroImages(force = false)", "Zotero image requests must support forced reloads");
