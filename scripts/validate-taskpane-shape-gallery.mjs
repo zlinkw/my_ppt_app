@@ -43,6 +43,9 @@ for (const snippet of [
 if (!app.includes("完整形状目录读取失败，当前只显示常用形状兜底")) {
   violations.push("app.mjs missing catalog fallback user feedback");
 }
+if (!app.includes("state.catalogDegraded = true") || !app.includes("if (state.catalogDegraded) {")) {
+  violations.push("app.mjs must preserve catalog fallback feedback after initialization status updates");
+}
 
 const galleryApp = fs.readFileSync("src/RoughPptAddin/ui/ribbon-shape-gallery.mjs", "utf8");
 for (const snippet of [
