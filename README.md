@@ -98,11 +98,12 @@ ZIP 包便于离线转存和检查载荷；`Install-RoughPptAddin.cmd` 会执行
 
 ### 更新到新版本
 
-1. 在右侧任务窗格点击“版本检测”，记录版本号、提交和构建时间。
-2. 前往 [GitHub Releases](https://github.com/zlinkw/my_ppt_app/releases) 查看最新发布说明。
-3. 保存演示文稿并关闭全部 PowerPoint 窗口。
-4. 运行新版 EXE、MSI 或 ZIP 引导安装器。安装事务会替换旧载荷，失败时恢复回滚目录。
-5. 重新打开 PowerPoint，再次点击“版本检测”核对提交和构建时间。
+1. 在右侧任务窗格点击“检查更新”。插件会读取本机安装版本，并查询 GitHub 最新正式 Release；发现新版本时可直接打开下载页。
+2. 点击“版本检测”，记录版本号、提交和构建时间。
+3. 前往 [GitHub Releases](https://github.com/zlinkw/my_ppt_app/releases) 查看最新发布说明。
+4. 保存演示文稿并关闭全部 PowerPoint 窗口。
+5. 运行新版 EXE、MSI 或 ZIP 引导安装器。安装事务会替换旧载荷，失败时恢复回滚目录。
+6. 重新打开 PowerPoint，再次点击“版本检测”核对提交和构建时间。
 
 当前发布流程以 GitHub Releases 为更新来源；插件不会在后台静默替换自身文件。
 

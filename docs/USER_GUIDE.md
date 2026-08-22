@@ -255,11 +255,12 @@ RAWGraphs、Datawrapper、Plotly Chart Studio 和 Vega Editor 收纳在外部工
 
 ### 更新
 
-1. 点击“版本检测”记录当前提交和构建时间。
-2. 到 GitHub Releases 下载较新的 ZIP、MSI 或 EXE。
-3. 保存并关闭全部 PowerPoint 窗口。
-4. 运行新版安装器；安装事务会替换旧载荷，失败时恢复回滚目录。
-5. 重新打开 PowerPoint，再次核对版本信息。
+1. 点击“检查更新”，插件会对比本机版本和 GitHub 最新正式 Release。
+2. 发现新版本时选择“打开下载页”；也可手动访问 GitHub Releases。
+3. 点击“版本检测”记录当前提交和构建时间。
+4. 保存并关闭全部 PowerPoint 窗口。
+5. 运行新版 ZIP、MSI 或 EXE 安装器；安装事务会替换旧载荷，失败时恢复回滚目录。
+6. 重新打开 PowerPoint，再次核对版本信息。
 
 ### 普通卸载
 
