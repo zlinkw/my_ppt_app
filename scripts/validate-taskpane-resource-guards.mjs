@@ -61,6 +61,9 @@ for (const snippet of [
 
 for (const snippet of [
   "const styleParamRules = Object.freeze({",
+  'fillWeight: { type: "number", min: -1, max: 12 },',
+  'hachureGap: { type: "number", min: -1, max: 40 },',
+  'curveFitting: { type: "number", min: 0.5, max: 1 },',
   'roughSource: { type: "enum", values: ["native", "roughjs", "excalidraw", "drawio", "d2", "tldraw"] },',
   "result[name] = rule.values.includes(value) ? value : baseStyleParams[name];",
   "result[name] = \"min\" in rule ? Math.min(rule.max, Math.max(rule.min, rounded)) : rounded;"
