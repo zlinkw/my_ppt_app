@@ -45,12 +45,12 @@
 
 - discovery：`%LOCALAPPDATA%\\RoughPptAddin\\automation.json`、`automation.token`
 - 仅监听 `127.0.0.1` / `localhost`
-- endpoint：`GET /health`、`POST /api/zlk-cluster/plot`
+- endpoint：`GET /health`、`POST /api/simple-experiment/plot`；旧兼容端点 `POST /api/zlk-cluster/plot`
 - token header：`Authorization: Bearer`、`X-Rough-Ppt-Token`、`X-RoughPpt-Automation-Token`
 - `schemaVersion=1`；未知字段忽略，只接受 additive extensions
 - 不得关闭已有 PPT，不得退出 PowerPoint
 - 结果必须经 `zlk-cluster-result-importer.mjs` 归一化后再绘制
-- 默认优先 `statistics.json` / 论文表格 CSV；禁止默认扫 raw dataset、checkpoint、Agent 全局态
+- 当前 SimpleExperiment 默认优先 `simple_cluster/results/statistics.json` / `paper/tables/simple_results_table.csv`；旧项目兼容 `zlk_cluster/results/statistics.json` 与旧论文表格。禁止默认扫 raw dataset、checkpoint、Agent 全局态
 
 ### 3.2 Zotero Image Saver
 
