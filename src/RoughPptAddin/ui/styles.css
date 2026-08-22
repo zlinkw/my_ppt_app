@@ -10281,6 +10281,13 @@ body.ux-simple .topbar .status:not(.expanded) {
 }
 
 /* B559: compact simple-mode paths stay scannable without oversized rows. */
+/* B606: quick paths keep a useful touch width instead of stretching across ultra-wide task panes. */
+.workflow-actions {
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
+}
+
 body.ux-simple[data-selection-kind="none"] .workflow-actions,
 body.ux-simple[data-selection-kind="feature"] .workflow-actions,
 body.ux-simple[data-selection-kind="none"] .simple-mode-actions,
@@ -10289,6 +10296,7 @@ body.ux-simple[data-selection-kind="feature"] .simple-mode-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 8px !important;
   align-items: stretch;
+  max-width: 620px !important;
 }
 
 body.ux-simple .workflow-actions-label {

@@ -11,7 +11,7 @@ import {
 const root = process.cwd();
 const uiRoot = path.join(root, "src", "RoughPptAddin", "ui");
 const keywords = ["重绘", "转换", "填充", "模板", "箭头", "素材", "特征块", "导入", "分享", "保存", "检查"];
-const widths = [320, 420, 720];
+const widths = [320, 420, 720, 1000];
 const violations = [];
 
 const server = await startStaticServer(uiRoot);
@@ -53,7 +53,7 @@ try {
     if (!simpleModeActions.bounded || simpleModeActions.height > 80) violations.push(`${width}px: 简洁模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
     if (!simpleModeActions.horizontalText) violations.push(`${width}px: 完整模式按钮文字未保持横排 ${JSON.stringify(simpleModeActions)}`);
     const workflowDensity = await evaluate(client, simpleWorkflowDensityProbe());
-    if (!workflowDensity.twoColumns || !workflowDensity.compact || !workflowDensity.readable || !workflowDensity.bounded) {
+    if (!workflowDensity.twoColumns || !workflowDensity.compact || !workflowDensity.notOversized || !workflowDensity.wideEnough || !workflowDensity.readable || !workflowDensity.bounded) {
       violations.push(`${width}px: 简洁模式工作台按钮密度异常 ${JSON.stringify(workflowDensity)}`);
     }
     if (width <= 420) {
@@ -278,6 +278,8 @@ function simpleWorkflowDensityProbe() {
       columns,
       twoColumns: buttons.length === 4 && columns === 2,
       compact: rects.every(rect => rect.height <= 48),
+      notOversized: rects.every(rect => rect.width <= 340),
+      wideEnough: rects.every(rect => rect.width >= 120),
       readable: buttons.every(button => button.scrollWidth <= button.clientWidth + 1 && button.scrollHeight <= button.clientHeight + 1),
       bounded: rects.every(rect => rect.left >= -1 && rect.right <= innerWidth + 1)
     };
