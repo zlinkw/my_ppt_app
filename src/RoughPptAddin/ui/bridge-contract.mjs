@@ -1,5 +1,7 @@
 export const HOST_MESSAGE_TYPES = {
   openUsageGuide: "openUsageGuide",
+  checkForUpdates: "checkForUpdates",
+  openUpdateReleases: "openUpdateReleases",
   openResearchChartStudio: "openResearchChartStudio",
   researchChartStudioReady: "researchChartStudioReady",
   toggleResearchChartStudioFullscreen: "toggleResearchChartStudioFullscreen",
