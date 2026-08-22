@@ -400,6 +400,8 @@ const initialStyleTemplateId = localStorage.getItem("roughPptSelectedStyleTempla
 const initialInsertParams = paramsForTemplateId(initialStyleTemplates, initialStyleTemplateId);
 const validSearchScopes = new Set(["all", "shape", "command", "preset", "chart", "asset"]);
 const savedSearchScope = localStorage.getItem("roughPptSearchScope") || "all";
+const validShapeSortModes = new Set(["smart", "favorites", "recent", "az"]);
+const savedSortMode = localStorage.getItem("roughPptSortMode") || "smart";
 const GUIDE_RETURN_SCROLL_KEY = "roughPptGuideReturnScrollY";
 const ZOTERO_IMAGE_RENDER_BATCH = 30;
 const PALETTE_SCHEME_RENDER_BATCH = 16;
@@ -444,7 +446,7 @@ const state = {
   favorites: loadFavorites(),
   quickShapes: [],
   quickShapesLoaded: false,
-  sortMode: localStorage.getItem("roughPptSortMode") || "smart",
+  sortMode: validShapeSortModes.has(savedSortMode) ? savedSortMode : "smart",
   searchScope: validSearchScopes.has(savedSearchScope) ? savedSearchScope : "all",
   query: "",
   recentCommands: loadRecentCommands(),

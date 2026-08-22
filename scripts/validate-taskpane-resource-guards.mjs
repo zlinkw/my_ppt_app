@@ -50,6 +50,13 @@ for (const snippet of [
 }
 
 for (const snippet of [
+  'const validShapeSortModes = new Set(["smart", "favorites", "recent", "az"]);',
+  'validShapeSortModes.has(savedSortMode) ? savedSortMode : "smart"'
+]) {
+  requireIncludes(app, snippet, "app.mjs missing shape sort preference validation");
+}
+
+for (const snippet of [
   'allowedValue("mode", "3d", ["3d", "2d"])',
   'boundedNumber("countX", 3, 1, 32, true)',
   'boundedNumber("gapPt", 0, 0, 16)',
