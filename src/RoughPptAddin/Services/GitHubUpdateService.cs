@@ -143,6 +143,10 @@ public sealed class GitHubUpdateService
 				throw new InvalidOperationException("GitHub HTTP " + (int)response.StatusCode);
 			}
 			using Stream stream = response.GetResponseStream();
+			if (stream == null)
+			{
+				throw new InvalidOperationException("GitHub 更新响应为空。");
+			}
 			string body = ReadBoundedText(stream, MaxResponseBytes);
 			return serializer.Deserialize<Dictionary<string, object>>(body);
 		}
@@ -150,6 +154,15 @@ public sealed class GitHubUpdateService
 		{
 			notFound = true;
 			return null;
+		}
+		catch (WebException exception) when (exception.Response is HttpWebResponse response &&
+			(response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == (HttpStatusCode)429))
+		{
+			throw new InvalidOperationException("GitHub 访问频率受限，请稍后再试。", exception);
+		}
+		catch (WebException exception)
+		{
+			throw new InvalidOperationException("无法连接 GitHub 更新服务。", exception);
 		}
 	}
 

@@ -16,7 +16,10 @@ for (const needle of [
   'IsTrue(release, "draft")',
   'IsTrue(release, "prerelease")',
   "ReadInstalledVersion()",
-  "CompareVersions(result.CurrentVersion, result.LatestVersion)"
+  "CompareVersions(result.CurrentVersion, result.LatestVersion)",
+  "GitHub 更新响应为空。",
+  "GitHub 访问频率受限，请稍后再试。",
+  "无法连接 GitHub 更新服务。"
 ]) {
   if (!service.includes(needle)) violations.push(`GitHub update service missing contract: ${needle}`);
 }
