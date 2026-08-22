@@ -2267,10 +2267,10 @@ button.selection-primary .function-icon,
 
 
 .style-template-card {
-  width: 116px;
-  min-width: 116px;
+  width: 148px;
+  min-width: 148px;
   min-height: 58px;
-  flex: 0 0 116px;
+  flex: 0 0 148px;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
   grid-template-rows: auto auto;
@@ -10123,6 +10123,14 @@ body.ux-simple .topbar .status:not(.expanded) {
   text-overflow: clip;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.status:not(.expanded) {
+  scrollbar-width: none;
+}
+
+.status:not(.expanded)::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-width: 520px) {

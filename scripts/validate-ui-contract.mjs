@@ -644,9 +644,21 @@ if (!statusRule) {
   if (/white-space\s*:\s*nowrap/.test(statusRule)) violations.push("styles.css: task pane status long text must not force nowrap");
   if (/text-overflow\s*:\s*ellipsis/.test(statusRule)) violations.push("styles.css: task pane status long text must not be hidden behind ellipsis");
   if (/overflow\s*:\s*hidden/.test(statusRule)) violations.push("styles.css: task pane status long text must not hide overflow");
-  if (!/(white-space\s*:\s*(normal|pre-wrap|break-spaces)|overflow-wrap\s*:\s*(anywhere|break-word)|word-break\s*:\s*break-word)/.test(statusRule)) {
+if (!/(white-space\s*:\s*(normal|pre-wrap|break-spaces)|overflow-wrap\s*:\s*(anywhere|break-word)|word-break\s*:\s*break-word)/.test(statusRule)) {
     violations.push("styles.css: task pane status long text must wrap or break inside the top bar");
   }
+}
+
+for (const selector of [".style-template-preview", ".style-quick-strip", ".style-param-jump"]) {
+  if (!app.includes(selector)) {
+    violations.push(`app.mjs: horizontal drag-scroll contract missing selector: ${selector}`);
+  }
+}
+if (!/\.style-template-card\s*\{[^}]*min-width:\s*148px/.test(css)) {
+  violations.push("styles.css: style template cards must reserve enough width for readable names and summaries");
+}
+if (!css.includes(".status:not(.expanded)") || !css.includes(".status:not(.expanded)::-webkit-scrollbar")) {
+  violations.push("styles.css: collapsed status scrollbar must be visually hidden without clipping wrapped text");
 }
 if (!/\.feature-direction|data-feature-direction-guide/.test(css)) {
   violations.push("styles.css: feature block direction indication must have dedicated layout styling");

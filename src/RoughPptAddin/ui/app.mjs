@@ -7917,6 +7917,7 @@ function renderStyleTemplates() {
 
 function renderStyleTemplatePreview() {
   if (!els.styleTemplatePreview) return;
+  initHorizontalDragScroll();
   els.styleTemplatePreview.classList.add("style-template-preview");
   els.styleTemplatePreview.innerHTML = "";
   const templates = state.styleTemplates;
@@ -8671,13 +8672,26 @@ function safeInitStep(label, fn) {
 
 function initHorizontalDragScroll() {
   const containers = document.querySelectorAll(
-    ".chart-preset-strip"
+    ".chart-preset-strip, .style-template-preview, .style-quick-strip, .style-param-jump"
   );
   for (const container of containers) {
     if (container.dataset.dragScrollReady === "true") continue;
     container.dataset.dragScrollReady = "true";
     container.classList.add("horizontal-drag-scroll");
     if (!container.hasAttribute("tabindex")) container.tabIndex = 0;
+    if (!container.hasAttribute("aria-label")) {
+      const label = container.classList.contains("style-template-preview")
+        ? "风格模板预览，可横向拖动或按左右方向键查看更多"
+        : container.classList.contains("style-quick-strip")
+          ? "常用风格快捷项，可横向拖动或按左右方向键查看更多"
+          : container.classList.contains("style-param-jump")
+            ? "风格参数分组，可横向拖动或按左右方向键查看更多"
+            : "科研图预设，可横向拖动或按左右方向键查看更多";
+      container.setAttribute("aria-label", label);
+    }
+    if (!container.title) {
+      container.title = "内容较多时可左右拖动；聚焦后也可按左右方向键滚动。";
+    }
 
     let pointerId = null;
     let startX = 0;
