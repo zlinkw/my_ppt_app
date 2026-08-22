@@ -355,6 +355,29 @@ function persistSetting(key, value) {
   }
 }
 
+function readSessionSetting(key) {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionSetting(key, value) {
+  try {
+    sessionStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removeSessionSetting(key) {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {}
+}
+
 function saveUserStyleTemplates(templates) {
   persistSetting("roughPptStyleTemplates", JSON.stringify(templates.filter(template => !template.builtIn)));
 }
@@ -3964,13 +3987,13 @@ function applyUiMode(mode = state.uiMode, { persist = true } = {}) {
 function initUsageGuideNavigation() {
   const guideLink = document.querySelector("#usageGuide");
   guideLink?.addEventListener("click", event => {
-    sessionStorage.setItem(GUIDE_RETURN_SCROLL_KEY, String(Math.round(window.scrollY)));
+    writeSessionSetting(GUIDE_RETURN_SCROLL_KEY, String(Math.round(window.scrollY)));
     if (!describeHostConnection()) return;
     event.preventDefault();
     postHost({ type: "openUsageGuide" });
   });
   const restoreScroll = () => {
-    const stored = sessionStorage.getItem(GUIDE_RETURN_SCROLL_KEY);
+    const stored = readSessionSetting(GUIDE_RETURN_SCROLL_KEY);
     if (stored == null) return;
     const saved = Number(stored);
     if (!Number.isFinite(saved) || saved < 0) return;
@@ -3978,8 +4001,8 @@ function initUsageGuideNavigation() {
     window.requestAnimationFrame(() => window.requestAnimationFrame(apply));
     for (const delay of [50, 150, 300]) window.setTimeout(apply, delay);
     window.setTimeout(() => {
-      if (sessionStorage.getItem(GUIDE_RETURN_SCROLL_KEY) === stored) {
-        sessionStorage.removeItem(GUIDE_RETURN_SCROLL_KEY);
+      if (readSessionSetting(GUIDE_RETURN_SCROLL_KEY) === stored) {
+        removeSessionSetting(GUIDE_RETURN_SCROLL_KEY);
       }
     }, 360);
   };

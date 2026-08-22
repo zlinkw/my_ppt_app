@@ -109,6 +109,11 @@ try {
     }
   }
 
+  const guideSessionFailure = await evaluate(client, guideSessionFailureProbe());
+  if (!guideSessionFailure.hostCalled || !guideSessionFailure.threw || guideSessionFailure.navigated) {
+    violations.push(`说明页会话存储写入失败时入口被阻断 ${JSON.stringify(guideSessionFailure)}`);
+  }
+
   // 该检查会展开全部面板并追加占位元素，必须放在其他交互检查之后。
   const sticky = await evaluate(client, stickyChromeMetricProbe());
   if (!sticky.metricFollowsHeight) {
@@ -399,5 +404,29 @@ function scopeSortAvailabilityProbe() {
       scopeButton('all')?.click();
       return { missing: false, rows };
     });
+  })()`;
+}
+
+function guideSessionFailureProbe() {
+  return `(() => {
+    const calls = [];
+    const originalChrome = window.chrome;
+    const originalSetItem = Storage.prototype.setItem;
+    let threw = false;
+    try {
+      window.chrome = { webview: { postMessage: message => calls.push(message?.type) } };
+      Storage.prototype.setItem = () => { threw = true; throw new Error('QuotaExceededError'); };
+      document.querySelector('#usageGuide')?.click();
+    } catch {
+      threw = true;
+    } finally {
+      Storage.prototype.setItem = originalSetItem;
+      window.chrome = originalChrome;
+    }
+    return {
+      hostCalled: calls.includes('openUsageGuide'),
+      threw,
+      navigated: location.pathname !== '/index.html'
+    };
   })()`;
 }

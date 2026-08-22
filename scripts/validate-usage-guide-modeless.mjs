@@ -79,6 +79,25 @@ for (const snippet of [
   if (!app.includes(snippet)) violations.push(`UI runtime regression missing: ${snippet}`);
 }
 
+for (const snippet of [
+  "function readSessionSetting(key)",
+  "function writeSessionSetting(key, value)",
+  "function removeSessionSetting(key)",
+  'writeSessionSetting(GUIDE_RETURN_SCROLL_KEY, String(Math.round(window.scrollY)));',
+  "const stored = readSessionSetting(GUIDE_RETURN_SCROLL_KEY);",
+  "if (readSessionSetting(GUIDE_RETURN_SCROLL_KEY) === stored) {",
+  "removeSessionSetting(GUIDE_RETURN_SCROLL_KEY);"
+]) {
+  if (!app.includes(snippet)) violations.push(`app.mjs missing guarded guide session storage: ${snippet}`);
+}
+for (const rawCall of [
+  "sessionStorage.setItem(GUIDE_RETURN_SCROLL_KEY",
+  "sessionStorage.getItem(GUIDE_RETURN_SCROLL_KEY)",
+  "sessionStorage.removeItem(GUIDE_RETURN_SCROLL_KEY)"
+]) {
+  if (app.includes(rawCall)) violations.push(`app.mjs guide return scroll must use guarded session storage: ${rawCall}`);
+}
+
 // 使用说明目录是自定义控件，每个章节链接都必须有中文悬浮说明，
 // 让用户在点击前就知道该章节讲什么。
 const help = read("src/RoughPptAddin/ui/help.html");
