@@ -10,6 +10,8 @@
   --status-blue: #2563eb;
   --command-blue: #5871ef;
   --command-hover: #6b83ed;
+  --command-text-blue: #4754d8;
+  --command-text-hover: #4050c5;
   --focus-blue: #526fff;
   --green: #16a34a;
   --amber-soft: #fffbeb;
@@ -54,7 +56,7 @@ footer {
 
 .guide-kicker {
   margin: 0 0 4px;
-  color: var(--command-blue);
+  color: var(--command-text-blue);
   font-size: 13px;
   font-weight: 700;
 }
@@ -78,9 +80,9 @@ footer a {
   align-items: center;
   justify-content: center;
   padding: 6px 12px;
-  border: 1px solid var(--command-blue);
+    border: 1px solid var(--command-text-blue);
   border-radius: 6px;
-  background: var(--command-blue);
+  background: var(--command-text-blue);
   color: #ffffff;
   font-weight: 700;
   text-decoration: none;
@@ -88,7 +90,7 @@ footer a {
 }
 
 .guide-back:hover,
-footer a:hover { background: var(--command-hover); }
+footer a:hover { background: var(--command-text-hover); }
 
 .guide-nav {
   display: flex;
@@ -111,7 +113,7 @@ footer a:hover { background: var(--command-hover); }
   border-color: #bfdbfe;
   background: #eff6ff;
   box-shadow: inset 0 -2px 0 var(--command-blue);
-  color: var(--command-blue);
+  color: var(--command-text-blue);
 }
 
 main { background: var(--panel); }

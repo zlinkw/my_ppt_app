@@ -9302,6 +9302,8 @@ body.ux-simple .style-template-tools {
   --accent-strong: #1d4ed8;
   --command-accent: #5871ef;
   --command-accent-hover: #6b83ed;
+  --command-accent-text: #4754d8;
+  --command-accent-text-hover: #4050c5;
   --focus-accent: #526fff;
   --green: #16a34a;
   --amber: #d97706;
@@ -9768,11 +9770,11 @@ body .control-focus-pulse {
   align-items: center;
   justify-content: center;
   padding: 3px 8px;
-  border: 1px solid var(--command-accent);
+  border: 1px solid var(--command-accent-text);
   border-radius: 6px;
   background-color: #ffffff;
   background-image: none;
-  color: var(--command-accent);
+  color: var(--command-accent-text);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
@@ -9781,9 +9783,9 @@ body .control-focus-pulse {
 }
 
 .usage-guide-button:hover {
-  border-color: var(--command-accent-hover);
+  border-color: var(--command-accent-text-hover);
   background-color: #f8fafc;
-  color: var(--command-accent-hover);
+  color: var(--command-accent-text-hover);
 }
 
 .usage-guide-button:focus-visible {
