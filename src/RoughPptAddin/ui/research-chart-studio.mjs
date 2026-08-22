@@ -141,6 +141,7 @@ const els = {
   chartSearch: byId("chartSearch"),
   chartCategory: byId("chartCategory"),
   chartSearchSummary: byId("chartSearchSummary"),
+  chartEmptyState: byId("chartEmptyState"),
   currentChartType: byId("currentChartType"),
   xField: byId("xField"),
   yField: byId("yField"),
@@ -278,6 +279,12 @@ function filterChartTypeButtons() {
   });
   if (visibleButtons.length && !visibleButtons.some(button => button.getAttribute("aria-checked") === "true")) {
     setChartType(visibleButtons[0].dataset.chartType);
+  }
+  if (els.chartEmptyState) {
+    els.chartEmptyState.hidden = visible > 0;
+    els.chartEmptyState.textContent = query || category !== "all"
+      ? "没有匹配的图表。请更换关键词或类别。"
+      : "暂无可显示的图表入口。";
   }
   if (els.chartSearchSummary) els.chartSearchSummary.textContent = `显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表`;
   syncRadioTabIndexes(els.chartTypeGrid);

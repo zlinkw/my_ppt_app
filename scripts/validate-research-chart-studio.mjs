@@ -63,6 +63,8 @@ for (const snippet of [
   'id="chartSearch"',
   'id="chartCategory"',
   'id="chartSearchSummary"',
+  'id="chartEmptyState"',
+  '没有匹配的图表。请更换关键词或类别。',
   'id="websiteList"',
   'id="selectSvgButton"',
   'id="insertButton"',
@@ -100,7 +102,7 @@ for (const snippet of [
 ]) {
   if (!app.includes(snippet)) throw new Error(`科研绘图工作区脚本合同缺少：${snippet}`);
 }
-for (const snippet of ["CHART_CATEGORIES", "filterChartTypeButtons", "aria-hidden", "显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表"]) {
+for (const snippet of ["CHART_CATEGORIES", "filterChartTypeButtons", "aria-hidden", "显示 ${visible} / ${Object.keys(CHART_LABELS).length} 种图表", 'els.chartEmptyState.hidden = visible > 0;']) {
   if (!app.includes(snippet)) throw new Error(`科研绘图入口发现性合同缺少：${snippet}`);
 }
 if (!app.includes("if (visibleButtons.length && !visibleButtons.some(button => button.getAttribute(\"aria-checked\") === \"true\"))")) {

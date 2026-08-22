@@ -108,6 +108,16 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
 .chart-discovery label { min-width: 0; display: grid; gap: 3px; color: #475467; font-size: 11px; }
 .chart-search-field input { min-width: 0; }
 .chart-search-summary { margin: 0 0 6px; color: var(--muted); font-size: 10px; }
+.chart-empty-state {
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 11px;
+}
+.chart-empty-state[hidden] { display: none; }
 .chart-type-grid button {
   min-width: 0;
   min-height: 42px;

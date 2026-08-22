@@ -67,6 +67,27 @@ try {
   ) {
     violations.push(`筛选隐藏当前图表后未保持可见选中项：${JSON.stringify(filteredSelection)}`);
   }
+
+  await evaluate(client, `(() => {
+    const search = document.querySelector('#chartSearch');
+    search.value = '不存在';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await delay(120);
+  const emptyState = await evaluate(client, `(() => ({
+    hidden: document.querySelector('#chartEmptyState').hidden,
+    text: document.querySelector('#chartEmptyState').textContent,
+    visibleRadios: [...document.querySelectorAll('#chartTypeGrid [role="radio"]:not([hidden])')].length,
+    summary: document.querySelector('#chartSearchSummary').textContent
+  }))()`);
+  if (
+    emptyState.hidden ||
+    emptyState.text !== "没有匹配的图表。请更换关键词或类别。" ||
+    emptyState.visibleRadios !== 0 ||
+    emptyState.summary !== "显示 0 / 36 种图表"
+  ) {
+    violations.push(`图表筛选空结果状态异常：${JSON.stringify(emptyState)}`);
+  }
 } finally {
   await client.close().catch(() => {});
   browser.process.kill();
