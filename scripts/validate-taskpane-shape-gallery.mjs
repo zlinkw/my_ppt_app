@@ -43,6 +43,13 @@ for (const snippet of [
 if (!app.includes("完整形状目录读取失败，当前只显示常用形状兜底")) {
   violations.push("app.mjs missing catalog fallback user feedback");
 }
+for (const snippet of [
+  "typeof item.enumName === \"string\" && item.enumName",
+  "typeof item.displayNameZh === \"string\" && item.displayNameZh",
+  "typeof item.category === \"string\" && item.category"
+]) {
+  if (!app.includes(snippet)) violations.push(`app.mjs missing catalog item validation: ${snippet}`);
+}
 for (const snippet of ["Array.isArray(catalog.items)", 'throw new Error("形状目录为空")', "state.catalogDegraded = false", "state.catalogDegraded = true"]) {
   if (!app.includes(snippet)) violations.push(`app.mjs missing robust catalog validation: ${snippet}`);
 }

@@ -1379,7 +1379,13 @@ async function loadCatalog() {
     const response = await fetch("./autoshape-catalog.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const catalog = await response.json();
-    state.catalog = Array.isArray(catalog.items) ? catalog.items : [];
+    state.catalog = Array.isArray(catalog.items) ? catalog.items.filter(item =>
+      item && typeof item === "object" &&
+      typeof item.enumName === "string" && item.enumName &&
+      typeof item.displayName === "string" &&
+      typeof item.displayNameZh === "string" && item.displayNameZh &&
+      typeof item.category === "string" && item.category
+    ) : [];
     if (!state.catalog.length) throw new Error("形状目录为空");
     state.catalogDegraded = false;
   } catch {
