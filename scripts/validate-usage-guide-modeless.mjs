@@ -6,7 +6,8 @@ import {
   connectToBrowser,
   evaluate,
   waitFor,
-  waitForExit
+  waitForExit,
+  delay
 } from "./lib/ui-browser.mjs";
 
 const read = path => fs.existsSync(path) ? fs.readFileSync(path, "utf8") : "";
@@ -84,6 +85,9 @@ const help = read("src/RoughPptAddin/ui/help.html");
 const helpCss = read("src/RoughPptAddin/ui/help.css");
 const helpApp = read("src/RoughPptAddin/ui/help.mjs");
 const guideNav = help.match(/<nav class="guide-nav"[\s\S]*?<\/nav>/)?.[0] ?? "";
+if (!help.includes('id="guideSkipLink"') || !help.includes('href="#guideMain"')) violations.push("help.html missing skip-to-content link");
+if (!help.includes('<main id="guideMain" tabindex="-1">')) violations.push("help.html main target must be focusable");
+if (!helpCss.includes(".skip-link:focus-visible")) violations.push("help.css missing visible skip-link focus state");
 if (!guideNav) {
   violations.push("help.html missing guide-nav table of contents");
 } else {
@@ -127,6 +131,16 @@ try {
   const state = await evaluate(client, "({active:document.querySelector('.guide-nav a.active')?.textContent,current:document.querySelector('.guide-nav a[aria-current=true]')?.getAttribute('aria-current'),count:document.querySelectorAll('.guide-nav a.active').length})");
   if (state.count !== 1 || state.current !== "true" || state.active !== "科研绘图") {
     violations.push(`usage guide scroll highlight state invalid: ${JSON.stringify(state)}`);
+  }
+  await evaluate(client, "document.querySelector('#guideSkipLink').focus()");
+  await evaluate(client, "document.querySelector('#guideSkipLink').click()");
+  await delay(100);
+  const skipState = await evaluate(client, `(() => ({
+    hash: location.hash,
+    focusedMain: document.activeElement === document.querySelector('#guideMain')
+  }))()`);
+  if (skipState.hash !== "#guideMain" || !skipState.focusedMain) {
+    violations.push(`usage guide skip link failed: ${JSON.stringify(skipState)}`);
   }
 } finally {
   await client.close().catch(() => {});

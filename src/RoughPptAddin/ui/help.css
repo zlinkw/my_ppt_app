@@ -20,6 +20,37 @@
 
 * { box-sizing: border-box; }
 
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  color: #ffffff;
+}
+
+.skip-link:focus-visible,
+.skip-link:focus {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  z-index: 10;
+  width: auto;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--command-text-blue);
+  border-radius: 6px;
+  background: var(--command-text-blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+main:focus-visible,
+main:focus { outline: 2px solid var(--focus-blue); outline-offset: 4px; }
+
 html { scroll-behavior: smooth; }
 
 body {
