@@ -82,6 +82,7 @@
     <Compile Include="Services\CatalogService.cs" />
     <Compile Include="Services\FeatureBlockPresetService.cs" />
     <Compile Include="Services\FeatureBlockInserter.cs" />
+    <Compile Include="Services\GitHubUpdateService.cs" />
     <Compile Include="Services\InteractionShell.cs" />
     <Compile Include="Services\MetadataService.cs" />
     <Compile Include="Services\PaperStructurePresetService.cs" />

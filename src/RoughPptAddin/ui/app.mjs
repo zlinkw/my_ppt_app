@@ -484,6 +484,7 @@ const state = {
   zlkAutomationResult: null,
   buildInfo: null,
   buildInfoUnavailable: false,
+  updateChecking: false,
   selectionKey: "",
   lastRoughSelectionKey: "",
   pendingParamEdit: null,
@@ -583,6 +584,7 @@ const els = {
   selectionEmptyActions: document.querySelector("#selectionEmptyActions"),
   status: document.querySelector("#status"),
   buildInfo: document.querySelector("#buildInfo"),
+  checkUpdates: document.querySelector("#checkUpdates"),
   inlinePrompt: document.querySelector("#inlinePrompt")
 };
 
@@ -6751,6 +6753,34 @@ function showBuildInfo() {
   toggleStatusExpanded(true);
 }
 
+function setUpdateChecking(checking) {
+  state.updateChecking = Boolean(checking);
+  if (!els.checkUpdates) return;
+  els.checkUpdates.disabled = state.updateChecking;
+  els.checkUpdates.textContent = state.updateChecking ? "检查中" : "检查更新";
+  els.checkUpdates.setAttribute("aria-label", state.updateChecking ? "正在检查 GitHub 更新" : "检查 GitHub 正式版本更新");
+}
+
+function handleUpdateResult(message) {
+  setUpdateChecking(false);
+  const status = String(message.status || "error");
+  const text = String(message.message || "更新检查完成。");
+  els.checkUpdates?.classList.toggle("available", status === "update-available");
+  setStatus(text, status === "error");
+  if (status !== "update-available") return;
+  showInlinePrompt({
+    title: "发现新版本",
+    message: `${text} 更新需要关闭 PowerPoint 并运行安装包，插件不会自动替换自身文件。`,
+    confirmLabel: "打开下载页",
+    cancelLabel: "稍后再说",
+    onConfirm: () => {
+      if (!postHost({ type: "openUpdateReleases" })) {
+        setStatus("未连接 PowerPoint 宿主，无法打开下载页。", true);
+      }
+    }
+  });
+}
+
 function closeInlinePrompt(message = "") {
   if (!els.inlinePrompt) return;
   const returnFocus = els.inlinePrompt.__returnFocus;
@@ -6976,6 +7006,14 @@ function handleHostMessage(message) {
 
   if (message.type === "status") {
     setStatus(message.text ?? "", Boolean(message.isError));
+  }
+
+  if (message.type === "updateCheckState") {
+    setUpdateChecking(String(message.state) === "checking");
+  }
+
+  if (message.type === "updateCheckResult") {
+    handleUpdateResult(message);
   }
 
   if (message.type === "zlkAutomationStatus") {
@@ -8445,6 +8483,16 @@ els.buildInfo?.addEventListener("keydown", event => {
     event.preventDefault();
     showBuildInfo();
   }
+});
+els.checkUpdates?.addEventListener("click", () => {
+  if (state.updateChecking) return;
+  if (!describeHostConnection()) {
+    setStatus("无法连接 PowerPoint 宿主，不能检查更新。请通过 PPT 任务窗格打开本界面。", true);
+    return;
+  }
+  setUpdateChecking(true);
+  setStatus("正在检查 GitHub 正式 Release...");
+  postHost({ type: "checkForUpdates" });
 });
 els.saveFeatureDefault?.addEventListener("click", saveFeatureBlockDefault);
 els.featureDirectionTools?.querySelector(":scope > summary")?.addEventListener("click", event => {

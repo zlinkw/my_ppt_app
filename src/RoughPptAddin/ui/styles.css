@@ -9796,11 +9796,18 @@ body .control-focus-pulse {
   color: var(--command-accent-text-hover);
 }
 
-.usage-guide-button:focus-visible {
+.usage-guide-button:focus-visible,
+.update-button:focus-visible {
   border-color: var(--focus-accent);
   outline: 1px solid var(--focus-accent);
   outline-offset: 1px;
   box-shadow: var(--focus-ring);
+}
+
+.update-button.available {
+  border-color: #b7791f;
+  background-color: #fff7e6;
+  color: #7a4b00;
 }
 
 @media (min-width: 521px) and (max-width: 640px) {

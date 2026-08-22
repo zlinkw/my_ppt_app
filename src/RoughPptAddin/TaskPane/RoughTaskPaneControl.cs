@@ -44,6 +44,8 @@ public sealed class RoughTaskPaneControl : UserControl
 
 	private readonly Dictionary<string, TaskCompletionSource<ZlkChartRenderResult>> pendingZlkCharts = new Dictionary<string, TaskCompletionSource<ZlkChartRenderResult>>(StringComparer.OrdinalIgnoreCase);
 
+	private readonly GitHubUpdateService updateService = new();
+
 	private Task initializationTask;
 
 	public RoughTaskPaneControl(RoughAddInController controller, RoughJsBridge bridge)
@@ -327,6 +329,13 @@ public sealed class RoughTaskPaneControl : UserControl
 		case "openResearchChartStudio":
 			controller.ShowResearchChartStudio();
 			PostStatus("已打开独立科研绘图工作区。", isError: false);
+			break;
+		case "checkForUpdates":
+			await CheckForUpdatesAsync();
+			break;
+		case "openUpdateReleases":
+			GitHubUpdateService.OpenReleasesPage();
+			PostStatus("已打开 GitHub Releases 页面。", isError: false);
 			break;
 		case "getShapeIcons":
 			SendShapeIcons();
@@ -730,6 +739,41 @@ public sealed class RoughTaskPaneControl : UserControl
 				SendUserAssets();
 				break;
 			}
+		}
+	}
+
+	private async Task CheckForUpdatesAsync()
+	{
+		PostToWeb(new Dictionary<string, object>
+		{
+			["type"] = "updateCheckState",
+			["state"] = "checking"
+		});
+		try
+		{
+			UpdateCheckResult result = await Task.Run(() => updateService.Check()).ConfigureAwait(continueOnCapturedContext: true);
+			PostToWeb(new Dictionary<string, object>
+			{
+				["type"] = "updateCheckResult",
+				["status"] = result.Status,
+				["message"] = result.Message,
+				["currentVersion"] = result.CurrentVersion,
+				["latestVersion"] = result.LatestVersion,
+				["checkedAtUtc"] = result.CheckedAtUtc
+			});
+		}
+		catch (Exception exception)
+		{
+			AddInLogger.Error("分发更新检查结果失败。", exception);
+			PostToWeb(new Dictionary<string, object>
+			{
+				["type"] = "updateCheckResult",
+				["status"] = "error",
+				["message"] = "检查更新失败：" + exception.Message,
+				["currentVersion"] = "",
+				["latestVersion"] = "",
+				["checkedAtUtc"] = DateTime.UtcNow
+			});
 		}
 	}
 
