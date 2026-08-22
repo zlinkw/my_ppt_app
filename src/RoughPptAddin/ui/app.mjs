@@ -4,7 +4,7 @@ import { buildChartRecommendations, importZlkClusterResultFile, supportedZlkClus
 function loadRecent() {
   try {
     const values = JSON.parse(localStorage.getItem("roughPptRecentShapes") || "[]");
-    return Array.isArray(values) ? values.filter(value => typeof value === "string") : [];
+    return Array.isArray(values) ? values.filter(value => typeof value === "string").slice(0, 12) : [];
   } catch {
     return [];
   }
@@ -13,7 +13,7 @@ function loadRecent() {
 function loadFavorites() {
   try {
     const values = JSON.parse(localStorage.getItem("roughPptFavoriteShapes") || "[]");
-    return Array.isArray(values) ? values.filter(value => typeof value === "string") : [];
+    return Array.isArray(values) ? values.filter(value => typeof value === "string").slice(0, 12) : [];
   } catch {
     return [];
   }
@@ -22,7 +22,7 @@ function loadFavorites() {
 function loadRecentPaperPresets() {
   try {
     const ids = JSON.parse(localStorage.getItem("roughPptRecentPaperPresets") || "[]");
-    return Array.isArray(ids) ? ids.filter(id => typeof id === "string") : [];
+    return Array.isArray(ids) ? ids.filter(id => typeof id === "string").slice(0, 8) : [];
   } catch {
     return [];
   }
@@ -31,7 +31,7 @@ function loadRecentPaperPresets() {
 function loadFavoritePaperPresets() {
   try {
     const ids = JSON.parse(localStorage.getItem("roughPptFavoritePaperPresets") || "[]");
-    return Array.isArray(ids) ? ids.filter(id => typeof id === "string") : [];
+    return Array.isArray(ids) ? ids.filter(id => typeof id === "string").slice(0, 16) : [];
   } catch {
     return [];
   }
@@ -40,7 +40,7 @@ function loadFavoritePaperPresets() {
 function loadRecentCommands() {
   try {
     const ids = JSON.parse(localStorage.getItem("roughPptRecentCommands") || "[]");
-    return Array.isArray(ids) ? ids.filter(id => typeof id === "string") : [];
+    return Array.isArray(ids) ? ids.filter(id => typeof id === "string").slice(0, 12) : [];
   } catch {
     return [];
   }

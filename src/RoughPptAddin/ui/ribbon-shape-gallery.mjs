@@ -10,8 +10,8 @@ const els = {
 
 const state = {
   catalog: [],
-  recent: loadJson("roughPptRecentShapes", []),
-  favorites: loadJson("roughPptFavoriteShapes", []),
+  recent: loadJson("roughPptRecentShapes", [], 12),
+  favorites: loadJson("roughPptFavoriteShapes", [], 12),
   sortMode: localStorage.getItem("roughPptSortMode") || "smart",
   query: "",
   contextAnchor: null,
@@ -47,11 +47,11 @@ const galleryGroups = [
   { id: "action-buttons", title: "动作按钮", match: item => item.category === "action-buttons" }
 ];
 
-function loadJson(key, fallback) {
+function loadJson(key, fallback, max = Number.POSITIVE_INFINITY) {
   try {
     const value = JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
     if (Array.isArray(fallback)) {
-      return Array.isArray(value) ? value.filter(item => typeof item === "string") : fallback;
+      return Array.isArray(value) ? value.filter(item => typeof item === "string").slice(0, max) : fallback;
     }
     return value;
   } catch {

@@ -43,10 +43,18 @@ for (const snippet of [
 
 for (const snippet of [
   'localStorage.getItem("roughPptRecentShapes")',
-  'Array.isArray(values) ? values.filter(value => typeof value === "string") : []',
+  'Array.isArray(values) ? values.filter(value => typeof value === "string").slice(0, 12) : []',
   'localStorage.getItem("roughPptFavoriteShapes")'
 ]) {
   requireIncludes(app, snippet, "app.mjs missing shape preference validation");
+}
+
+for (const snippet of [
+  'ids.filter(id => typeof id === "string").slice(0, 8)',
+  'ids.filter(id => typeof id === "string").slice(0, 12)',
+  'ids.filter(id => typeof id === "string").slice(0, 16)'
+]) {
+  requireIncludes(app, snippet, "app.mjs missing persisted preference cap");
 }
 
 for (const snippet of [

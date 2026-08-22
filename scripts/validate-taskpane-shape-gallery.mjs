@@ -62,9 +62,11 @@ for (const snippet of [
 if (!galleryApp.includes(snippet)) violations.push(`ribbon-shape-gallery.mjs missing catalog failure feedback: ${snippet}`);
 }
 for (const snippet of [
-  "function loadJson(key, fallback)",
+  "function loadJson(key, fallback, max = Number.POSITIVE_INFINITY)",
   "if (Array.isArray(fallback))",
-  "return Array.isArray(value) ? value.filter(item => typeof item === \"string\") : fallback;"
+  'recent: loadJson("roughPptRecentShapes", [], 12)',
+  'favorites: loadJson("roughPptFavoriteShapes", [], 12)',
+  "return Array.isArray(value) ? value.filter(item => typeof item === \"string\").slice(0, max) : fallback;"
 ]) {
   if (!galleryApp.includes(snippet)) violations.push(`ribbon-shape-gallery.mjs missing preference validation: ${snippet}`);
 }
