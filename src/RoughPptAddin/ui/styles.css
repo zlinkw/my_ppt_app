@@ -7896,6 +7896,14 @@ body.ux-simple .app-layout {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* B595: compact simple mode ends at its last visible card instead of stretching
+   an empty content track across the remaining task-pane viewport. */
+body.ux-simple .shell {
+  min-height: 0;
+  grid-template-rows: none;
+  align-content: start;
+}
+
 body.ux-simple .app-layout > .app-rail {
   display: none;
 }

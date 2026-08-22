@@ -154,3 +154,5 @@ powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1
 ```
 
 `npm test` 是提交前基线；`scripts/package-release-preserving.ps1` 会生成带版本号目录的 ZIP、MSI、EXE 和哈希清单。开发机构建使用本地开发证书；对外分发前应替换为受信任的组织签名证书。
+
+发布前完整部署路径是 `powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1`。它会构建并验证 portable zip, MSI, and EXE installers，完成本机安装和 PowerPoint 加载检查；只做内部迭代验证时可追加 `-NoInstall -SkipInstallers`，跳过安装器生成与本机安装。
