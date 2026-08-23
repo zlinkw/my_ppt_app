@@ -49,6 +49,8 @@ try {
     if (!readable.chartScrollable) violations.push(`${width}px: 科研图预设轨道未保留可读宽度或横向滚动`);
     if (!readable.dragReady) violations.push(`${width}px: 横向轨道未启用鼠标拖动滚动`);
     if (!readable.cardsReadable) violations.push(`${width}px: 科研图预设卡片文字被裁切或压缩`);
+    if (!readable.suggestionsScrollable) violations.push(`${width}px: 常用搜索建议未保留横向滚动`);
+    if (!readable.suggestionDragReady) violations.push(`${width}px: 常用搜索建议未启用鼠标拖动滚动`);
     const simpleModeActions = await evaluate(client, simpleModeActionsProbe());
     if (!simpleModeActions.bounded || simpleModeActions.height > 80) violations.push(`${width}px: 简洁模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
     if (!simpleModeActions.horizontalText) violations.push(`${width}px: 完整模式按钮文字未保持横排 ${JSON.stringify(simpleModeActions)}`);
@@ -234,6 +236,12 @@ function horizontalControlProbe() {
     const dragReady = Boolean(
       chart?.classList.contains('horizontal-drag-scroll') && chart?.dataset.dragScrollReady === 'true'
     );
+    const suggestions = document.querySelector('.search-suggestion-list');
+    const suggestionButtons = [...(suggestions?.querySelectorAll('.search-suggestion') ?? [])].filter(visible);
+    const suggestionsScrollable = Boolean(visible(suggestions) && suggestionButtons.length >= 3 && suggestions.scrollWidth > suggestions.clientWidth + 1);
+    const suggestionDragReady = Boolean(
+      suggestions?.classList.contains('horizontal-drag-scroll') && suggestions?.dataset.dragScrollReady === 'true'
+    );
     const cardsReadable = cards.length >= 3 && cards.every(card => {
       const title = card.querySelector('strong');
       const summary = card.querySelector('small');
@@ -241,7 +249,7 @@ function horizontalControlProbe() {
         (!title || (title.scrollWidth <= title.clientWidth + 1 && title.scrollHeight <= title.clientHeight + 1)) &&
         (!summary || (summary.scrollWidth <= summary.clientWidth + 1 && summary.scrollHeight <= summary.clientHeight + 1));
     });
-    return { chartScrollable, dragReady, cardsReadable };
+    return { chartScrollable, dragReady, cardsReadable, suggestionsScrollable, suggestionDragReady };
   })()`;
 }
 

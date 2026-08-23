@@ -2557,6 +2557,7 @@ function renderSearchSuggestions() {
   }
 
   els.searchSuggestions.append(label, list);
+  initHorizontalDragScroll();
 }
 
 function applySearchSuggestion(suggestion) {
@@ -8672,7 +8673,7 @@ function safeInitStep(label, fn) {
 
 function initHorizontalDragScroll() {
   const containers = document.querySelectorAll(
-    ".chart-preset-strip, .style-template-preview, .style-quick-strip, .style-param-jump"
+    ".chart-preset-strip, .style-template-preview, .style-quick-strip, .style-param-jump, .search-suggestion-list"
   );
   for (const container of containers) {
     if (container.dataset.dragScrollReady === "true") continue;
@@ -8682,8 +8683,10 @@ function initHorizontalDragScroll() {
     if (!container.hasAttribute("aria-label")) {
       const label = container.classList.contains("style-template-preview")
         ? "风格模板预览，可横向拖动或按左右方向键查看更多"
-        : container.classList.contains("style-quick-strip")
-          ? "常用风格快捷项，可横向拖动或按左右方向键查看更多"
+        : container.classList.contains("search-suggestion-list")
+          ? "常用搜索建议，可横向拖动或按左右方向键查看更多"
+          : container.classList.contains("style-quick-strip")
+            ? "常用风格快捷项，可横向拖动或按左右方向键查看更多"
           : container.classList.contains("style-param-jump")
             ? "风格参数分组，可横向拖动或按左右方向键查看更多"
             : "科研图预设，可横向拖动或按左右方向键查看更多";
