@@ -8624,7 +8624,6 @@ button > span[aria-hidden="true"]:not(.connection-dot):not(.novice-step):not(.ga
   gap: 0;
 }
 
-.search-box,
 .command-result {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -10440,4 +10439,50 @@ body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button.prim
   border-color: var(--accent) !important;
   background: var(--accent) !important;
   color: #ffffff !important;
+}
+
+/* B618: one search-field grammar for the task pane and standalone gallery. */
+body .search-box,
+body .zotero-search-box,
+body .ribbon-gallery-search {
+  height: 32px;
+  padding: 0 8px;
+  gap: 6px;
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 8px !important;
+  background: var(--panel) !important;
+  box-shadow: none !important;
+}
+
+body .search-box:focus-within,
+body .zotero-search-box:focus-within,
+body .ribbon-gallery-search:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+
+body .search-box > span,
+body .zotero-search-box > span,
+body .ribbon-gallery-search > span {
+  display: grid !important;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+body .search-box input,
+body .zotero-search-box input,
+body .ribbon-gallery-search input {
+  min-width: 0;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 2px;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-weight: 500;
+  font-size: 12px;
 }
