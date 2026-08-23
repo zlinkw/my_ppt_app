@@ -2,6 +2,7 @@
 // 只服务 src/RoughPptAddin/ui 下的本地文件，不访问外部网络。
 import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
@@ -42,8 +43,8 @@ export async function launchBrowser(userDataDirName) {
   const executable = findBrowserExecutable();
   let lastError = null;
   for (let launchAttempt = 0; launchAttempt < 3; launchAttempt++) {
-    const userDataDir = path.join(process.cwd(), ".runtime", userDataDirName);
-    fs.mkdirSync(userDataDir, { recursive: true });
+    void userDataDirName;
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "rough-ui-browser-"));
     const port = await freeTcpPort();
     const child = spawn(executable, [
       `--remote-debugging-port=${port}`,
@@ -90,11 +91,11 @@ function freeTcpPort() {
 
 function findBrowserExecutable() {
   const candidates = [
+    path.join(process.env.ProgramFiles ?? "", "Google", "Chrome", "Application", "chrome.exe"),
+    path.join(process.env["ProgramFiles(x86)"] ?? "", "Google", "Chrome", "Application", "chrome.exe"),
     path.join(process.env.ProgramFiles ?? "", "Microsoft", "Edge", "Application", "msedge.exe"),
     path.join(process.env["ProgramFiles(x86)"] ?? "", "Microsoft", "Edge", "Application", "msedge.exe"),
-    path.join(process.env.LOCALAPPDATA ?? "", "Microsoft", "Edge", "Application", "msedge.exe"),
-    path.join(process.env.ProgramFiles ?? "", "Google", "Chrome", "Application", "chrome.exe"),
-    path.join(process.env["ProgramFiles(x86)"] ?? "", "Google", "Chrome", "Application", "chrome.exe")
+    path.join(process.env.LOCALAPPDATA ?? "", "Microsoft", "Edge", "Application", "msedge.exe")
   ];
   for (const candidate of candidates) {
     if (candidate && fs.existsSync(candidate)) return candidate;

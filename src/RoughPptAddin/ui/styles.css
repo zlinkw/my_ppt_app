@@ -8619,7 +8619,6 @@ button > span[aria-hidden="true"]:not(.connection-dot):not(.novice-step):not(.ga
 }
 
 .search-box,
-.zotero-search-box,
 .command-result {
   grid-template-columns: minmax(0, 1fr);
 }

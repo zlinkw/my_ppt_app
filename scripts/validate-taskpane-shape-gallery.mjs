@@ -56,7 +56,12 @@ for (const snippet of ["Array.isArray(catalog.items)", 'throw new Error("形状�
 if (!app.includes("state.catalogDegraded = true") || !app.includes("if (state.catalogDegraded) {")) {
   violations.push("app.mjs must preserve catalog fallback feedback after initialization status updates");
 }
-for (const snippet of ["const startupIssues = [];", "startupIssues.push(\"界面脚本已加载", "startupIssues.join(\" \")"]) {
+for (const snippet of [
+  "const startupIssues = [];",
+  "startupIssues.push(\"未连接 PowerPoint 宿主",
+  "startupIssues.push(\"完整形状目录读取失败",
+  "startupIssues.join(\" \")"
+]) {
   if (!app.includes(snippet)) violations.push(`app.mjs must merge startup status issues: ${snippet}`);
 }
 
