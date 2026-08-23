@@ -8811,7 +8811,7 @@ window.roughPpt.normalizeZlkChartFiles = async (request, files) => {
 window.roughPptTaskPaneReady = true;
 const startupIssues = [];
 if (!describeHostConnection()) {
-  startupIssues.push("界面脚本已加载，但未连接到 PowerPoint 宿主；按钮本地可用，插入和重绘等需在 PPT 任务窗格中使用。");
+  startupIssues.push("未连接 PowerPoint 宿主；插入和重绘需在 PPT 任务窗格中使用。");
 }
 if (state.catalogDegraded) {
   startupIssues.push("完整形状目录读取失败，当前只显示常用形状兜底；重启任务窗格可重试。");

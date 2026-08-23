@@ -279,7 +279,7 @@ button.selection-primary .function-icon,
 .status {
   max-width: none;
   min-height: 24px;
-  max-height: 40px;
+  max-height: 64px;
   padding: 3px 8px;
   overflow: auto;
   border: 1px solid var(--line);
@@ -6069,7 +6069,7 @@ body.ux-simple .build-info {
 }
 
 body.ux-simple .status {
-  max-height: 28px;
+  max-height: 64px;
   font-size: 11px;
 }
 
@@ -6554,7 +6554,7 @@ body.ux-simple .feature-grid .param-number-row {
 
 /* B335 nav live wire status */
 body.ux-simple .status {
-  max-height: 34px;
+  max-height: 64px;
   line-height: 1.25;
 }
 body.ux-simple .status.expanded {
@@ -10296,7 +10296,7 @@ body.ux-simple .topbar .status:not(.expanded) {
 /* B606: quick paths keep a useful touch width instead of stretching across ultra-wide task panes. */
 .workflow-actions {
   width: 100%;
-  max-width: 680px;
+  max-width: 560px;
   margin-inline: auto;
 }
 
@@ -10306,9 +10306,9 @@ body.ux-simple[data-selection-kind="none"] .simple-mode-actions,
 body.ux-simple[data-selection-kind="feature"] .simple-mode-actions {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 8px !important;
+  gap: 5px !important;
   align-items: stretch;
-  max-width: 620px !important;
+  max-width: 560px !important;
 }
 
 body.ux-simple .workflow-actions-label {
@@ -10321,8 +10321,48 @@ body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button,
 body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button {
   width: 100%;
   min-width: 0;
-  min-height: 32px !important;
-  padding: 6px 8px !important;
+  min-height: 36px !important;
+  padding: 7px 10px !important;
+}
+
+/* B612: primary paths use one compact tile grammar across narrow and wide panes. */
+body.ux-simple[data-selection-kind="none"] .workflow-actions > button:not(.primary-action),
+body.ux-simple[data-selection-kind="feature"] .workflow-actions > button:not(.primary-action),
+body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button:not(.primary-action),
+body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button:not(.primary-action) {
+  border-color: #e4e4e8 !important;
+  border-radius: 8px !important;
+  background: #f7f7f8 !important;
+  color: #26262a !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+body.ux-simple[data-selection-kind="none"] .workflow-actions > button:not(.primary-action):hover,
+body.ux-simple[data-selection-kind="feature"] .workflow-actions > button:not(.primary-action):hover,
+body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button:not(.primary-action):hover,
+body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button:not(.primary-action):hover,
+body.ux-simple[data-selection-kind="none"] .workflow-actions > button:not(.primary-action):focus-visible,
+body.ux-simple[data-selection-kind="feature"] .workflow-actions > button:not(.primary-action):focus-visible,
+body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button:not(.primary-action):focus-visible,
+body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button:not(.primary-action):focus-visible {
+  border-color: var(--accent) !important;
+  background: #ffffff !important;
+  color: var(--accent-strong) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+
+body.ux-simple[data-selection-kind="none"] .workflow-actions > button.primary-action,
+body.ux-simple[data-selection-kind="feature"] .workflow-actions > button.primary-action,
+body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button.primary-action,
+body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button.primary-action {
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
 }
 
 /* B566: narrow panes give long status text its own readable row. */
