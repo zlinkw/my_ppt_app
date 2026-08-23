@@ -29,6 +29,19 @@ function Move-VerifiedTempDirectoryToRecycleBin {
     )
 }
 
+function Get-VerifiedSha256 {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        $bytes = [System.Security.Cryptography.SHA256]::Create().ComputeHash($stream)
+        return (($bytes | ForEach-Object { $_.ToString("X2") }) -join "")
+    }
+    finally {
+        $stream.Dispose()
+    }
+}
+
 $assembly = [Reflection.Assembly]::LoadFrom($assemblyFile)
 $ribbonType = $assembly.GetType("RoughPptAddin.Ribbon.RoughRibbon", $true)
 $ribbonInstance = [Runtime.Serialization.FormatterServices]::GetUninitializedObject($ribbonType)
@@ -84,7 +97,7 @@ try {
         try {
             $path = Join-Path $tempRoot ($controlId + ".png")
             $bitmap.Save($path, [Drawing.Imaging.ImageFormat]::Png)
-            $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+            $hash = Get-VerifiedSha256 -Path $path
             $hashes[$hash] = $true
 
             $background = $bitmap.GetPixel(0, 0)

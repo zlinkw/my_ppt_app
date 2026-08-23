@@ -43,10 +43,16 @@ if (-not $msbuildPath) {
 }
 
 $certificateSubject = "CN=RoughPptAddin Dev"
-$signingCertificate = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue |
+$certificateStore = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+    [System.Security.Cryptography.X509Certificates.StoreName]::My,
+    [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+)
+$certificateStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+$signingCertificate = $certificateStore.Certificates |
     Where-Object { $_.Subject -eq $certificateSubject -and $_.HasPrivateKey -and $_.NotAfter -gt [DateTime]::Now } |
     Sort-Object NotAfter -Descending |
     Select-Object -First 1
+$certificateStore.Close()
 if (-not $signingCertificate) {
     $signingCertificate = New-SelfSignedCertificate -Type CodeSigningCert -Subject $certificateSubject -CertStoreLocation Cert:\CurrentUser\My
 }

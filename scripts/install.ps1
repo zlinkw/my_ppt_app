@@ -211,23 +211,43 @@ $manifestUri = (New-Object System.Uri($manifest)).AbsoluteUri
 $addInKey = "HKCU:\Software\Microsoft\Office\PowerPoint\Addins\RoughPptAddin"
 
 try {
+$trustStoreNames = @(
+    [System.Security.Cryptography.X509Certificates.StoreName]::TrustedPublisher,
+    [System.Security.Cryptography.X509Certificates.StoreName]::Root
+)
+function Add-RoughTrustCertificate {
+    param([System.Security.Cryptography.X509Certificates.X509Certificate2]$Certificate)
+
+    foreach ($storeName in $trustStoreNames) {
+        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+            $storeName,
+            [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+        )
+        $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+        $store.Add($Certificate)
+        $store.Close()
+    }
+}
+
 $packagedCert = Join-Path $root "certificates\RoughPptAddin.cer"
 if (Test-Path $packagedCert) {
-    Import-Certificate -FilePath $packagedCert -CertStoreLocation Cert:\CurrentUser\TrustedPublisher | Out-Null
-    Import-Certificate -FilePath $packagedCert -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
+    $packagedCertificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($packagedCert)
+    Add-RoughTrustCertificate -Certificate $packagedCertificate
     Write-Host ((U "\u5df2\u4fe1\u4efb\u6253\u5305\u7b7e\u540d\u8bc1\u4e66\uff1a") + $packagedCert)
 }
 
-$cert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue |
+$certificateStore = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+    [System.Security.Cryptography.X509Certificates.StoreName]::My,
+    [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+)
+$certificateStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+$cert = $certificateStore.Certificates |
     Where-Object { $_.Subject -eq "CN=RoughPptAddin Dev" -and $_.HasPrivateKey } |
     Sort-Object NotAfter -Descending |
     Select-Object -First 1
+$certificateStore.Close()
 if ($cert) {
-    $certPath = Join-Path $env:TEMP "RoughPptAddin-Dev.cer"
-    Export-Certificate -Cert $cert -FilePath $certPath -Force | Out-Null
-    Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\TrustedPublisher | Out-Null
-    Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
-    Remove-Item -LiteralPath $certPath -Force
+    Add-RoughTrustCertificate -Certificate $cert
     Write-Host ((U "\u5df2\u4fe1\u4efb\u5f00\u53d1\u7b7e\u540d\u8bc1\u4e66\uff1a") + $cert.Thumbprint)
 }
 

@@ -53,10 +53,18 @@ function Wait-ForFileReady {
 
 function New-FileManifest([string]$Path) {
     $item = Get-Item -LiteralPath $Path
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        $hashBytes = [System.Security.Cryptography.SHA256]::Create().ComputeHash($stream)
+        $sha256 = (($hashBytes | ForEach-Object { $_.ToString("X2") }) -join "")
+    }
+    finally {
+        $stream.Dispose()
+    }
     return [ordered]@{
         fileName = $item.Name
         length = $item.Length
-        sha256 = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+        sha256 = $sha256
     }
 }
 
@@ -99,6 +107,19 @@ function Resolve-Wix([string]$ToolRoot) {
         throw "WiX tools were not found after NuGet extraction."
     }
     return [ordered]@{ Candle = $resolvedCandle; Light = $resolvedLight }
+}
+
+function Resolve-Mage {
+    $candidates = @(
+        (Join-Path ${env:ProgramFiles(x86)} "Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\mage.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\mage.exe")
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return $candidate
+        }
+    }
+    throw "Mage.exe was not found. Install the .NET Framework 4.8 Developer Pack."
 }
 
 $commit = (& git rev-parse HEAD).Trim()
@@ -158,29 +179,92 @@ foreach ($path in @($releasePath, $publishRoot, $objRoot, $portableRoot, $portab
     New-Item -ItemType Directory -Path $path | Out-Null
 }
 
-$msbuildPath = Resolve-MsBuild
-$signingCertificate = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert -ErrorAction SilentlyContinue |
-    Where-Object { $_.Subject -eq "CN=RoughPptAddin Dev" -and $_.HasPrivateKey -and $_.NotAfter -gt [DateTime]::Now } |
-    Sort-Object NotAfter -Descending |
-    Select-Object -First 1
-if (-not $signingCertificate) {
-    throw "Current-user code-signing certificate CN=RoughPptAddin Dev with private key is required."
+$manifestTemplateRoot = Join-Path $objRoot "manifest-templates"
+New-Item -ItemType Directory -Path $manifestTemplateRoot | Out-Null
+foreach ($manifestName in @("RoughPptAddin.dll.manifest", "RoughPptAddin.vsto")) {
+    $source = Join-Path $root "publish\$manifestName"
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        throw "VSTO manifest template missing: $source"
+    }
+    Copy-Item -LiteralPath $source -Destination (Join-Path $manifestTemplateRoot $manifestName) -Force
 }
-$outputPath = $publishRoot.TrimEnd("\") + "\"
-$baseIntermediatePath = $objRoot.TrimEnd("\") + "\"
-$intermediatePath = (Join-Path $objRoot "Release").TrimEnd("\") + "\"
+
 Invoke-Checked {
-    & $msbuildPath RoughPptAddin.sln /t:Restore,Build /p:Configuration=Release /p:LangVersion=latest /p:SignManifests=true /p:ManifestCertificateThumbprint=$($signingCertificate.Thumbprint) /p:OutputPath=$outputPath /p:BaseIntermediateOutputPath=$baseIntermediatePath /p:IntermediateOutputPath=$intermediatePath /m
+    powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build.ps1
 } "MSBuild"
 
-$assemblyPath = Join-Path $publishRoot "RoughPptAddin.dll"
+$binRelease = Join-Path $root "src\RoughPptAddin\bin\Release"
+$assemblyPath = Join-Path $binRelease "RoughPptAddin.dll"
 $vstoPath = Join-Path $publishRoot "RoughPptAddin.vsto"
-if (-not ((Test-Path -LiteralPath $assemblyPath) -and (Test-Path -LiteralPath $vstoPath))) {
-    throw "Fresh VSTO build did not produce required DLL and VSTO manifest."
+$applicationManifestPath = Join-Path $publishRoot "RoughPptAddin.dll.manifest"
+if (-not (Test-Path -LiteralPath $assemblyPath -PathType Leaf)) {
+    throw "Fresh VSTO build did not produce required DLL."
 }
 Invoke-Checked {
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-ribbon-icons.ps1 -AssemblyPath $assemblyPath
 } "compiled Ribbon verification"
+
+Copy-Item -Path (Join-Path $binRelease "*") -Destination $publishRoot -Recurse -Force
+Copy-Item -Path (Join-Path $manifestTemplateRoot "*") -Destination $publishRoot -Force
+$releaseBuildInfo = [ordered]@{
+    name = $packageInfo.name
+    version = $installerProductVersion
+    commit = $commit.Substring(0, [Math]::Min(12, $commit.Length))
+    branch = (& git rev-parse --abbrev-ref HEAD).Trim()
+    dirty = -not [string]::IsNullOrWhiteSpace($statusText)
+    builtAtUtc = [DateTime]::UtcNow.ToString("o")
+    source = "release-package"
+}
+[IO.File]::WriteAllText(
+    (Join-Path $publishRoot "ui\build-info.json"),
+    ($releaseBuildInfo | ConvertTo-Json -Depth 3),
+    [Text.UTF8Encoding]::new($false)
+)
+
+$applicationManifestTemplate = Join-Path $manifestTemplateRoot "RoughPptAddin.dll.manifest"
+$deploymentManifestTemplate = Join-Path $manifestTemplateRoot "RoughPptAddin.vsto"
+Copy-Item -LiteralPath $applicationManifestTemplate -Destination $applicationManifestPath -Force
+$manifestXml = New-Object System.Xml.XmlDocument
+$manifestXml.Load($applicationManifestPath)
+$obsoleteDependencies = @(
+    $manifestXml.SelectNodes("//*[local-name()='dependency']") |
+        Where-Object {
+            $identity = $_.SelectSingleNode("*[local-name()='dependentAssembly']/*[local-name()='assemblyIdentity']")
+            $identity -and ($identity.name -eq 'Microsoft.VisualStudio.Interop' -or $identity.name -eq 'Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime')
+        }
+)
+foreach ($dependency in $obsoleteDependencies) {
+    $dependency.ParentNode.RemoveChild($dependency) | Out-Null
+}
+$manifestXml.Save($applicationManifestPath)
+
+$deploymentManifestPath = $vstoPath
+Remove-Item -LiteralPath $deploymentManifestPath -Force
+
+$certificateStore = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+    [System.Security.Cryptography.X509Certificates.StoreName]::My,
+    [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+)
+$certificateStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+$signingCertificate = $certificateStore.Certificates |
+    Where-Object { $_.Subject -eq "CN=RoughPptAddin Dev" -and $_.HasPrivateKey -and $_.NotAfter -gt [DateTime]::Now } |
+    Sort-Object NotAfter -Descending |
+    Select-Object -First 1
+$certificateStore.Close()
+if (-not $signingCertificate) {
+    throw "Current-user code-signing certificate CN=RoughPptAddin Dev with private key is required."
+}
+
+$mage = Resolve-Mage
+Invoke-Checked {
+    & $mage -u $applicationManifestPath -fd $publishRoot -ch $signingCertificate.Thumbprint -a sha256RSA
+} "VSTO application manifest update"
+Copy-Item -LiteralPath $deploymentManifestTemplate -Destination $deploymentManifestPath -Force
+Invoke-Checked {
+    & $mage -u $deploymentManifestPath -appm $applicationManifestPath -ch $signingCertificate.Thumbprint -a sha256RSA
+} "VSTO deployment manifest update"
+Invoke-Checked { & $mage -ver $applicationManifestPath } "VSTO application manifest verification"
+Invoke-Checked { & $mage -ver $vstoPath } "VSTO deployment manifest verification"
 
 Copy-Item -Path (Join-Path $publishRoot "*") -Destination $portablePublish -Recurse
 Copy-Item -Path scripts\install.ps1,scripts\install-payload-core.ps1,scripts\uninstall.ps1,scripts\uninstall-completely.ps1,scripts\diagnose.ps1,scripts\install-prereqs.ps1 -Destination $portableScripts
