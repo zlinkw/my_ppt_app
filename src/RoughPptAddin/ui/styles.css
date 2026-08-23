@@ -9849,6 +9849,11 @@ body .control-focus-pulse {
   max-width: 100%;
 }
 
+.topbar .build-info {
+  width: auto;
+  max-width: 240px;
+}
+
 .workflow-more-actions,
 .workflow-quickfind-actions {
   display: flex;

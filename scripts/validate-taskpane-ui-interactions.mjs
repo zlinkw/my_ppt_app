@@ -57,7 +57,7 @@ try {
     }
     if (width >= 720) {
       const wideControls = await evaluate(client, wideControlProbe());
-      if (wideControls.foldedMax > 340 || wideControls.galleryWidth > 520 || wideControls.quickToolMax > 320) {
+      if (wideControls.foldedMax > 340 || wideControls.galleryWidth > 520 || wideControls.quickToolMax > 320 || wideControls.buildInfoWidth > 240) {
         violations.push(`${width}px: 宽窗折叠控件或图库入口异常拉伸 ${JSON.stringify(wideControls)}`);
       }
     }
@@ -279,10 +279,12 @@ function wideControlProbe() {
     const quickTools = [...document.querySelectorAll('.quick-shape-tools button')]
       .filter(button => getComputedStyle(button).display !== 'none')
       .map(button => button.getBoundingClientRect().width);
+    const buildInfo = document.querySelector('.topbar .build-info')?.getBoundingClientRect().width ?? 0;
     return {
       foldedMax: Math.max(0, ...folded),
       galleryWidth: Math.round(gallery),
-      quickToolMax: Math.max(0, ...quickTools)
+      quickToolMax: Math.max(0, ...quickTools),
+      buildInfoWidth: Math.round(buildInfo)
     };
   })()`;
 }
