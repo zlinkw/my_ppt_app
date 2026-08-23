@@ -9701,6 +9701,42 @@ body .param-number-row:focus-within {
   box-shadow: var(--focus-ring);
 }
 
+/* B619: keep the sticky chrome compact and make the active mode unmistakable. */
+.topbar {
+  gap: 3px;
+  padding: 4px 5px;
+}
+
+.ux-mode-switch button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.ux-mode-switch button[aria-pressed="true"]:hover,
+.ux-mode-switch button[aria-pressed="true"]:focus-visible {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #ffffff;
+}
+
+.topbar .status {
+  min-height: 26px;
+  max-height: 44px;
+  padding: 2px 7px;
+}
+
+.topbar .build-info {
+  min-height: 24px;
+  padding: 2px 8px;
+}
+
+@media (max-width: 520px) {
+  .brand-copy small {
+    display: none;
+  }
+}
+
 body #sortMode:focus,
 body .params select:focus,
 body .params input[type="number"]:focus,
@@ -10397,4 +10433,11 @@ body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button.prim
     max-width: none;
     justify-self: start;
   }
+}
+
+/* B619: final mode-state override wins over the layered legacy button skins. */
+.ux-mode-switch button[aria-pressed="true"] {
+  border-color: var(--accent) !important;
+  background: var(--accent) !important;
+  color: #ffffff !important;
 }
