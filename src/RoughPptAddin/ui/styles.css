@@ -10486,3 +10486,15 @@ body .ribbon-gallery-search input {
   font-weight: 500;
   font-size: 12px;
 }
+
+/* B622: keep removal out of the resting preview; keyboard focus restores it. */
+.quick-shape-remove {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.quick-shape-item:hover .quick-shape-remove,
+.quick-shape-item:focus-within .quick-shape-remove {
+  opacity: 1;
+  pointer-events: auto;
+}
