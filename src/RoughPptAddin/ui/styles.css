@@ -1629,6 +1629,10 @@ button.selection-primary .function-icon,
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
+.badge:empty {
+  display: none !important;
+}
+
 .badge.tone-idle {
   background: var(--panel-soft);
   color: var(--muted);
@@ -1680,13 +1684,15 @@ button.selection-primary .function-icon,
 .panel.collapsed,
 .catalog-panel.collapsed {
   gap: 0;
+  padding: 5px 6px;
 }
 
 .panel.collapsed .panel-head,
 .catalog-panel.collapsed .catalog-head {
   border-bottom-color: transparent;
   background: #eef2f8;
-  padding-bottom: 2px;
+  min-height: 24px;
+  padding-bottom: 0;
 }
 
 .panel.collapsed .panel-head strong,
