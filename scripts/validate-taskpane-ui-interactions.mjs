@@ -55,6 +55,12 @@ try {
       if (!readable.commandsScrollable) violations.push(`${width}px: 常用功能命令未保留横向滚动`);
       if (!readable.commandDragReady) violations.push(`${width}px: 常用功能命令未启用鼠标拖动滚动`);
     }
+    if (width >= 720) {
+      const wideControls = await evaluate(client, wideControlProbe());
+      if (wideControls.foldedMax > 340 || wideControls.galleryWidth > 520 || wideControls.quickToolMax > 320) {
+        violations.push(`${width}px: 宽窗折叠控件或图库入口异常拉伸 ${JSON.stringify(wideControls)}`);
+      }
+    }
     const simpleModeActions = await evaluate(client, simpleModeActionsProbe());
     if (!simpleModeActions.bounded || simpleModeActions.height > 80) violations.push(`${width}px: 简洁模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
     if (!simpleModeActions.horizontalText) violations.push(`${width}px: 完整模式按钮文字未保持横排 ${JSON.stringify(simpleModeActions)}`);
@@ -260,6 +266,24 @@ function horizontalControlProbe() {
         (!summary || (summary.scrollWidth <= summary.clientWidth + 1 && summary.scrollHeight <= summary.clientHeight + 1));
     });
     return { chartScrollable, dragReady, cardsReadable, suggestionsScrollable, suggestionDragReady, commandsScrollable, commandDragReady };
+  })()`;
+}
+
+function wideControlProbe() {
+  return `(() => {
+    document.querySelector('#uiModeFull')?.click();
+    const folded = [...document.querySelectorAll('.workflow-more-actions button, .workflow-quickfind-actions button')]
+      .filter(button => getComputedStyle(button).display !== 'none')
+      .map(button => button.getBoundingClientRect().width);
+    const gallery = document.querySelector('.gallery-toggle')?.getBoundingClientRect().width ?? 0;
+    const quickTools = [...document.querySelectorAll('.quick-shape-tools button')]
+      .filter(button => getComputedStyle(button).display !== 'none')
+      .map(button => button.getBoundingClientRect().width);
+    return {
+      foldedMax: Math.max(0, ...folded),
+      galleryWidth: Math.round(gallery),
+      quickToolMax: Math.max(0, ...quickTools)
+    };
   })()`;
 }
 

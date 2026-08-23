@@ -9854,6 +9854,9 @@ body .control-focus-pulse {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
 }
 
 .workflow-more-actions button,
@@ -9878,6 +9881,8 @@ body .control-focus-pulse {
 .gallery-toggle {
   display: flex;
   width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
   min-height: 30px;
   height: auto;
   align-items: center;
@@ -9910,6 +9915,8 @@ body .control-focus-pulse {
   display: flex;
   flex-wrap: wrap;
   min-width: 0;
+  max-width: 640px;
+  margin-inline: auto;
 }
 
 .quick-shape-tools button {
