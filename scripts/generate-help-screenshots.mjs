@@ -49,7 +49,7 @@ try {
     }
     await evaluate(client, `(() => {
       const build = document.querySelector('#buildInfo');
-      if (build) build.textContent = build.textContent.replace(/\\*$/, '');
+      if (build) build.textContent = '版本 当前构建';
     })()`);
     await delay(100);
     const screenshot = await client.send("Page.captureScreenshot", {
