@@ -2473,7 +2473,7 @@ button.selection-primary .function-icon,
 
 .paper-preset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 5px;
 }
 
@@ -2597,6 +2597,7 @@ button.selection-primary .function-icon,
   min-width: 0;
   display: grid;
   gap: 3px;
+  padding-right: 44px;
 }
 
 .paper-preset-copy strong,
@@ -6247,12 +6248,12 @@ body.ux-simple .paper-preset-filters {
 }
 
 .paper-preset-grid {
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 6px;
 }
 
 body.ux-simple .paper-preset-grid {
-  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
 .zotero-image-card {
