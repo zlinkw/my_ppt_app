@@ -1572,8 +1572,8 @@ function renderGalleryIcon(item, scrollRoot = null, { eager = false } = {}) {
 function renderLocalGalleryIcon(item, scrollRoot = null, { eager = false } = {}) {
   const canvas = document.createElement("canvas");
   canvas.className = "gallery-icon";
-  canvas.width = 32;
-  canvas.height = 32;
+  canvas.width = 48;
+  canvas.height = 48;
   if (eager) {
     safeDrawNativeIconPreview(canvas, item);
     canvas.dataset.previewDrawn = "1";

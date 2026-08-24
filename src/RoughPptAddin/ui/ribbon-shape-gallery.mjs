@@ -206,8 +206,8 @@ function matchesQuery(item) {
 
 function renderGalleryIcon(item) {
   const canvas = document.createElement("canvas");
-  canvas.width = 32;
-  canvas.height = 32;
+  canvas.width = 48;
+  canvas.height = 48;
   safeDrawNativeIconPreview(canvas, item);
   return canvas;
 }

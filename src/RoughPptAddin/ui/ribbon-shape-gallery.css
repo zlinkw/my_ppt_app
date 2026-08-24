@@ -109,15 +109,15 @@ body {
 }
 
 .ribbon-shape-dropdown .gallery-list {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 5px;
 }
 
 .ribbon-shape-dropdown .gallery-shape {
-  width: 31px;
-  height: 31px;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
   display: grid;
   place-items: center;
   padding: 2px;
@@ -140,8 +140,8 @@ body {
 }
 
 .ribbon-shape-dropdown .gallery-shape canvas {
-  width: 25px;
-  height: 25px;
+  width: 30px;
+  height: 30px;
 }
 
 .gallery-empty {
