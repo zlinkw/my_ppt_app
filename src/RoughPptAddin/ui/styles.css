@@ -10342,12 +10342,11 @@ body.ux-simple .topbar .status:not(.expanded) {
   margin-inline: auto;
 }
 
-body.ux-simple[data-selection-kind="none"] .workflow-actions,
-body.ux-simple[data-selection-kind="feature"] .workflow-actions,
-body.ux-simple[data-selection-kind="none"] .simple-mode-actions,
-body.ux-simple[data-selection-kind="feature"] .simple-mode-actions {
+body.ux-simple .workflow-actions,
+body.ux-simple .simple-mode-actions {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(2, minmax(0, 272px)) !important;
+  justify-content: center !important;
   gap: 5px !important;
   align-items: stretch;
   max-width: 560px !important;
@@ -10357,21 +10356,25 @@ body.ux-simple .workflow-actions-label {
   display: none !important;
 }
 
-body.ux-simple[data-selection-kind="none"] .workflow-actions > button,
-body.ux-simple[data-selection-kind="feature"] .workflow-actions > button,
-body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button,
-body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button {
+body.ux-simple .workflow-actions > button,
+body.ux-simple .simple-mode-actions > button {
   width: 100%;
   min-width: 0;
   min-height: 36px !important;
   padding: 7px 10px !important;
 }
 
+body.ux-simple[data-selection-kind="normal"] .workflow-actions > #simpleModeFullSwitch,
+body.ux-simple[data-selection-kind="rough"] .workflow-actions > #simpleModeFullSwitch,
+body.ux-simple[data-selection-kind="feature"] .workflow-actions > #simpleModeFullSwitch {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(100%, 272px);
+}
+
 /* B612: primary paths use one compact tile grammar across narrow and wide panes. */
-body.ux-simple[data-selection-kind="none"] .workflow-actions > button:not(.primary-action),
-body.ux-simple[data-selection-kind="feature"] .workflow-actions > button:not(.primary-action),
-body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button:not(.primary-action),
-body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button:not(.primary-action) {
+body.ux-simple .workflow-actions > button:not(.primary-action),
+body.ux-simple .simple-mode-actions > button:not(.primary-action) {
   border-color: #e4e4e8 !important;
   border-radius: 8px !important;
   background: #f7f7f8 !important;
@@ -10382,24 +10385,18 @@ body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button:not(
   white-space: nowrap !important;
 }
 
-body.ux-simple[data-selection-kind="none"] .workflow-actions > button:not(.primary-action):hover,
-body.ux-simple[data-selection-kind="feature"] .workflow-actions > button:not(.primary-action):hover,
-body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button:not(.primary-action):hover,
-body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button:not(.primary-action):hover,
-body.ux-simple[data-selection-kind="none"] .workflow-actions > button:not(.primary-action):focus-visible,
-body.ux-simple[data-selection-kind="feature"] .workflow-actions > button:not(.primary-action):focus-visible,
-body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button:not(.primary-action):focus-visible,
-body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button:not(.primary-action):focus-visible {
+body.ux-simple .workflow-actions > button:not(.primary-action):hover,
+body.ux-simple .simple-mode-actions > button:not(.primary-action):hover,
+body.ux-simple .workflow-actions > button:not(.primary-action):focus-visible,
+body.ux-simple .simple-mode-actions > button:not(.primary-action):focus-visible {
   border-color: var(--accent) !important;
   background: #ffffff !important;
   color: var(--accent-strong) !important;
   box-shadow: var(--focus-ring) !important;
 }
 
-body.ux-simple[data-selection-kind="none"] .workflow-actions > button.primary-action,
-body.ux-simple[data-selection-kind="feature"] .workflow-actions > button.primary-action,
-body.ux-simple[data-selection-kind="none"] .simple-mode-actions > button.primary-action,
-body.ux-simple[data-selection-kind="feature"] .simple-mode-actions > button.primary-action {
+body.ux-simple .workflow-actions > button.primary-action,
+body.ux-simple .simple-mode-actions > button.primary-action {
   border-radius: 8px !important;
   box-shadow: none !important;
   font-size: 12px !important;
