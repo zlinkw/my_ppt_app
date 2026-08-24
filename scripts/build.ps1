@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $root
+. (Join-Path $PSScriptRoot "installer-version.ps1")
 
 function Invoke-Checked {
     param(
@@ -67,4 +68,31 @@ Invoke-Checked { powershell -ExecutionPolicy Bypass -File scripts\verify-ribbon-
 
 New-Item -ItemType Directory -Force publish | Out-Null
 Copy-Item -Recurse -Force src\RoughPptAddin\bin\Release\* publish\
+
+$commitCountText = (& git rev-list --count HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $commitCountText -notmatch "^\d+$") {
+    throw "Unable to derive local build version from Git history."
+}
+
+$packageInfo = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $root "package.json") | ConvertFrom-Json
+$statusText = (& git status --porcelain | Out-String).Trim()
+$buildInfo = [ordered]@{
+    name = $packageInfo.name
+    version = Resolve-InstallerProductVersion -PackageJsonPath (Join-Path $root "package.json") -CommitCount ([int]$commitCountText)
+    commit = (& git rev-parse --short=12 HEAD).Trim()
+    branch = (& git rev-parse --abbrev-ref HEAD).Trim()
+    dirty = -not [string]::IsNullOrWhiteSpace($statusText)
+    builtAtUtc = [DateTime]::UtcNow.ToString("o")
+    source = "local-build"
+}
+$buildInfoJson = $buildInfo | ConvertTo-Json -Depth 3
+foreach ($relativeTarget in @(
+    "src\RoughPptAddin\bin\Release\ui\build-info.json",
+    "publish\ui\build-info.json"
+)) {
+    $targetPath = Join-Path $root $relativeTarget
+    New-Item -ItemType Directory -Force (Split-Path -Parent $targetPath) | Out-Null
+    [IO.File]::WriteAllText($targetPath, $buildInfoJson, [Text.UTF8Encoding]::new($false))
+}
+
 Write-Host "Build staged in publish/"
