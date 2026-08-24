@@ -30,7 +30,8 @@ const windows = [
       if (result.checkedCount !== 1) push(`图表类型单选状态异常，aria-checked=true 的入口有 ${result.checkedCount} 个`);
       if (viewport.width >= 1121 && result.layoutColumns !== 3) push(`默认科研绘图窗口应为三栏，实际 ${result.layoutColumns} 栏`);
       if (viewport.width <= 780 && !result.controlFirst) push("窄窗科研绘图必须先显示数据和图表控制，再显示预览");
-      if (result.previewTopGap > 32) push(`科研绘图预览顶部空白异常：${result.previewTopGap}px`);
+      if (result.previewVerticalOffset > result.previewVerticalSlack + 4) push(`科研绘图预览未居中或越界：偏移 ${result.previewVerticalOffset}px，允许 ${result.previewVerticalSlack}px`);
+      if (viewport.width >= 1121 && result.pageScroll > 2) push(`宽窗科研绘图不应整页滚动，当前额外高度 ${result.pageScroll}px`);
     }
   },
   {
@@ -211,6 +212,9 @@ function chartTypeProbe() {
       layoutColumns: layoutStyle.gridTemplateColumns.split(' ').length,
       controlFirst: controlRect.top <= previewRect.top,
       previewTopGap: Math.round(contentRect.top - wrapRect.top),
+      previewVerticalOffset: Math.round(Math.max(0, contentRect.top - wrapRect.top)),
+      previewVerticalSlack: Math.round(Math.max(0, wrapRect.height - contentRect.height) / 2),
+      pageScroll: Math.max(0, document.documentElement.scrollHeight - document.documentElement.clientHeight),
       importPreviewVisible: Boolean(importedPreview && !importedPreview.hidden && importedPreview.getBoundingClientRect().height > 0)
     };
   } catch (error) { return { probeError: String(error), stack: error?.stack }; }
