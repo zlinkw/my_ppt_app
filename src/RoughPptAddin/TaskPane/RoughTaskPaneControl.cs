@@ -74,7 +74,19 @@ public sealed class RoughTaskPaneControl : UserControl
 
 	public void BeginInitialization()
 	{
-		EnsureInitializedAsync();
+		RunInitializationInBackground();
+	}
+
+	private async void RunInitializationInBackground()
+	{
+		try
+		{
+			await EnsureInitializedAsync().ConfigureAwait(continueOnCapturedContext: true);
+		}
+		catch
+		{
+			// InitializeCoreAsync already records and renders the failure.
+		}
 	}
 
 	public void ShowStatusFromHost(string text, bool isError = false)
@@ -120,7 +132,7 @@ public sealed class RoughTaskPaneControl : UserControl
 
 	public void ApplyStyleFromHost(RoughStyle style, string status)
 	{
-		ApplyStyleFromHostAsync(style, status);
+		_ = ApplyStyleFromHostAsync(style, status);
 	}
 
 	private async Task ApplyStyleFromHostAsync(RoughStyle style, string status)
@@ -143,7 +155,7 @@ public sealed class RoughTaskPaneControl : UserControl
 
 	public void ApplyFeatureBlockFromHost(FeatureBlockOptions options, string status)
 	{
-		ApplyFeatureBlockFromHostAsync(options, status);
+		_ = ApplyFeatureBlockFromHostAsync(options, status);
 	}
 
 	private async Task ApplyFeatureBlockFromHostAsync(FeatureBlockOptions options, string status)
@@ -166,12 +178,12 @@ public sealed class RoughTaskPaneControl : UserControl
 
 	public void FocusSection(string section, string status)
 	{
-		FocusSectionAsync(section, status);
+		_ = FocusSectionAsync(section, status);
 	}
 
 	public void RefreshUserAssetsFromHost(string status)
 	{
-		RefreshUserAssetsFromHostAsync(status);
+		_ = RefreshUserAssetsFromHostAsync(status);
 	}
 
 	private async Task RefreshUserAssetsFromHostAsync(string status)

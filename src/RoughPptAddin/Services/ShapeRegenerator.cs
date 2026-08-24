@@ -156,7 +156,7 @@ public sealed class ShapeRegenerator : IDisposable
 		}
 		if (startDrain)
 		{
-			DrainPendingAsync();
+			_ = DrainPendingAsync();
 		}
 	}
 
@@ -200,7 +200,7 @@ public sealed class ShapeRegenerator : IDisposable
 		}
 		if (restart)
 		{
-			DrainPendingAsync();
+			_ = DrainPendingAsync();
 		}
 	}
 

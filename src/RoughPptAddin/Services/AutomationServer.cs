@@ -126,7 +126,7 @@ public sealed class AutomationServer : IDisposable
 			try
 			{
 				context = await listener.GetContextAsync().ConfigureAwait(continueOnCapturedContext: false);
-				Task.Run(() => HandleAsync(context, cancel), cancel);
+				_ = Task.Run(() => HandleAsync(context, cancel), cancel);
 			}
 			catch (ObjectDisposedException)
 			{
