@@ -4691,6 +4691,8 @@ button.selection-primary .function-icon,
   width: 23px;
   height: 23px;
   object-fit: contain;
+  content-visibility: visible;
+  contain-intrinsic-size: 23px 23px;
 }
 
 .quick-empty {

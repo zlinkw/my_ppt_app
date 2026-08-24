@@ -1553,27 +1553,33 @@ function resolveGalleryIconDataUrl(item) {
   return item.dataUrl || state.shapeIcons[item.enumName] || state.quickShapeDetails?.[item.enumName]?.dataUrl || null;
 }
 
-function renderGalleryIcon(item, scrollRoot = null) {
+function renderGalleryIcon(item, scrollRoot = null, { eager = false } = {}) {
   const dataUrl = state.preferOfficeIcons ? (item?.dataUrl || state.shapeIcons[item.enumName]) : null;
   if (dataUrl) {
     const image = document.createElement("img");
     image.className = "gallery-icon";
     image.alt = "";
-    image.loading = "lazy";
+    image.loading = eager ? "eager" : "lazy";
     image.decoding = "async";
     image.src = dataUrl;
-    image.addEventListener("error", () => image.replaceWith(renderLocalGalleryIcon(item, scrollRoot)));
+    image.addEventListener("error", () => image.replaceWith(renderLocalGalleryIcon(item, scrollRoot, { eager })));
     return image;
   }
 
-  return renderLocalGalleryIcon(item, scrollRoot);
+  return renderLocalGalleryIcon(item, scrollRoot, { eager });
 }
 
-function renderLocalGalleryIcon(item, scrollRoot = null) {
+function renderLocalGalleryIcon(item, scrollRoot = null, { eager = false } = {}) {
   const canvas = document.createElement("canvas");
   canvas.className = "gallery-icon";
   canvas.width = 32;
   canvas.height = 32;
+  if (eager) {
+    safeDrawNativeIconPreview(canvas, item);
+    canvas.dataset.previewDrawn = "1";
+    delete canvas.__roughPreviewItem;
+    return canvas;
+  }
   scheduleGalleryIconPreview(canvas, item, scrollRoot);
   return canvas;
 }
@@ -5815,7 +5821,7 @@ function renderQuickShapes() {
     button.className = "quick-shape";
     button.title = displayName(item);
     button.setAttribute("aria-label", displayName(item));
-    button.append(renderGalleryIcon(item, els.quickShapes));
+    button.append(renderGalleryIcon(item, els.quickShapes, { eager: true }));
     button.addEventListener("click", () => insertShape(item));
     button.addEventListener("contextmenu", event => {
       event.preventDefault();
