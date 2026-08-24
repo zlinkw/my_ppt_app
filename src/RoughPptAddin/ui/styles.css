@@ -8345,11 +8345,11 @@ body.ux-simple:not(:has(.command-bar:focus-within, .search-suggestions:focus-wit
   display: none;
 }
 
-/* B370: wide full-mode command center uses the available pane width. */
+/* B638: wide command-center cards keep detail text readable without overpacking. */
 @media (min-width: 521px) {
   .command-results.command-center .command-result-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 8px;
     overflow-x: visible;
     padding-bottom: 0;
