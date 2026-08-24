@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { writeUiBuildInfo } from "./lib/ui-build-info.mjs";
 
 const destDir = "src/RoughPptAddin/ui/vendor";
 fs.mkdirSync(destDir, { recursive: true });
@@ -28,3 +29,5 @@ const licenseText = licenses.map(([name, src]) => {
   return `===== ${name} =====\n\n${fs.readFileSync(src, "utf8").trim()}\n`;
 }).join("\n");
 fs.writeFileSync(path.join(destDir, "vega-LICENSES.txt"), licenseText, "utf8");
+
+writeUiBuildInfo();

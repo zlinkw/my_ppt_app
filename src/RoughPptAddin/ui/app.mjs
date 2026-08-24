@@ -6679,9 +6679,8 @@ function buildInfoShortLabel(info) {
 
 function buildInfoCompactLabel(info) {
   if (!info) return "版本检测";
-  const commit = info.commit && info.commit !== "未知" ? info.commit.slice(0, 7) : "";
   const dirty = info.dirty ? "*" : "";
-  return commit ? `版本 ${commit}${dirty}` : `版本 v${info.version}${dirty}`;
+  return `版本 v${info.version}${dirty}`;
 }
 
 function formatBuildTimeShort(info) {
