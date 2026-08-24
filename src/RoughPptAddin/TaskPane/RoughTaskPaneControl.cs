@@ -233,7 +233,6 @@ public sealed class RoughTaskPaneControl : UserControl
 
 	private async Task InitializeCoreAsync()
 	{
-		_ = 2;
 		try
 		{
 			string uiDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ui");

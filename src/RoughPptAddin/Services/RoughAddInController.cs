@@ -498,7 +498,6 @@ namespace RoughPptAddin.Services
     
     	public async void InsertShape(string sourceMsoType, RoughStyle style, float? width, float? height)
     	{
-    		_ = 1;
     		try
     		{
     			if (!bridge.IsReady)
@@ -564,7 +563,6 @@ namespace RoughPptAddin.Services
     
     	public async Task<int> ConvertSelectionToRoughAsync(RoughStyle style)
     	{
-    		_ = 1;
     		try
     		{
     			if (!bridge.IsReady)
