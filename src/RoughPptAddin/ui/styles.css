@@ -3928,6 +3928,7 @@ button.selection-primary .function-icon,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(98px, 1fr));
   gap: 5px;
+  align-items: start;
   padding: 4px;
   border: 1px solid #e8eef5;
   border-radius: var(--radius);
