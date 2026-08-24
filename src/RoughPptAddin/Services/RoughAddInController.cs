@@ -558,7 +558,7 @@ namespace RoughPptAddin.Services
     
     	public void ConvertSelectionToRough(RoughStyle style)
     	{
-    		_ = ConvertSelectionToRoughAsync(style);
+		_ = ConvertSelectionToRoughAsync(style);
     	}
     
     	public async Task<int> ConvertSelectionToRoughAsync(RoughStyle style)
