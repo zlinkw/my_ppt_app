@@ -75,7 +75,7 @@ if ($LASTEXITCODE -ne 0 -or $commitCountText -notmatch "^\d+$") {
 }
 
 $packageInfo = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $root "package.json") | ConvertFrom-Json
-$statusText = (& git status --porcelain | Out-String).Trim()
+$statusText = (& git status --porcelain -- . ":(exclude)src/RoughPptAddin/ui/build-info.json" | Out-String).Trim()
 $buildInfo = [ordered]@{
     name = $packageInfo.name
     version = Resolve-InstallerProductVersion -PackageJsonPath (Join-Path $root "package.json") -CommitCount ([int]$commitCountText)
