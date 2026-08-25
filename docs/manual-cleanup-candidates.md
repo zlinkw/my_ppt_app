@@ -42,6 +42,8 @@
 | `src/RoughPptAddin/Ribbon/RoughRibbon.cs).Count` | 恢复抽取副产物文件 | 7 字节，内容只有一个行数 `2532`；无任何脚本、工程文件或文档引用 | 位于 `src/` 之下，必须与正式源文件 `RoughRibbon.cs` 区分确认后再删除 | 待人工审核 |
 | `src/RoughPptAddin/ui/app.mjs).Count` | 恢复抽取副产物文件 | 7 字节，内容只有一个行数 `2802`；无任何脚本、工程文件或文档引用 | 位于 `src/` 之下，必须与正式源文件 `app.mjs` 区分确认后再删除 | 待人工审核 |
 | `src/RoughPptAddin/ui/styles.css.bak345` | 手工样式备份 | 185 KB 的旧版 `styles.css` 备份（2026-07-13），当前 `styles.css` 已增长到 245 KB；无任何脚本、工程文件或文档引用 | 位于运行时 UI 源目录内。B543 起同步脚本会过滤并清除运行时目录中的同类残留，但源目录副本仍需人工确认历史样式不再需要后删除 | 待人工审核 |
+| `src/RoughPptAddin/Services/ZlkClusterAutomationServer.cs/` | 恢复抽取副产物目录 | 目录名与正式 C# 源文件同名，内部只保存 2026-07-07 的 add 和 before-delete 文本片段；Git 跟踪两个 txt，未发现脚本、工程或文档引用 | 删除前确认这些补丁过程片段无需继续留在工作区；正式源文件 `ZlkClusterAutomationServer.cs` 必须保留 | 待人工审核 |
+| `src/RoughPptAddin/Services/ZlkClusterChartRenderer.cs/` | 恢复抽取副产物目录 | 目录名与正式 C# 源文件同名，内部只保存 2026-07-07 的 add 和 before-delete 文本片段；Git 跟踪两个 txt，未发现脚本、工程或文档引用 | 删除前确认这些补丁过程片段无需继续留在工作区；正式源文件 `ZlkClusterChartRenderer.cs` 必须保留 | 待人工审核 |
 
 ## 后续清理方向
 
