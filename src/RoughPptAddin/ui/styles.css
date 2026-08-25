@@ -4423,7 +4423,8 @@ button.selection-primary .function-icon,
 
 .gallery-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(32px, 38px));
+  justify-content: start;
   gap: 3px;
 }
 
