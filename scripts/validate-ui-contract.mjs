@@ -293,7 +293,7 @@ for (const snippet of [
   "matchedCommands",
   "commandCenterItems",
   "roughPptRecentCommands",
-  "command-center",
+  "if (!query) {\n    els.commandResults.hidden = true;",
   "searchScope",
   "searchScopeAllows(\"preset\")",
   "searchScopeAllows(\"chart\")",
@@ -649,7 +649,7 @@ if (!/(white-space\s*:\s*(normal|pre-wrap|break-spaces)|overflow-wrap\s*:\s*(any
   }
 }
 
-for (const selector of [".style-template-preview", ".style-quick-strip", ".style-param-jump", ".search-suggestion-list", ".command-results.command-center .command-result-list"]) {
+for (const selector of [".style-template-preview", ".style-quick-strip", ".style-param-jump", ".search-suggestion-list"]) {
   if (!app.includes(selector)) {
     violations.push(`app.mjs: horizontal drag-scroll contract missing selector: ${selector}`);
   }

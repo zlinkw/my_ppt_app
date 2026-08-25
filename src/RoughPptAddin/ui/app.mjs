@@ -2443,22 +2443,26 @@ function activateCommandResult(command) {
 
 function renderCommandResults() {
   if (!els.commandResults) return;
-  const commands = matchedCommands();
   const query = state.query.trim();
-  els.commandResults.hidden = commands.length === 0;
-  els.commandResults.classList.toggle("command-center", !query);
+  els.commandResults.classList.remove("command-center");
   els.commandResults.innerHTML = "";
+  if (!query) {
+    els.commandResults.hidden = true;
+    return;
+  }
+  const commands = matchedCommands();
+  els.commandResults.hidden = commands.length === 0;
   if (!commands.length) return;
 
   const header = document.createElement("header");
   header.className = "command-results-head";
   const title = document.createElement("strong");
-  title.textContent = query ? "匹配功能" : "常用功能";
-  title.title = query ? "根据当前搜索词匹配到的插件功能命令" : "空搜索时显示最近使用和常用插件功能命令";
+  title.textContent = "匹配功能";
+  title.title = "根据当前搜索词匹配到的插件功能命令";
   const hint = document.createElement("span");
   hint.className = "badge";
-  hint.textContent = query ? `${commands.length} 项` : "命令中心";
-  hint.title = query ? "点击命令会定位到对应功能区，不会直接执行删除或覆盖等操作" : "点击命令只定位到功能区，不会直接执行删除、分享或覆盖操作";
+  hint.textContent = `${commands.length} 项`;
+  hint.title = "点击命令会定位到对应功能区，不会直接执行删除或覆盖等操作";
   header.append(title, hint);
 
   const list = document.createElement("div");
@@ -2484,9 +2488,9 @@ function renderCommandResults() {
     button.append(icon, copy);
     button.addEventListener("click", () => activateCommandResult(command));
     button.addEventListener("keydown", event => {
-      if (event.key === "ArrowDown" || event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
-        focusAdjacentCommandButton(button, event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1);
+        focusAdjacentCommandButton(button, event.key === "ArrowDown" ? 1 : -1);
       } else if (event.key === "Home" || event.key === "End") {
         event.preventDefault();
         focusEdgeCommandButton(event.key === "End" ? -1 : 0);
@@ -8644,7 +8648,7 @@ function safeInitStep(label, fn) {
 
 function initHorizontalDragScroll() {
   const containers = document.querySelectorAll(
-    ".chart-preset-strip, .style-template-preview, .style-quick-strip, .style-param-jump, .search-suggestion-list, .command-results.command-center .command-result-list"
+    ".chart-preset-strip, .style-template-preview, .style-quick-strip, .style-param-jump, .search-suggestion-list"
   );
   for (const container of containers) {
     if (container.dataset.dragScrollReady === "true") continue;
@@ -8654,9 +8658,7 @@ function initHorizontalDragScroll() {
     if (!container.hasAttribute("aria-label")) {
       const label = container.classList.contains("style-template-preview")
         ? "风格模板预览，可横向拖动或按左右方向键查看更多"
-        : container.classList.contains("command-result-list")
-          ? "常用功能命令，可横向拖动或按左右方向键查看更多"
-          : container.classList.contains("search-suggestion-list")
+        : container.classList.contains("search-suggestion-list")
             ? "常用搜索建议，可横向拖动或按左右方向键查看更多"
           : container.classList.contains("style-quick-strip")
             ? "常用风格快捷项，可横向拖动或按左右方向键查看更多"

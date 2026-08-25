@@ -878,6 +878,10 @@ button.selection-primary .function-icon,
   background: var(--panel);
 }
 
+.command-results[hidden] {
+  display: none !important;
+}
+
 .command-results-head {
   display: flex;
   align-items: center;
@@ -887,32 +891,13 @@ button.selection-primary .function-icon,
 
 .command-result-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-  gap: 4px;
-}
-
-.command-results.command-center {
-  gap: 4px;
-  padding: 5px;
-}
-
-.command-results.command-center .command-result-list {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding-bottom: 1px;
-}
-
-.command-results.command-center .command-result {
-  min-height: 34px;
-  flex: 0 0 128px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
 }
 
 .command-result {
   min-width: 0;
-  min-height: 34px;
+  min-height: 44px;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
@@ -8263,7 +8248,6 @@ body.ux-simple .style-template-bar #redrawFromStyle {
 
 /* B359: simple mode keeps one route per first-screen workflow. */
 body.ux-simple .novice-guide-strip,
-body.ux-simple .command-results.command-center,
 body.ux-simple .selection-panel[data-selection-kind="none"] .selection-empty-actions,
 body.ux-simple .selection-panel[data-selection-kind="none"] .quick-actions {
   display: none;
@@ -8364,31 +8348,6 @@ body.ux-simple .search-suggestion-label {
 /* B371: simple mode reveals keyword hints only while search is engaged. */
 body.ux-simple:not(:has(.command-bar:focus-within, .search-suggestions:focus-within)) .search-suggestions {
   display: none;
-}
-
-/* B638: wide command-center cards keep detail text readable without overpacking. */
-@media (min-width: 521px) {
-  .command-results.command-center .command-result-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 8px;
-    overflow-x: visible;
-    padding-bottom: 0;
-  }
-
-  .command-results.command-center .command-result {
-    width: auto;
-    min-width: 0;
-    min-height: 48px;
-    flex: none;
-  }
-
-  .command-results.command-center .command-result-copy strong {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-    line-height: 1.2;
-  }
 }
 
 /* B380 final override: ZLK workbench colors and button geometry. */

@@ -55,10 +55,6 @@ try {
     if (!readable.cardsReadable) violations.push(`${width}px: 科研图预设卡片文字被裁切或压缩`);
     if (!readable.suggestionsScrollable) violations.push(`${width}px: 常用搜索建议未保留横向滚动`);
     if (!readable.suggestionDragReady) violations.push(`${width}px: 常用搜索建议未启用鼠标拖动滚动`);
-    if (width <= 520) {
-      if (!readable.commandsScrollable) violations.push(`${width}px: 常用功能命令未保留横向滚动`);
-      if (!readable.commandDragReady) violations.push(`${width}px: 常用功能命令未启用鼠标拖动滚动`);
-    }
     if (width >= 720) {
       const wideControls = await evaluate(client, wideControlProbe());
       if (wideControls.foldedMax > 340 || wideControls.galleryWidth > 520 || wideControls.quickToolMax > 320 || wideControls.buildInfoWidth > 240) {
@@ -256,12 +252,6 @@ function horizontalControlProbe() {
     const suggestionDragReady = Boolean(
       suggestions?.classList.contains('horizontal-drag-scroll') && suggestions?.dataset.dragScrollReady === 'true'
     );
-    const commands = document.querySelector('.command-results.command-center .command-result-list');
-    const commandButtons = [...(commands?.querySelectorAll('.command-result') ?? [])].filter(visible);
-    const commandsScrollable = Boolean(visible(commands) && commandButtons.length >= 3 && commands.scrollWidth > commands.clientWidth + 1);
-    const commandDragReady = Boolean(
-      commands?.classList.contains('horizontal-drag-scroll') && commands?.dataset.dragScrollReady === 'true'
-    );
     const cardsReadable = cards.length >= 3 && cards.every(card => {
       const title = card.querySelector('strong');
       const summary = card.querySelector('small');
@@ -269,7 +259,7 @@ function horizontalControlProbe() {
         (!title || (title.scrollWidth <= title.clientWidth + 1 && title.scrollHeight <= title.clientHeight + 1)) &&
         (!summary || (summary.scrollWidth <= summary.clientWidth + 1 && summary.scrollHeight <= summary.clientHeight + 1));
     });
-    return { chartScrollable, dragReady, cardsReadable, suggestionsScrollable, suggestionDragReady, commandsScrollable, commandDragReady };
+    return { chartScrollable, dragReady, cardsReadable, suggestionsScrollable, suggestionDragReady };
   })()`;
 }
 
