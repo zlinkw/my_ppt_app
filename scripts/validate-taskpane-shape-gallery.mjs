@@ -88,6 +88,12 @@ if (app.includes("button.title = `${group.title} - ${displayName(item)}")) {
 if (app.includes("name.textContent = displayName(item);") && app.includes("button.append(canvas, name);")) {
   violations.push("app.mjs shape dropdown should not duplicate names under every icon");
 }
+if (!app.includes("shell.className = \"shape-card-shell\";") || !app.includes("shell.append(card, favorite);")) {
+  violations.push("app.mjs shape cards must keep the favorite action outside the insert role=button");
+}
+if (!css.includes(".shape-card-shell") || !css.includes(".shape-card-shell .shape-card")) {
+  violations.push("styles.css missing shape card shell layout for sibling favorite action");
+}
 
 const generator = fs.readFileSync("src/RoughPptAddin/ui/rough-shape-generator.mjs", "utf8");
 if (!generator.includes("function previewShapeForMso")) {

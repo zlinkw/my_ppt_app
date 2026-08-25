@@ -3047,6 +3047,8 @@ function renderCard(item) {
 
 function renderShapeCard(item) {
   const insertable = item.insertable !== false;
+  const shell = document.createElement("div");
+  shell.className = "shape-card-shell";
   const card = document.createElement("div");
   card.className = `shape-card${insertable ? "" : " disabled"}`;
   card.title = insertable
@@ -3098,7 +3100,7 @@ function renderShapeCard(item) {
     chip(fidelityLabel(item.fidelity), fidelityLabel(item.fidelity), "几何生成精度：精确表示可直接插入，占位表示暂不插入")
   );
 
-  card.append(favorite, previewWrap, name, meta, chips);
+  card.append(previewWrap, name, meta, chips);
   card.addEventListener("click", () => {
     if (insertable) insertShape(item);
     else setStatus(`${displayName(item)} 是 PowerPoint 占位枚举，当前不能插入。`, true);
@@ -3109,7 +3111,8 @@ function renderShapeCard(item) {
       if (insertable) insertShape(item);
     }
   });
-  return card;
+  shell.append(card, favorite);
+  return shell;
 }
 
 function chip(text, tone = "", title = "") {
