@@ -132,6 +132,9 @@ footer a:hover { background: var(--command-text-hover); }
 }
 
 .guide-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   color: var(--ink);
   font-size: 13px;
   font-weight: 700;

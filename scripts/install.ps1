@@ -62,6 +62,17 @@ function Stop-InstallerTranscript {
     $script:InstallerTranscriptStarted = $false
 }
 
+function Invoke-RoughBuild {
+    $powershellExecutable = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+    $buildScript = Join-Path $PSScriptRoot "build.ps1"
+    $buildProcess = Start-Process -FilePath $powershellExecutable `
+        -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$buildScript`"") `
+        -Wait -PassThru -WindowStyle Hidden
+    if ($buildProcess.ExitCode -ne 0) {
+        throw ((U "\u6784\u5efa\u5931\u8d25\uff0c\u9000\u51fa\u7801\uff1a") + $buildProcess.ExitCode)
+    }
+}
+
 trap {
     $message = if ($_.Exception -and $_.Exception.Message) { $_.Exception.Message } else { [string]$_ }
     Stop-InstallerTranscript
@@ -98,7 +109,7 @@ if (-not (Test-Path -LiteralPath $payloadCore -PathType Leaf)) {
 . $payloadCore
 
 if (-not $SkipBuild) {
-    powershell -ExecutionPolicy Bypass -File scripts\build.ps1
+    Invoke-RoughBuild
 }
 
 function Test-RegistryPath {

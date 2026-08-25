@@ -22,7 +22,11 @@ try {
   await client.send("Runtime.enable");
   await client.send("Page.enable");
   await client.send("Page.navigate", { url: `http://127.0.0.1:${server.port}/index.html` });
-  await waitFor(client, "document.readyState === 'complete' && Boolean(document.querySelector('#search'))");
+  await waitFor(client,
+    "document.readyState === 'complete' && window.roughPptTaskPaneReady === true && " +
+    "Boolean(document.querySelector('#search')) && " +
+    "document.querySelectorAll('#chartPresetStrip .chart-preset-card').length >= 3 && " +
+    "document.querySelector('#chartPresetStrip')?.dataset.dragScrollReady === 'true'");
 
   for (const width of widths) {
     await client.send("Emulation.setDeviceMetricsOverride", {

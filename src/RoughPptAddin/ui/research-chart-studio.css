@@ -112,7 +112,7 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
 .chart-type-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
 .chart-discovery { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(112px, .9fr); gap: 6px; margin-bottom: 5px; }
 .chart-discovery label { min-width: 0; display: grid; gap: 3px; color: #475467; font-size: 11px; }
-.chart-search-field input { min-width: 0; }
+.chart-search-field input { min-width: 24px; min-height: 32px; }
 .chart-search-summary { margin: 0 0 6px; color: var(--muted); font-size: 10px; }
 .chart-empty-state {
   margin: 0 0 6px;
@@ -177,7 +177,15 @@ input[type="text"], input[type="number"], select { padding: 4px 7px; }
 .options-section { display: grid; gap: 6px; }
 .options-section .section-heading { margin-bottom: 2px; }
 .toggle-row { min-height: 26px; display: flex; align-items: center; gap: 7px; color: #475467; font-size: 12px; }
-.toggle-row input { width: 15px; height: 15px; accent-color: var(--accent); }
+.toggle-row input {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--accent);
+}
 .full-width { width: 100%; margin-top: 4px; }
 
 .external-tools { margin: 0 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
