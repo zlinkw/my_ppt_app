@@ -64,6 +64,10 @@ try {
     const simpleModeActions = await evaluate(client, simpleModeActionsProbe());
     if (!simpleModeActions.bounded || simpleModeActions.height > 80) violations.push(`${width}px: 简洁模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
     if (!simpleModeActions.horizontalText) violations.push(`${width}px: 完整模式按钮文字未保持横排 ${JSON.stringify(simpleModeActions)}`);
+    const modeSwitch = await evaluate(client, modeSwitchProbe());
+    if (!modeSwitch.simpleLabel || !modeSwitch.simpleTitle || !modeSwitch.fullLabel || !modeSwitch.fullTitle) {
+      violations.push(`${width}px: 模式切换按钮未按当前模式动态更新 ${JSON.stringify(modeSwitch)}`);
+    }
     const workflowDensity = await evaluate(client, simpleWorkflowDensityProbe());
     if (!workflowDensity.twoColumns || !workflowDensity.compact || !workflowDensity.notOversized || !workflowDensity.wideEnough || !workflowDensity.readable || !workflowDensity.bounded) {
       violations.push(`${width}px: 简洁模式工作台按钮密度异常 ${JSON.stringify(workflowDensity)}`);
@@ -298,6 +302,29 @@ function simpleModeActionsProbe() {
       height: Math.round(rect?.height ?? 0),
       horizontalText: Boolean(label && style?.writingMode === 'horizontal-tb' && label.getBoundingClientRect().height < 24),
       buttonWidth: Math.round(buttonRect?.width ?? 0)
+    };
+  })()`;
+}
+
+function modeSwitchProbe() {
+  return `(() => {
+    const read = () => {
+      const button = document.querySelector('#simpleModeFullSwitch');
+      return {
+        label: button?.querySelector('span:last-child')?.textContent.trim() || '',
+        title: button?.getAttribute('title') || ''
+      };
+    };
+    document.querySelector('#uiModeSimple')?.click();
+    const simple = read();
+    document.querySelector('#uiModeFull')?.click();
+    const full = read();
+    document.querySelector('#uiModeSimple')?.click();
+    return {
+      simpleLabel: simple.label === '完整模式',
+      simpleTitle: simple.title.includes('切换到完整模式'),
+      fullLabel: full.label === '简洁模式',
+      fullTitle: full.title.includes('切换到简洁模式')
     };
   })()`;
 }

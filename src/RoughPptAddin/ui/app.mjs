@@ -3953,6 +3953,15 @@ function applyUiMode(mode = state.uiMode, { persist = true } = {}) {
     els.uiModeFull.classList.toggle("is-active", next === "full");
     els.uiModeFull.setAttribute("aria-pressed", String(next === "full"));
   }
+  const modeSwitch = document.querySelector("#simpleModeFullSwitch");
+  if (modeSwitch) {
+    const label = modeSwitch.querySelector("span:last-child");
+    if (label) label.textContent = next === "full" ? "简洁模式" : "完整模式";
+    modeSwitch.title = next === "full"
+      ? "切换到简洁模式：只显示当前选区状态或正在使用的单个工作区"
+      : "切换到完整模式：显示全部专业面板";
+    modeSwitch.setAttribute("aria-label", modeSwitch.title);
+  }
   if (persist) persistSetting("roughPptUiMode", next);
   syncStyleSectionsForUiMode(next);
   if (next === "simple") applySimplePanelLayout();
@@ -4213,8 +4222,11 @@ function renderChartPresetPreview() {
 function initUiModeControls() {
   applyUiMode(state.uiMode, { persist: false });
   document.querySelector("#simpleModeFullSwitch")?.addEventListener("click", () => {
-    applyUiMode("full");
-    setStatus("已切换到完整模式：显示全部专业面板与连接详情。");
+    const next = state.uiMode === "full" ? "simple" : "full";
+    applyUiMode(next);
+    setStatus(next === "full"
+      ? "已切换到完整模式：显示全部专业面板与连接详情。"
+      : "已切换到简洁模式：只显示当前右侧工作区；高频命令保留在 PowerPoint Ribbon。");
   });
   els.uiModeSimple && els.uiModeSimple.addEventListener("click", () => {
     applyUiMode("simple");
