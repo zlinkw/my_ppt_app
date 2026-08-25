@@ -3005,46 +3005,6 @@ function iconSpan(text) {
   return icon;
 }
 
-function renderCard(item) {
-  const card = document.createElement("div");
-  card.className = "shape-card";
-  card.title = `${displayName(item)}：点击插入 Rough.js 视觉的 PPT 原生可编辑对象（${item.enumName}）`;
-  card.tabIndex = 0;
-  card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `${displayName(item)}，插入 PPT 原生可编辑手绘对象`);
-  const preview = document.createElement("canvas");
-  preview.width = 160;
-  preview.height = 96;
-  const favorite = document.createElement("button");
-  favorite.type = "button";
-  favorite.className = `favorite-toggle${isQuickShape(item.enumName) ? " active" : ""}`;
-  favorite.textContent = isQuickShape(item.enumName) ? "已固定" : "固定";
-  favorite.title = isQuickShape(item.enumName) ? "从快速插入栏移除此形状" : "固定到快速插入栏";
-  favorite.setAttribute("aria-label", favorite.title);
-  favorite.addEventListener("click", event => {
-    event.stopPropagation();
-    toggleQuickShape(item);
-  });
-  scheduleShapePreview(preview, item);
-  const name = document.createElement("span");
-  name.className = "shape-name";
-  name.textContent = displayName(item);
-  const meta = document.createElement("span");
-  meta.className = "shape-meta";
-  const recent = state.recent.includes(item.enumName) ? " | 最近使用" : "";
-  const favoriteMeta = isQuickShape(item.enumName) ? " | 快速插入" : "";
-  meta.textContent = `类型：${item.enumName} | ${categoryLabel(item.category)} | ${strategyLabel(item.generationStrategy)} | ${fidelityLabel(item.fidelity)}${recent}${favoriteMeta}`;
-  card.append(favorite, preview, name, meta);
-  card.addEventListener("click", () => insertShape(item));
-  card.addEventListener("keydown", event => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      insertShape(item);
-    }
-  });
-  return card;
-}
-
 function renderShapeCard(item) {
   const insertable = item.insertable !== false;
   const shell = document.createElement("div");
