@@ -7927,6 +7927,13 @@ body.ux-simple .app-content {
   grid-row: 1;
 }
 
+@media (min-width: 701px) {
+  body.ux-simple .app-content {
+    width: min(100%, 640px);
+    margin-inline: auto;
+  }
+}
+
 /* B379: all five style parameter destinations stay visible without horizontal scrolling. */
 body .style-param-jump {
   display: grid;

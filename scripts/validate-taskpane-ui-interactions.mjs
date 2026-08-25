@@ -72,6 +72,10 @@ try {
     if (!workflowDensity.twoColumns || !workflowDensity.compact || !workflowDensity.notOversized || !workflowDensity.wideEnough || !workflowDensity.readable || !workflowDensity.bounded) {
       violations.push(`${width}px: 简洁模式工作台按钮密度异常 ${JSON.stringify(workflowDensity)}`);
     }
+    if (width >= 720) {
+      const centered = await evaluate(client, simpleCenteredProbe());
+      if (!centered.boundedWidth || !centered.centered) violations.push(`${width}px: 宽窗简洁模式内容列未居中收窄 ${JSON.stringify(centered)}`);
+    }
     if (width <= 420) {
       const topbarFlow = await evaluate(client, narrowTopbarFlowProbe());
       if (!topbarFlow.statusFullRow || !topbarFlow.buildBelowStatus || topbarFlow.horizontalOverlap) {
@@ -325,6 +329,22 @@ function modeSwitchProbe() {
       simpleTitle: simple.title.includes('切换到完整模式'),
       fullLabel: full.label === '简洁模式',
       fullTitle: full.title.includes('切换到简洁模式')
+    };
+  })()`;
+}
+
+function simpleCenteredProbe() {
+  return `(() => {
+    const rect = document.querySelector('.app-content')?.getBoundingClientRect();
+    const width = Math.round(rect?.width ?? 0);
+    const left = Math.round(rect?.left ?? 0);
+    const right = Math.round(rect?.right ?? 0);
+    return {
+      width,
+      left,
+      right,
+      boundedWidth: width > 0 && width <= 642,
+      centered: Math.abs(left - (innerWidth - right)) <= 2
     };
   })()`;
 }
