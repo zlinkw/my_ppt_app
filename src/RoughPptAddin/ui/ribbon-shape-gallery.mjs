@@ -206,8 +206,8 @@ function matchesQuery(item) {
 
 function renderGalleryIcon(item) {
   const canvas = document.createElement("canvas");
-  canvas.width = 48;
-  canvas.height = 48;
+  canvas.width = 64;
+  canvas.height = 64;
   safeDrawNativeIconPreview(canvas, item);
   return canvas;
 }
@@ -224,7 +224,8 @@ function drawIconFallback(canvas, item = {}) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
-  ctx.translate(4, 4);
+  ctx.translate(8, 8);
+  ctx.scale(11 / 6, 11 / 6);
   ctx.strokeStyle = "#111111";
   ctx.fillStyle = "transparent";
   ctx.lineWidth = 1.6;
@@ -274,10 +275,11 @@ function drawNativeIconPreview(canvas, item) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
-  ctx.translate(4, 4);
+  ctx.translate(8, 8);
+  ctx.scale(11 / 6, 11 / 6);
   ctx.strokeStyle = "#111111";
   ctx.fillStyle = "transparent";
-  ctx.lineWidth = 1.8;
+  ctx.lineWidth = 1.4;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   const size = item.defaultSizePt ?? {};

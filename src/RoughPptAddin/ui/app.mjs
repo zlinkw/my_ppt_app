@@ -1572,8 +1572,8 @@ function renderGalleryIcon(item, scrollRoot = null, { eager = false } = {}) {
 function renderLocalGalleryIcon(item, scrollRoot = null, { eager = false } = {}) {
   const canvas = document.createElement("canvas");
   canvas.className = "gallery-icon";
-  canvas.width = 48;
-  canvas.height = 48;
+  canvas.width = 64;
+  canvas.height = 64;
   if (eager) {
     safeDrawNativeIconPreview(canvas, item);
     canvas.dataset.previewDrawn = "1";
@@ -3237,7 +3237,8 @@ function drawIconFallback(canvas, item = {}) {
   if (!ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
-  ctx.translate(4, 4);
+  ctx.translate(8, 8);
+  ctx.scale(11 / 6, 11 / 6);
   ctx.strokeStyle = "#242d37";
   ctx.fillStyle = "transparent";
   ctx.lineWidth = 1.6;
@@ -3302,10 +3303,11 @@ function drawNativeIconPreview(canvas, item) {
   if (!ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
-  ctx.translate(4, 4);
+  ctx.translate(8, 8);
+  ctx.scale(11 / 6, 11 / 6);
   ctx.strokeStyle = "#111111";
   ctx.fillStyle = "transparent";
-  ctx.lineWidth = 1.8;
+  ctx.lineWidth = 1.4;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
   const size = item.defaultSizePt ?? {};

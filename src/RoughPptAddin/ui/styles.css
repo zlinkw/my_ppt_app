@@ -4423,15 +4423,15 @@ button.selection-primary .function-icon,
 
 .gallery-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(32px, 38px));
+  grid-template-columns: repeat(auto-fill, minmax(40px, 44px));
   justify-content: start;
-  gap: 3px;
+  gap: 4px;
 }
 
 .gallery-shape {
   width: 100%;
   min-width: 0;
-  height: 32px;
+  height: 38px;
   display: grid;
   place-items: center;
   padding: 2px;
@@ -4459,17 +4459,17 @@ button.selection-primary .function-icon,
 
 .gallery-shape canvas,
 .gallery-icon {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   content-visibility: auto;
-  contain-intrinsic-size: 26px 26px;
+  contain-intrinsic-size: 32px 32px;
 }
 
 .gallery-shape canvas {
-  width: 26px;
-  height: 26px;
-  contain-intrinsic-size: 26px 26px;
+  width: 32px;
+  height: 32px;
+  contain-intrinsic-size: 32px 32px;
 }
 
 .quick-shapes {
@@ -4591,8 +4591,8 @@ button.selection-primary .function-icon,
 }
 
 .quick-shape {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   padding: 2px;
@@ -4691,11 +4691,11 @@ button.selection-primary .function-icon,
 
 .quick-shape canvas,
 .quick-shape .gallery-icon {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   content-visibility: visible;
-  contain-intrinsic-size: 26px 26px;
+  contain-intrinsic-size: 28px 28px;
 }
 
 .quick-empty {

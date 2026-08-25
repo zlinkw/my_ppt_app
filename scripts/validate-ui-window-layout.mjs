@@ -48,6 +48,7 @@ const windows = [
       if (result.cardCount < 200) push(`形状卡片只有 ${result.cardCount} 个，应覆盖完整目录`);
       if (result.groupCount < 10) push(`形状分组只有 ${result.groupCount} 个`);
       if (result.overflowing.length) push(`形状卡片横向越出容器 ${result.overflowing.slice(0, 6).join(", ")}`);
+      if (result.iconMin < 34) push(`形状图标视觉尺寸不足：最小 ${result.iconMin}px，应至少 34px`);
     }
   }
 ];
@@ -224,7 +225,7 @@ function chartTypeProbe() {
 function shapeGalleryProbe() {
   return `(() => {
     const dropdown = document.querySelector('#shapeDropdown');
-    if (!dropdown) return { cardCount: 0, groupCount: 0, overflowing: ['shapeDropdown missing'] };
+    if (!dropdown) return { cardCount: 0, groupCount: 0, iconMin: 0, overflowing: ['shapeDropdown missing'] };
     const cards = [...dropdown.querySelectorAll('button')];
     const groups = [...dropdown.querySelectorAll('.gallery-group, details')];
     const dropdownRect = dropdown.getBoundingClientRect();
@@ -233,6 +234,11 @@ function shapeGalleryProbe() {
       if (rect.width <= 0 || rect.height <= 0) return false;
       return rect.left < dropdownRect.left - 2 || rect.right > dropdownRect.right + 2;
     }).map(card => (card.dataset.enumName || card.textContent || '').trim().slice(0, 20));
-    return { cardCount: cards.length, groupCount: groups.length, overflowing: [...new Set(overflowing)] };
+    const iconRects = cards.map(card => {
+      const icon = card.querySelector('canvas, img');
+      return icon ? icon.getBoundingClientRect() : null;
+    }).filter(Boolean);
+    const iconMin = Math.round(Math.min(Infinity, ...iconRects.map(rect => Math.min(rect.width, rect.height))));
+    return { cardCount: cards.length, groupCount: groups.length, iconMin, overflowing: [...new Set(overflowing)] };
   })()`;
 }
