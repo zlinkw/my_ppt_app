@@ -36,15 +36,16 @@ public sealed class UsageGuideWindow : Form
 		this.reportStatus = reportStatus;
 		Text = "Rough 使用说明";
 		base.ShowIcon = false;
-		base.ShowInTaskbar = false;
-		base.MinimizeBox = false;
+		base.ShowInTaskbar = true;
+		base.MinimizeBox = true;
 		base.MaximizeBox = true;
-		base.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+		base.FormBorderStyle = FormBorderStyle.Sizable;
 		base.SizeGripStyle = SizeGripStyle.Show;
 		MinimumSize = new Size(520, 420);
 		base.Size = new Size(920, 760);
 		base.StartPosition = FormStartPosition.Manual;
 		base.TopMost = false;
+		base.KeyPreview = true;
 		webView.Dock = DockStyle.Fill;
 		base.Controls.Add(webView);
 	}

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
@@ -42,6 +43,28 @@ public sealed class ShapeGalleryWindow : Form
 
 	private bool initializationStarted;
 
+	private static Task<CoreWebView2Environment> prewarmEnvironmentTask;
+
+	private static readonly object prewarmLock = new object();
+
+	public static void PrewarmEnvironment()
+	{
+		try
+		{
+			lock (prewarmLock)
+			{
+				if (prewarmEnvironmentTask == null || prewarmEnvironmentTask.IsFaulted || prewarmEnvironmentTask.IsCanceled)
+				{
+					prewarmEnvironmentTask = RoughJsBridge.CreateEnvironmentAsync();
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			AddInLogger.Error("预热形状图库环境失败。", ex);
+		}
+	}
+
 	public ShapeGalleryWindow(Action<string> insertShape, Action<string> pinQuickShape, Action<string> unpinQuickShape, Func<IList<string>> listQuickShapes, Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus = null)
 	{
 		this.insertShape = insertShape;
@@ -52,15 +75,16 @@ public sealed class ShapeGalleryWindow : Form
 		this.reportStatus = reportStatus;
 		Text = "Rough 形状图库";
 		base.ShowIcon = false;
-		base.ShowInTaskbar = false;
-		base.MinimizeBox = false;
-		base.MaximizeBox = false;
-		base.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+		base.ShowInTaskbar = true;
+		base.MinimizeBox = true;
+		base.MaximizeBox = true;
+		base.FormBorderStyle = FormBorderStyle.Sizable;
 		base.SizeGripStyle = SizeGripStyle.Show;
 		MinimumSize = new Size(420, 320);
 		base.Size = new Size(700, 620);
 		base.StartPosition = FormStartPosition.Manual;
 		base.TopMost = false;
+		base.KeyPreview = true;
 		webView.Dock = DockStyle.Fill;
 		base.Controls.Add(webView);
 	}
@@ -99,7 +123,7 @@ public sealed class ShapeGalleryWindow : Form
 		try
 		{
 			string uiDirectory = ResolveUiDirectory();
-			CoreWebView2Environment environment = await RoughJsBridge.CreateEnvironmentAsync().ConfigureAwait(continueOnCapturedContext: true);
+			CoreWebView2Environment environment = await TakePrewarmedEnvironmentAsync().ConfigureAwait(continueOnCapturedContext: true);
 			await webView.EnsureCoreWebView2Async(environment).ConfigureAwait(continueOnCapturedContext: true);
 			webView.CoreWebView2.SetVirtualHostNameToFolderMapping("rough-ppt.local", uiDirectory, CoreWebView2HostResourceAccessKind.Allow);
 			webView.CoreWebView2.WebMessageReceived -= OnWebMessageReceived;
@@ -114,6 +138,31 @@ public sealed class ShapeGalleryWindow : Form
 			initializationStarted = false;
 			AddInLogger.Error("打开 Ribbon 形状图库失败。", ex);
 			ReportOpenFailure(ex);
+		}
+	}
+
+	private static async Task<CoreWebView2Environment> TakePrewarmedEnvironmentAsync()
+	{
+		Task<CoreWebView2Environment> pending = null;
+		lock (prewarmLock)
+		{
+			pending = prewarmEnvironmentTask;
+		}
+		if (pending == null || pending.IsFaulted || pending.IsCanceled)
+		{
+			return await RoughJsBridge.CreateEnvironmentAsync().ConfigureAwait(continueOnCapturedContext: false);
+		}
+		try
+		{
+			return await pending.ConfigureAwait(continueOnCapturedContext: false);
+		}
+		catch
+		{
+			lock (prewarmLock)
+			{
+				prewarmEnvironmentTask = null;
+			}
+			return await RoughJsBridge.CreateEnvironmentAsync().ConfigureAwait(continueOnCapturedContext: false);
 		}
 	}
 
@@ -181,6 +230,11 @@ public sealed class ShapeGalleryWindow : Form
 					}
 				}
 			}
+			else if (string.Equals(type, "toggleShapeGalleryFullscreen", StringComparison.OrdinalIgnoreCase))
+			{
+				WindowState = ((WindowState == FormWindowState.Maximized) ? FormWindowState.Normal : FormWindowState.Maximized);
+				Activate();
+			}
 			else if (string.Equals(type, "close", StringComparison.OrdinalIgnoreCase))
 			{
 				Hide();
@@ -222,6 +276,19 @@ public sealed class ShapeGalleryWindow : Form
 		catch (Exception exception)
 		{
 			AddInLogger.Error("发送 Ribbon 形状图库快速插入状态失败。", exception);
+		}
+	}
+
+	protected override void OnFormClosing(FormClosingEventArgs e)
+	{
+		if (e.CloseReason == CloseReason.UserClosing)
+		{
+			e.Cancel = true;
+			Hide();
+		}
+		else
+		{
+			base.OnFormClosing(e);
 		}
 	}
 

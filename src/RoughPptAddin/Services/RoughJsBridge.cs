@@ -68,11 +68,7 @@ public sealed class RoughJsBridge
 	{
 		get
 		{
-			if (webView?.CoreWebView2 != null)
-			{
-				return initialized;
-			}
-			return false;
+			return InvokeOnUiThread(() => webView?.CoreWebView2 != null && initialized, () => initialized);
 		}
 	}
 
@@ -91,6 +87,44 @@ public sealed class RoughJsBridge
 		this.webView = webView;
 	}
 
+	private T InvokeOnUiThread<T>(Func<T> action, Func<T> fallback)
+	{
+		try
+		{
+			WebView2 view = webView;
+			if (view == null)
+			{
+				return fallback();
+			}
+			if (view.InvokeRequired)
+			{
+				try
+				{
+					return (T)view.Invoke(action);
+				}
+				catch
+				{
+					return fallback();
+				}
+			}
+			return action();
+		}
+		catch
+		{
+			return fallback();
+		}
+	}
+
+	private Task<string> ExecuteScriptOnUiThreadAsync(string script)
+	{
+		WebView2 view = webView;
+		if (view != null && view.InvokeRequired)
+		{
+			return (Task<string>)view.Invoke(new Func<Task<string>>(() => view.CoreWebView2.ExecuteScriptAsync(script)));
+		}
+		return view.CoreWebView2.ExecuteScriptAsync(script);
+	}
+
 	public async Task<RoughDrawable> GenerateAsync(RoughShapeRequest request)
 	{
 		if (!IsReady)
@@ -99,7 +133,7 @@ public sealed class RoughJsBridge
 		}
 		string json = serializer.Serialize(request);
 		string script = "window.roughPpt.generateFromHost(" + json + ")";
-		string raw = await webView.CoreWebView2.ExecuteScriptAsync(script).ConfigureAwait(continueOnCapturedContext: true);
+		string raw = await ExecuteScriptOnUiThreadAsync(script).ConfigureAwait(continueOnCapturedContext: true);
 		string unescaped = serializer.Deserialize<string>(raw);
 		return serializer.Deserialize<RoughDrawable>(unescaped);
 	}
@@ -113,7 +147,7 @@ public sealed class RoughJsBridge
 		string pathJson = serializer.Serialize(filePath ?? string.Empty);
 		string contentJson = serializer.Serialize(content ?? string.Empty);
 		string script = "window.roughPpt.importZlkClusterResultForHost(" + pathJson + ", " + contentJson + ")";
-		string raw = await webView.CoreWebView2.ExecuteScriptAsync(script).ConfigureAwait(continueOnCapturedContext: true);
+		string raw = await ExecuteScriptOnUiThreadAsync(script).ConfigureAwait(continueOnCapturedContext: true);
 		string unescaped = serializer.Deserialize<string>(raw);
 		return serializer.Deserialize<ChartDataset>(unescaped);
 	}
@@ -301,7 +335,7 @@ public sealed class RoughJsBridge
 		string helpText = File.ReadAllText(helpPath);
 		string helpScriptText = File.ReadAllText(helpScriptPath);
 		string[] appNeedles = new string[10] { "postHost", "chrome.webview", "roughPptTaskPaneReady", "listUserAssets", "getSelectionState", "function render(", "initWorkflowNavigation", "roughPptUiMode", "selectedChartPresetId", "openUsageGuide" };
-		string[] htmlNeedles = new string[10] { "id=\"params\"", "id=\"search\"", "id=\"refreshSelection\"", "id=\"convertSelection\"", "id=\"shapeGrid\"", "id=\"uiModeSimple\"", "id=\"usageGuide\"", "href=\"./help.html\"", "id=\"chartPresetStrip\"", "type=\"module\" src=\"./app.mjs\"" };
+		string[] htmlNeedles = new string[8] { "id=\"params\"", "id=\"search\"", "id=\"refreshSelection\"", "id=\"convertSelection\"", "id=\"shapeGrid\"", "id=\"chartPresetStrip\"", "type=\"module\" src=\"./app.mjs\"", "topbar-mode-note" };
 		string[] helpNeedles = new string[8] { "id=\"quick-start\"", "id=\"entry-map\"", "id=\"rough-shapes\"", "id=\"charts\"", "id=\"troubleshooting\"", "href=\"./index.html\"", "data-guide-back", "type=\"module\" src=\"./help.mjs\"" };
 		string[] helpScriptNeedles = new string[3] { "history.back()", "location.href = \"./index.html\"", "event.key !== \"Escape\"" };
 		string[] array = appNeedles;

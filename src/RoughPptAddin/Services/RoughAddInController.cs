@@ -121,12 +121,28 @@ namespace RoughPptAddin.Services
     
     	public void ShowTaskPane()
     	{
-    		EnsureTaskPane(visible: true);
+    		try
+    		{
+    			EnsureTaskPane(visible: true);
+    		}
+    		catch (Exception ex)
+    		{
+    			AddInLogger.Error("打开右侧任务窗格失败。", ex);
+    			NotifyUiOrFallback("打开右侧窗格失败：" + ex.Message, isError: true);
+    		}
     	}
     
     	public void ShowTaskPaneSection(string section)
     	{
-    		EnsureTaskPane(visible: true).FocusSection(section, "已定位到右侧窗格：" + SectionDisplayName(section));
+    		try
+    		{
+    			EnsureTaskPane(visible: true).FocusSection(section, "已定位到右侧窗格：" + SectionDisplayName(section));
+    		}
+    		catch (Exception ex)
+    		{
+    			AddInLogger.Error("定位右侧窗格分区失败：" + section, ex);
+    			NotifyUiOrFallback("打开右侧窗格失败：" + ex.Message, isError: true);
+    		}
     	}
     
     	public void ShowUsageGuide()
@@ -181,18 +197,57 @@ namespace RoughPptAddin.Services
     
     	private RoughTaskPaneControl EnsureTaskPane(bool visible)
     	{
-    		if (taskPane == null)
+    		if (taskPane == null || taskPaneControl == null || taskPaneControl.IsDisposed || IsTaskPaneDead())
     		{
-    			taskPaneControl = new RoughTaskPaneControl(this, bridge);
-    			taskPane = taskPanes.Add(taskPaneControl, "Rough 手绘图形");
-    			taskPane.Width = 420;
-    			taskPane.Visible = false;
+    			RecreateTaskPane();
     		}
-    		if (visible)
+    		try
     		{
+    			if (visible)
+    			{
+    				taskPane.Visible = true;
+    			}
+    		}
+    		catch (COMException)
+    		{
+    			RecreateTaskPane();
     			taskPane.Visible = true;
     		}
     		return taskPaneControl;
+    	}
+    
+    	private bool IsTaskPaneDead()
+    	{
+    		try
+    		{
+    			_ = taskPane.Visible;
+    			return false;
+    		}
+    		catch
+    		{
+    			return true;
+    		}
+    	}
+    
+    	private void RecreateTaskPane()
+    	{
+    		try
+    		{
+    			if (taskPane != null)
+    			{
+    				try { taskPanes.Remove(taskPane); } catch { }
+    				try { taskPane.Dispose(); } catch { }
+    			}
+    		}
+    		finally
+    		{
+    			taskPane = null;
+    			taskPaneControl = null;
+    		}
+    		taskPaneControl = new RoughTaskPaneControl(this, bridge);
+    		taskPane = taskPanes.Add(taskPaneControl, "Rough 手绘图形");
+    		taskPane.Width = 420;
+    		taskPane.Visible = false;
     	}
     
     	private void PrewarmTaskPane()
@@ -316,7 +371,16 @@ namespace RoughPptAddin.Services
     			}
     			if (selection.ShapeRange.Count == 1)
     			{
-    				Microsoft.Office.Interop.PowerPoint.Shape shape = selection.ShapeRange[1];
+    				Microsoft.Office.Interop.PowerPoint.Shape shape;
+    		try
+    		{
+    			shape = selection.ShapeRange[1];
+    		}
+			catch (Exception ex)
+			{
+				taskPaneControl?.ShowStatusFromHost("读取选中形状失败：" + ex.Message, isError: true);
+				return;
+			}
     				if (featureBlocks.IsFeatureBlock(shape))
     				{
     					InsertFeatureBlockFromPreset();
@@ -631,9 +695,31 @@ namespace RoughPptAddin.Services
     
     	public void InspectSelection()
     	{
-    		Selection selection = application.ActiveWindow?.Selection;
-    		string report = metadata.BuildInspectionReport(selection);
-    		NotifyUi(report);
+    		try
+    		{
+    			if (!TryGetSelection(out Selection selection, out string reason))
+    			{
+    				NotifyUi(reason, isError: true);
+    				return;
+    			}
+    			string report;
+    			try
+    			{
+    				report = metadata.BuildInspectionReport(selection);
+    			}
+    			catch (Exception ex)
+    			{
+    				AddInLogger.Error("生成选区检查报告失败。", ex);
+    				NotifyUi("检查选区失败：" + ex.Message, isError: true);
+    				return;
+    			}
+    			NotifyUi(report);
+    		}
+    		catch (Exception ex)
+    		{
+    			AddInLogger.Error("检查选区失败。", ex);
+    			NotifyUiOrFallback("检查选区失败：" + ex.Message, isError: true);
+    		}
     	}
     
     	public void SelectNativeCarrier()
@@ -1607,6 +1693,13 @@ namespace RoughPptAddin.Services
     			reason = "当前选区不是形状对象。";
     			return false;
     		}
+    	
+    		catch (Exception ex)
+    		{
+    			selection = null;
+    			reason = "读取选区失败：" + ex.Message;
+    			return false;
+    		}
     	}
     
     	public void InsertUserAsset(string assetId)
@@ -2100,6 +2193,8 @@ namespace RoughPptAddin.Services
     			"assetRefresh" => "刷新素材", 
     			"assetImport" => "导入素材包", 
     			"assetShare" => "分享素材包", 
+    			"fillTexture" => "填充纹理参数",
+    			"lineStyle" => "线条参数",
     			_ => "完整参数", 
     		};
     	}

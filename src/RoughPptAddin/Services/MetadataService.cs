@@ -92,26 +92,58 @@ public sealed class MetadataService
 		return true;
 	}
 
-	public string BuildInspectionReport(Selection selection)
-	{
-		StringBuilder builder = new StringBuilder();
-		if (selection == null || selection.ShapeRange == null || selection.ShapeRange.Count == 0)
-		{
-			return "未选择形状。";
-		}
-		for (int i = 1; i <= selection.ShapeRange.Count; i++)
-		{
-			Shape shape = selection.ShapeRange[i];
-			builder.AppendLine("名称：" + shape.Name);
-			builder.AppendLine($"类型：{shape.Type}");
-			builder.AppendLine("Rough 素材：" + shape.Tags["PPT_ROUGH_ASSET_ID"]);
-			builder.AppendLine("Rough 组：" + shape.Tags["PPT_ROUGH_GROUP_ID"]);
-			builder.AppendLine("图层角色：" + shape.Tags["PPT_ROUGH_OVERLAY_ROLE"]);
-			builder.AppendLine("PPT 源形状：" + shape.Tags["PPT_ROUGH_SOURCE_MSO_TYPE"]);
-			builder.AppendLine("生成引擎：" + shape.Tags["PPT_ROUGH_ENGINE_VERSION"]);
-		}
-		return builder.ToString();
-	}
+    	public string BuildInspectionReport(Selection selection)
+    	{
+    		StringBuilder builder = new StringBuilder();
+    		int count;
+    		try
+    		{
+    			if (selection == null || selection.ShapeRange == null || selection.ShapeRange.Count == 0)
+    			{
+    				return "未选择形状。";
+    			}
+    			count = selection.ShapeRange.Count;
+    		}
+    		catch (Exception)
+    		{
+    			return "当前没有可读取的形状选区。";
+    		}
+    		for (int i = 1; i <= count; i++)
+    		{
+    			try
+    			{
+    				Shape shape = selection.ShapeRange[i];
+    				string name;
+    				string type;
+    				try { name = shape.Name; } catch { name = "（无法读取名称）"; }
+    				try { type = Convert.ToString(shape.Type); } catch { type = "（无法读取类型）"; }
+    				builder.AppendLine("名称：" + name);
+    				builder.AppendLine("类型：" + type);
+    				builder.AppendLine("Rough 素材：" + SafeTag(shape, "PPT_ROUGH_ASSET_ID"));
+    				builder.AppendLine("Rough 组：" + SafeTag(shape, "PPT_ROUGH_GROUP_ID"));
+    				builder.AppendLine("图层角色：" + SafeTag(shape, "PPT_ROUGH_OVERLAY_ROLE"));
+    				builder.AppendLine("PPT 源形状：" + SafeTag(shape, "PPT_ROUGH_SOURCE_MSO_TYPE"));
+    				builder.AppendLine("生成引擎：" + SafeTag(shape, "PPT_ROUGH_ENGINE_VERSION"));
+    			}
+    			catch (Exception ex)
+    			{
+    				builder.AppendLine("第 " + i + " 个形状读取失败：" + ex.Message);
+    			}
+    		}
+    		return builder.ToString();
+    	}
+    
+    	private static string SafeTag(Shape shape, string key)
+    	{
+    		try
+    		{
+    			return shape.Tags[key] ?? string.Empty;
+    		}
+    		catch
+    		{
+    			return string.Empty;
+    		}
+    	}
 
 	private List<T> ReadJsonList<T>(string json)
 	{

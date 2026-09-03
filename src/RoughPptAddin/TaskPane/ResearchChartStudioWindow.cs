@@ -41,14 +41,6 @@ public sealed class ResearchChartStudioWindow : Form
 
 	private bool initializationStarted;
 
-	private bool isFullscreen;
-
-	private FormBorderStyle normalBorderStyle;
-
-	private FormWindowState normalWindowState;
-
-	private Rectangle normalBounds;
-
 	private ResearchSvgDocument selectedSvg;
 
 	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart, Func<ResearchSvgDocument, string> insertSvg)
@@ -59,10 +51,10 @@ public sealed class ResearchChartStudioWindow : Form
 		this.insertSvg = insertSvg;
 		Text = "科研绘图工作区";
 		base.ShowIcon = false;
-		base.ShowInTaskbar = false;
-		base.MinimizeBox = false;
+		base.ShowInTaskbar = true;
+		base.MinimizeBox = true;
 		base.MaximizeBox = true;
-		base.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+		base.FormBorderStyle = FormBorderStyle.Sizable;
 		base.SizeGripStyle = SizeGripStyle.Show;
 		MinimumSize = new Size(720, 560);
 		base.Size = new Size(1180, 820);
@@ -150,12 +142,14 @@ public sealed class ResearchChartStudioWindow : Form
 			string messageType = ReadString(message, "type", string.Empty);
 			if (string.Equals(messageType, "researchChartStudioReady", StringComparison.OrdinalIgnoreCase))
 			{
-				PostFullscreenResult();
+				PostNativeMaximizeResult();
 				return;
 			}
 			if (string.Equals(messageType, "toggleResearchChartStudioFullscreen", StringComparison.OrdinalIgnoreCase))
 			{
-				ToggleFullscreen();
+				WindowState = ((WindowState == FormWindowState.Maximized) ? FormWindowState.Normal : FormWindowState.Maximized);
+				Activate();
+				PostNativeMaximizeResult();
 				return;
 			}
 			if (string.Equals(messageType, "openResearchChartWebsite", StringComparison.OrdinalIgnoreCase))
@@ -207,32 +201,7 @@ public sealed class ResearchChartStudioWindow : Form
 		}
 	}
 
-	private void ToggleFullscreen()
-	{
-		if (!isFullscreen)
-		{
-			normalBorderStyle = FormBorderStyle;
-			normalWindowState = WindowState;
-			normalBounds = Bounds;
-			Rectangle fullscreenBounds = Screen.FromControl(this).Bounds;
-			WindowState = FormWindowState.Normal;
-			FormBorderStyle = FormBorderStyle.None;
-			Bounds = fullscreenBounds;
-			isFullscreen = true;
-		}
-		else
-		{
-			WindowState = FormWindowState.Normal;
-			Bounds = normalBounds;
-			FormBorderStyle = normalBorderStyle;
-			WindowState = normalWindowState;
-			isFullscreen = false;
-		}
-		Activate();
-		PostFullscreenResult();
-	}
-
-	private void PostFullscreenResult()
+	private void PostNativeMaximizeResult()
 	{
 		if (webView.CoreWebView2 == null)
 		{
@@ -241,7 +210,7 @@ public sealed class ResearchChartStudioWindow : Form
 		webView.CoreWebView2.PostWebMessageAsJson(serializer.Serialize(new
 		{
 			type = "researchChartFullscreenResult",
-			fullscreen = isFullscreen
+			fullscreen = (WindowState == FormWindowState.Maximized)
 		}));
 	}
 
@@ -441,16 +410,6 @@ public sealed class ResearchChartStudioWindow : Form
 		{
 			base.OnFormClosing(e);
 		}
-	}
-
-	protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-	{
-		if (keyData == Keys.F11 || (keyData == Keys.Escape && isFullscreen))
-		{
-			ToggleFullscreen();
-			return true;
-		}
-		return base.ProcessCmdKey(ref msg, keyData);
 	}
 
 	protected override void Dispose(bool disposing)
