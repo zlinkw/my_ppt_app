@@ -1521,8 +1521,8 @@ button.selection-primary .function-icon,
   justify-content: space-between;
   gap: 8px;
   min-height: 28px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+  border-bottom: 0;
   background: transparent;
 }
 
@@ -2759,6 +2759,14 @@ button.selection-primary .function-icon,
   display: block;
 }
 
+/* 去内框：风格参数组留底去线，仅去边框与阴影，保留底色与 .active/open 显隐类名；特征分组零改。 */
+.param-section,
+.param-section[open] {
+  border: 0;
+  box-shadow: none;
+  background: var(--panel);
+}
+
 .param-section summary,
 .feature-section summary {
   min-height: 28px;
@@ -3443,11 +3451,11 @@ div[data-flattened="true"] {
 
 .zotero-palette-shell {
   margin-bottom: 5px;
-  padding: 6px;
-  border: 1px solid var(--accent-line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .zotero-palette-shell header {
@@ -3559,7 +3567,7 @@ div[data-flattened="true"] {
 
 .palette-scheme-grid {
   display: grid;
-  gap: 5px;
+  gap: 8px;
   max-height: 320px;
   overflow-y: auto;
   padding-right: 2px;
@@ -3569,10 +3577,10 @@ div[data-flattened="true"] {
   display: grid;
   gap: 4px;
   padding: 6px;
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--panel);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+  box-shadow: none;
   transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
 }
 
@@ -6220,10 +6228,11 @@ body.ux-simple .panel[data-panel-order="3"] {
 
 /* B323 palette tools danger polish */
 .palette-tools-details {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f4f6fa;
-  padding: 0 6px 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }
 
 .palette-tools-details > summary {
