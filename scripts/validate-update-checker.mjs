@@ -44,8 +44,9 @@ for (const needle of [
   "检查更新",
   "GitHub 正式 Release"
 ]) {
-  if (!html.includes(needle)) violations.push(`Task pane HTML missing update control contract: ${needle}`);
+  if (!help.includes(needle)) violations.push(`Help version section missing update control contract: ${needle}`);
 }
+if (html.includes('id="checkUpdates"')) violations.push("Task pane top bar must not retain checkUpdates; version actions live in help.html");
 
 for (const needle of [
   "setUpdateChecking(false)",

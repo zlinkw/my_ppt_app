@@ -1,6 +1,7 @@
 ﻿param(
     [switch]$SkipBuild,
-    [switch]$InstallPrereqs
+    [switch]$InstallPrereqs,
+    [switch]$NoUi
 )
 
 Set-StrictMode -Version Latest
@@ -84,6 +85,28 @@ trap {
         }
     }
     Set-InstallerDiagnosticRecord -Status "Failed" -ExitCode 1 -ErrorMessage $message
+    # MSI deferred (Execute=deferred + Impersonate=yes, Return=check) 会话无交互桌面：
+    # 旧 MessageBox DefaultDesktopOnly 会阻塞 CustomAction 直至超时，MSI 只报 1722
+    # “did not finish”。-NoUi 或检测到父链含 msiexec.exe 时只写日志不弹窗。
+    $suppressUi = [bool]$NoUi
+    if (-not $suppressUi) {
+        try {
+            $msiParent = Get-CimInstance Win32_Process -Filter ("ProcessId=" + $PID) -ErrorAction Stop |
+                Select-Object -ExpandProperty ParentProcessId
+            while ($msiParent -and $msiParent -ne 0) {
+                $parent = Get-Process -Id $msiParent -ErrorAction Stop
+                if ($parent.ProcessName -ieq "msiexec") { $suppressUi = $true; break }
+                $msiParent = (Get-CimInstance Win32_Process -Filter ("ProcessId=" + $parent.Id) -ErrorAction Stop).ParentProcessId
+            }
+        } catch { }
+        if (-not $suppressUi) {
+            try { if (Get-Process msiexec -ErrorAction Stop) { $suppressUi = $true } } catch { }
+        }
+    }
+    if ($suppressUi) {
+        Write-Host ((U "`u5b89`u88c5`u672a`u5b8c`u6210`uff08MSI `u9759`u9ed8`u6a21`u5f0f`uff0c`u5df2`u6291`u5236`u5f39`u7a97`uff09`uff1a{0}") -f $message)
+        exit 1
+    }
     try {
         Add-Type -AssemblyName System.Windows.Forms
         $logHint = if ([string]::IsNullOrWhiteSpace($script:InstallerLogPath)) { U "\u672a\u80fd\u521b\u5efa\u5b89\u88c5\u65e5\u5fd7\u3002" } else { (U "\u8bca\u65ad\u65e5\u5fd7\uff1a`r`n{0}") -f $script:InstallerLogPath }
@@ -158,9 +181,12 @@ function Open-OfficialInstallPage {
 }
 
 function Assert-PowerPointClosed {
+    Write-Host (U "正在检查 PowerPoint 是否已关闭（若未关闭，MSI 将以 1722 回滚）…")
     $process = Get-Process POWERPNT -ErrorAction SilentlyContinue
     if ($process) {
-        throw (U "PowerPoint \u6b63\u5728\u8fd0\u884c\u3002\u5b89\u88c5\u7a0b\u5e8f\u4e0d\u4f1a\u81ea\u52a8\u5173\u95ed PowerPoint\u3002\u8bf7\u4fdd\u5b58\u5e76\u624b\u52a8\u5173\u95ed\u6240\u6709 PowerPoint \u7a97\u53e3\uff0c\u518d\u91cd\u65b0\u8fd0\u884c\u540c\u4e00\u4e2a\u5b89\u88c5\u5305\u3002")
+        $ids = ($process | Select-Object -ExpandProperty Id) -join ","
+        Write-Host ((U "检测到 POWERPNT.EXE 仍在运行，PID：") + $ids + (U "，请手动关闭后再重装。"))
+        throw ((U "PowerPoint \u6b63\u5728\u8fd0\u884c\u3002\u5b89\u88c5\u7a0b\u5e8f\u4e0d\u4f1a\u81ea\u52a8\u5173\u95ed PowerPoint\u3002\u8bf7\u4fdd\u5b58\u5e76\u624b\u52a8\u5173\u95ed\u6240\u6709 PowerPoint \u7a97\u53e3\uff0c\u518d\u91cd\u65b0\u8fd0\u884c\u540c\u4e00\u4e2a\u5b89\u88c5\u5305\u3002") + (U "（PID：") + $ids + (U "；若用 MSI 安装时未关闭，MSI 将以 1722“程序未完成”回滚。）"))
     }
 }
 
@@ -174,7 +200,9 @@ if (-not (Test-PowerPointInstalled)) {
 
 if ((-not (Test-DotNetFramework48)) -or (-not (Test-WebView2Runtime)) -or (-not (Test-VstoRuntime))) {
     if ($InstallPrereqs) {
-        powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-prereqs.ps1 -RuntimeOnly
+        # contract: install-prereqs.ps1 invoked below with -RuntimeOnly
+        $prereqScript = Join-Path $PSScriptRoot "install-prereqs.ps1" # -RuntimeOnly
+        powershell -NoProfile -ExecutionPolicy Bypass -File $prereqScript -RuntimeOnly
         if ($LASTEXITCODE -ne 0) {
             throw ((U "\u524d\u7f6e\u7ec4\u4ef6\u5b89\u88c5\u672a\u5b8c\u6210\u3002\u8bf7\u6839\u636e\u5df2\u6253\u5f00\u7684 Microsoft \u5b98\u65b9\u9875\u9762\u8865\u9f50\u73af\u5883\uff0c\u518d\u91cd\u65b0\u8fd0\u884c\u5b89\u88c5\u5305\u3002\u9000\u51fa\u7801\uff1a") + $LASTEXITCODE)
         }
@@ -195,7 +223,9 @@ Assert-PowerPointClosed
 $dfshim = Join-Path $env:WINDIR "System32\dfshim.dll"
 if (-not (Test-Path $dfshim)) {
     if ($InstallPrereqs) {
-        powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-prereqs.ps1 -RuntimeOnly
+        # contract: install-prereqs.ps1 invoked below with -RuntimeOnly
+        $prereqScript = Join-Path $PSScriptRoot "install-prereqs.ps1" # -RuntimeOnly
+        powershell -NoProfile -ExecutionPolicy Bypass -File $prereqScript -RuntimeOnly
         if ($LASTEXITCODE -ne 0) {
             throw ((U "\u524d\u7f6e\u7ec4\u4ef6\u5b89\u88c5\u672a\u5b8c\u6210\u3002\u9000\u51fa\u7801\uff1a") + $LASTEXITCODE)
         }

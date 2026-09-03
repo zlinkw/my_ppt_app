@@ -24,7 +24,7 @@ if (!ribbon.includes("() => Controller?.GetPowerPointWindowHandle() ?? IntPtr.Ze
 if (!ribbon.includes("showLabel='false'")) violations.push("Ribbon quick insert buttons must stay compact icon-first buttons");
 
 for (const snippet of [
-  "FormBorderStyle.SizableToolWindow",
+  "FormBorderStyle.Sizable",
   "SizeGripStyle.Show",
   "MinimumSize = new Size(420, 320)",
   "TopMost = false",

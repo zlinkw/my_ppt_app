@@ -178,7 +178,7 @@ if (!taskPane.includes('case "openResearchChartStudio":') || taskPane.includes('
   throw new Error("主任务窗格宿主只能打开本地科研绘图工作台，不得接受网站跳转消息。");
 }
 
-for (const snippet of ["ResearchChartStudioWindow", "research-chart-studio.html", "WebMessageReceived", "StageResearchSvg", "SelectResearchSvg", "InsertResearchSvg", "PostSvgStageResult", "PostSvgSelectionResult", "PostSvgInsertResult", "OpenResearchChartWebsite", "ToggleFullscreen", "ProcessCmdKey", "researchChartFullscreenResult"]) {
+for (const snippet of ["ResearchChartStudioWindow", "research-chart-studio.html", "WebMessageReceived", "StageResearchSvg", "SelectResearchSvg", "InsertResearchSvg", "PostSvgStageResult", "PostSvgSelectionResult", "PostSvgInsertResult", "OpenResearchChartWebsite", "PostNativeMaximizeResult", "researchChartFullscreenResult", "FormBorderStyle.Sizable", "base.MinimizeBox = true;", "base.ShowInTaskbar = true;"]) {
   if (!windowHost.includes(snippet)) throw new Error(`科研绘图工作台宿主合同缺少：${snippet}`);
 }
 for (const snippet of ["StageSvg(string svgText", "StageSvgBytes", "https://app.rawgraphs.io/", "https://app.datawrapper.de/", "https://chart-studio.plotly.com/", "https://vega.github.io/editor/", "UseShellExecute = true", "MaxSvgBytes = 4194304L", "DtdProcessing = DtdProcessing.Prohibit", "ForbiddenElements", "ComputeSha256", "Shapes.AddPicture", "PowerPoint 2016"]) {

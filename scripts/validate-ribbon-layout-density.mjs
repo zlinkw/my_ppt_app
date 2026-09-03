@@ -9,7 +9,9 @@ let sourceXml = source.match(/return BuildConsolidatedRibbonXml\("([\s\S]*?)"\);
 if (!sourceXml) throw new Error("Ribbon source XML or consolidation call is missing");
 const libraryButton = source.match(/const string libraryButton = "([^"]+)";/)?.[1];
 if (!libraryButton) throw new Error("Ribbon library button injection is missing");
-sourceXml = sourceXml.replace("<button id='exportAssets'", `${libraryButton}<button id='exportAssets'`);
+const usageGuideButton = source.match(/(?:private\s+)?const string UsageGuideButton = "([^"]+)";/)?.[1];
+if (!usageGuideButton) throw new Error("Ribbon usage guide button injection is missing");
+sourceXml = sourceXml.replace("<button id='exportAssets'", `${usageGuideButton}${libraryButton}<button id='exportAssets'`);
 
 const sourceDocument = new JSDOM(sourceXml, { contentType: "text/xml" }).window.document;
 const groupSpecs = [];
@@ -84,7 +86,9 @@ const uniqueActions = [
   "SaveSelectionAsAsset",
   "RefreshUserAssets",
   "ImportAssets",
-  "ExportAssets"
+  "ExportAssets",
+  "OpenResearchChartStudio",
+  "ToggleAssetSelectAll"
 ];
 for (const action of uniqueActions) {
   const matches = visibleControls.filter(control => control.getAttribute("onAction") === action);
@@ -103,10 +107,20 @@ for (const label of [
   "分享素材",
   "论文矩阵",
   "体数据块",
-  "注意力图"
+  "注意力图",
+  "保存模板",
+  "重命名模板",
+  "风格模板库",
+  "科研绘图室",
+  "全选素材"
 ]) {
-  const matches = visibleControls.filter(control => control.getAttribute("label") === label);
+  const matches = visibleControls.filter(control => control.getAttribute("label") === label
+    || (label === "全选素材" && control.getAttribute("id") === "assetSelectAll" && control.getAttribute("getLabel") === "GetAssetSelectAllLabel"));
   if (matches.length !== 1) violations.push(`visible Ribbon label must have one entry: ${label} x${matches.length}`);
+  if (label === "全选素材" && !source.includes("GetAssetSelectAllLabel")) violations.push("visible Ribbon dynamic label missing: GetAssetSelectAllLabel");
+}
+for (const control of visibleControls) {
+  if (control.hasAttribute("label") && control.hasAttribute("getLabel")) violations.push(`Office CustomUI label/getLabel are mutually exclusive: ${control.getAttribute("id") ?? control.tagName} must not define both`);
 }
 
 for (const root of visibleRoots) {
@@ -129,6 +143,10 @@ for (const controlId of visibleStyleInvalidations) {
   if (!ids.has(controlId)) violations.push(`style invalidation targets a hidden Ribbon control: ${controlId}`);
 }
 for (const controlId of visibleControls.filter(control => control.hasAttribute("getPressed")).map(control => control.getAttribute("id"))) {
+  if (controlId === "assetSelectAll") {
+    if (!source.includes('ribbon.InvalidateControl("assetSelectAll")')) violations.push("asset select toggle is missing invalidation wiring: assetSelectAll");
+    continue;
+  }
   if (!visibleStyleInvalidations.includes(controlId)) violations.push(`visible toggle is missing invalidation wiring: ${controlId}`);
 }
 

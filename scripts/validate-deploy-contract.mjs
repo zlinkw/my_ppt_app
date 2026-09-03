@@ -23,7 +23,8 @@ requireIncludes(build, "/p:SignManifests=true", "build.ps1: VSTO ClickOnce manif
 requireIncludes(build, "/p:ManifestCertificateThumbprint=$($signingCertificate.Thumbprint)", "build.ps1: VSTO build must use the resolved signing certificate");
 requireIncludes(build, "scripts\\verify-ribbon-icons.ps1", "build.ps1: built Ribbon icons must pass runtime rendering verification");
 
-requireIncludes(verify, "[switch]$SkipInstallers", "verify-deploy-package.ps1: missing SkipInstallers switch");
+requireIncludes(verify, "ReleaseRoot", "verify-deploy-package.ps1: final verification must support releases via ReleaseRoot");
+requireIncludes(verify, "releases", "verify-deploy-package.ps1: final verification must resolve installer artifacts under releases");
 requireIncludes(verify, "Windows 11 MSI installer missing.", "verify-deploy-package.ps1: final verification must require MSI");
 requireIncludes(verify, "Windows 11 EXE installer missing.", "verify-deploy-package.ps1: final verification must require EXE");
 requireIncludes(verify, "Installer manifest missing.", "verify-deploy-package.ps1: final verification must require installer manifest");
@@ -34,7 +35,8 @@ requireIncludes(verify, '$exeValue = if ($SkipInstallers) { "SKIPPED" }', "verif
 requireIncludes(installers, 'AllowSameVersionUpgrades="yes"', "package-installers.ps1: MSI must allow same-version overwrite upgrades");
 requireIncludes(installers, '<Custom Action="RunInstall" After="InstallFiles">NOT REMOVE~="ALL"</Custom>', "package-installers.ps1: MSI repair/rerun must reinstall payload instead of skipping installed products");
 requireIncludes(installers, "Copy-Item -LiteralPath $rootZip -Destination", "package-installers.ps1: installer payload zip must be overwritten on rebuild");
-requireIncludes(installers, "dist\\installer-manifest.json", "package-installers.ps1: final package build must write installer manifest");
+requireIncludes(installers, 'Join-Path $releasePath "installer-manifest.json"', "package-installers.ps1: final package build must write installer manifest under releases");
+requireIncludes(installers, "releases\\RoughPptAddin-", "package-installers.ps1: installer outputs must resolve under releases");
 requireIncludes(installers, "New-FileManifest $exePath", "package-installers.ps1: installer manifest must include EXE hash");
 requireIncludes(installers, "function Wait-ForFileReady", "package-installers.ps1: EXE packaging must wait for asynchronous IExpress output");
 requireIncludes(installers, "Wait-ForFileReady $exePath", "package-installers.ps1: IExpress EXE output must be ready before hashing");

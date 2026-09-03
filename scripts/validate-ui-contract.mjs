@@ -78,8 +78,15 @@ if (!(workflowIndex >= 0 && commandIndex > workflowIndex && selectionIndex > com
 if (!index.includes("快捷工作台") || !index.includes("starter-panel") || !index.includes("data-starter-action")) {
   violations.push("index.html: first-screen quick workspace command band missing stable Chinese hooks");
 }
-if (!index.includes('id="buildInfo"') || !index.includes("版本检测")) {
-  violations.push("index.html: top bar must expose build/version verification button");
+for (const removed of ['id="uiModeSimple"', 'id="uiModeFull"', 'id="simpleModeFullSwitch"', 'id="checkUpdates"', 'id="usageGuide"', 'id="buildInfo"']) {
+  if (index.includes(removed)) violations.push(`index.html: full-only top bar must not retain ${removed}`);
+}
+if (!index.includes("topbar-mode-note") || !index.includes("完整模式")) {
+  violations.push("index.html: top bar must indicate pinned full mode");
+}
+const helpForVersion = fs.readFileSync("src/RoughPptAddin/ui/help.html", "utf8");
+if (!helpForVersion.includes('id="buildInfoDetail"') || !helpForVersion.includes("版本信息")) {
+  violations.push("help.html: moved version info must expose buildInfoDetail with Chinese copy");
 }
 for (const obsolete of ["connectionHealthStrip", "connectionZlk", "connectionZotero", "connection-health-strip", "connection-chip", "data-connection-zlk", "data-connection-zotero"]) {
   if (index.includes(obsolete)) violations.push(`index.html: duplicate external connection button remains ${obsolete}`);
@@ -215,7 +222,7 @@ for (const snippet of [
   ".zlk-automation-status.ok",
   ".zotero-image-status.warn",
   "#count.tone-ok",
-  ".param-section[open] .param-section-count",
+  ".param-section.active .param-section-count",
   ".categories button small",
   "inset 0 -2px 0 var(--accent)",
   ".asset-card:hover",
@@ -234,7 +241,7 @@ for (const snippet of [
   ".quick-shape-list",
   ".favorite-toggle.active",
   "1b7fd0",
-  ".param-section[open]"
+  ".param-section.active"
 ]) {
   if (!styles.includes(snippet)) violations.push(`styles.css: external connection strip style missing ${snippet}`);
 }
@@ -819,6 +826,7 @@ if (!ribbon.includes("GetShapeMenuGalleryItemId") || !/(?:ShapePrefix|"roughShap
 }
 for (const [i, match] of [...ribbon.matchAll(/<(button|toggleButton)\b[^>]*>/g)].entries()) {
   const attributes = attrs(match[0]);
+  if (attributes.label && attributes.getLabel) violations.push(`RoughRibbon.cs: ribbon button ${i + 1} (${attributes.id ?? "unknown"}) must not define both label and getLabel`);
   const isQuickShapeButton = /^quickShape_\d+$/.test(attributes.id ?? "");
   if (isQuickShapeButton) {
     if (attributes.getScreentip !== "GetQuickShapeScreentip" || attributes.getSupertip !== "GetQuickShapeSupertip") {

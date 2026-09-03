@@ -176,8 +176,13 @@ requireIncludes(
 );
 requireIncludes(
   installers,
-  '<Directory Id="RoughInstallerPayloadFolder" Name="RoughPptAddinInstaller" />',
+  '<Directory Id="RoughInstallerPayloadFolder" Name="RoughPptAddinInstaller">',
   "package-installers.ps1: end-user MSI staging must remain in a private fixed LocalAppData directory"
+);
+requireIncludes(
+  installers,
+  '<Directory Id="LocalAppDataFolder">',
+  "package-installers.ps1: end-user MSI staging must remain under LocalAppData"
 );
 rejectIncludes(
   installers,

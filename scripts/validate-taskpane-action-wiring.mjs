@@ -45,6 +45,20 @@ for (const [id, snippets] of Object.entries(expectedStaticActions)) {
   }
 }
 
+// T5 灰度折叠断言：去重高频区只加 hidden/disabled，不删 id/wiring（可回滚）。
+// style-param-jump 为风格参数分组导航（常用/边界/填充/嵌套/线条），保留可见做任务窗格内跳转，不随 Ribbon 灰度折叠。
+for (const pattern of [
+  /id="noviceGuideStrip"[^>]*\bhidden\b/,
+  /class="quick-actions"[^>]*\bhidden\b/,
+  /class="style-quick-strip"[^>]*\bhidden\b/
+]) {
+  if (!pattern.test(index)) violations.push(`task pane gray-out missing hidden fold: ${pattern}`);
+}
+if (/class="style-param-jump"[^>]*\bhidden\b/.test(index)) violations.push("style-param-jump must stay visible for param group navigation");
+for (const jump of ["常用", "边界", "填充纹理", "嵌套", "线条"]) {
+  if (!index.includes(`data-param-group-jump="${jump}"`)) violations.push(`style-param-jump missing button: ${jump}`);
+}
+
 for (const type of [...app.matchAll(/postHost\(\{\s*type:\s*"([^"]+)"/g)].map(match => match[1])) {
   if (!bridge.includes(`${type}: "${type}"`)) violations.push(`bridge-contract.mjs missing message type: ${type}`);
   if (!new RegExp(`(?:case\\s+"${type}"\\s*:|type\\s*==\\s*"${type}")`).test(taskPane)) violations.push(`RoughTaskPaneControl.cs missing handler: ${type}`);

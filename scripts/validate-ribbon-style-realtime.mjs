@@ -12,6 +12,11 @@ const violations = [];
 for (const snippet of [
   "Controller?.ApplyRoughStylePreset(style, StylePresetLabel(presetId))",
   "Controller?.ApplyRoughStylePreset(style, \"论文风格\")",
+  "Controller?.ShowResearchChartStudio()",
+  "ApplyStylePresetFromGallery",
+  "GetStylePresetGalleryItemCount",
+  "ToggleAssetSelectAll",
+  "ShowTaskPaneSection(\"assetSelect\")",
   "ArrowheadLengthPt",
   "ArrowheadWidthPt"
 ]) {

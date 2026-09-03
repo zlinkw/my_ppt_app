@@ -31,6 +31,17 @@ for (const [index, match] of [...source.matchAll(/<(button|dynamicMenu)\b[^>\r\n
 
 if (!/GetShapeMenu/.test(source)) violations.push("shape dynamic menu callback missing");
 if (!/InsertShapeFromMenu/.test(source)) violations.push("shape menu insert callback missing");
+for (const snippet of [
+  "id='startStyleGallery'",
+  "GetStylePresetGalleryItemCount",
+  "GetStylePresetGalleryItemId",
+  "GetStylePresetGalleryItemImage",
+  "GetStylePresetGalleryItemLabel",
+  "GetStylePresetGalleryItemScreentip",
+  "ApplyStylePresetFromGallery"
+]) {
+  if (!source.includes(snippet)) violations.push(`style gallery callback missing: ${snippet}`);
+}
 if (!/GetShapeMenuGalleryItemImage[\s\S]*?GetShapeImageForEnum/.test(source) || !/ShapeIconFactory\.Create/.test(source)) {
   violations.push("main shape menu must use local outline shape icons");
 }

@@ -48,7 +48,7 @@ try {
       await delay(700);
     }
     await evaluate(client, `(() => {
-      const build = document.querySelector('#buildInfo');
+      const build = document.querySelector('#buildInfoDetail');
       if (build) build.textContent = '版本 当前构建';
     })()`);
     await delay(100);
@@ -66,7 +66,7 @@ try {
     width: 800,
     height: 400,
     prepare: `(() => {
-      document.querySelector('#uiModeSimple')?.click();
+      document.body.classList.add('ux-full');
       document.body.dataset.selectionKind = 'none';
       const selection = document.querySelector('[data-collapse-key="selection"]');
       if (selection) selection.dataset.selectionKind = 'none';
@@ -83,7 +83,7 @@ try {
     width: 800,
     height: 820,
     prepare: `(() => {
-      document.querySelector('#uiModeSimple')?.click();
+      document.body.classList.add('ux-full');
       document.body.dataset.selectionKind = 'normal';
       const selection = document.querySelector('[data-collapse-key="selection"]');
       if (selection) selection.dataset.selectionKind = 'normal';
@@ -101,7 +101,7 @@ try {
     width: 800,
     height: 820,
     prepare: `(() => {
-      document.querySelector('#uiModeSimple')?.click();
+      document.body.classList.add('ux-full');
       document.body.dataset.selectionKind = 'feature';
       const selection = document.querySelector('[data-collapse-key="selection"]');
       if (selection) selection.dataset.selectionKind = 'feature';

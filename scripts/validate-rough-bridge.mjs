@@ -96,3 +96,25 @@ for (const category of ["action-buttons", "arrows", "basic", "callouts", "flowch
 }
 
 console.log(`rough bridge ok: ${catalog.items.length} catalog shapes, ${categories.size} categories`);
+
+// Host-side regression: RoughJsBridge must stay thread-affine. Selection-triggered
+// regeneration drains on a threadpool thread, so every CoreWebView2 touch must be
+// marshalled to the WebView2 UI thread; otherwise IsReady/GenerateAsync throw
+// "CoreWebView2 can only be accessed from the UI thread" and every template
+// switch + manual redraw fails globally (addin.log: 手绘对象重绘失败 @ IsReady).
+const bridgeHost = fs.readFileSync("src/RoughPptAddin/Services/RoughJsBridge.cs", "utf8");
+const bridgeViolations = [];
+for (const snippet of [
+  "InvokeOnUiThread",
+  "ExecuteScriptOnUiThreadAsync",
+  "view.InvokeRequired",
+  "view.Invoke(action)",
+  "() => initialized"
+]) {
+  if (!bridgeHost.includes(snippet)) bridgeViolations.push(`bridge thread-affinity missing: ${snippet}`);
+}
+if (/string raw = await webView\.CoreWebView2\.ExecuteScriptAsync\(script\)/.test(bridgeHost)) {
+  bridgeViolations.push("bridge GenerateAsync touches CoreWebView2 off the UI thread");
+}
+if (bridgeViolations.length) throw new Error(`Rough bridge host validation failed:\n${bridgeViolations.join("\n")}`);
+console.log("rough bridge host ok: IsReady/GenerateAsync marshalled to WebView2 UI thread");

@@ -17,6 +17,7 @@ const bridgeContract = read("src/RoughPptAddin/ui/bridge-contract.mjs");
 const taskPane = read("src/RoughPptAddin/TaskPane/RoughTaskPaneControl.cs");
 const controller = read("src/RoughPptAddin/Services/RoughAddInController.cs");
 const guideWindow = read("src/RoughPptAddin/TaskPane/UsageGuideWindow.cs");
+const ribbon = read("src/RoughPptAddin/Ribbon/RoughRibbon.cs");
 const project = read("src/RoughPptAddin/RoughPptAddin.csproj");
 const violations = [];
 
@@ -28,7 +29,14 @@ for (const snippet of [
 ]) {
   if (!app.includes(snippet)) violations.push(`app.mjs missing modeless guide request: ${snippet}`);
 }
-if (!index.includes('href="./help.html"')) violations.push("index.html must retain standalone browser fallback");
+if (index.includes('id="usageGuide"')) violations.push("index.html must not retain task-pane usage-guide link; entry lives on the Ribbon");
+for (const snippet of [
+  "openUsageGuide",
+  "OpenUsageGuide",
+  "Controller?.ShowUsageGuide();"
+]) {
+  if (!ribbon.includes(snippet)) violations.push(`RoughRibbon.cs missing usage guide entry: ${snippet}`);
+}
 if (!bridgeContract.includes('openUsageGuide: "openUsageGuide"')) violations.push("bridge contract missing openUsageGuide message type");
 
 for (const snippet of [
@@ -51,8 +59,9 @@ for (const snippet of [
 for (const snippet of [
   "public sealed class UsageGuideWindow : Form",
   'Text = "Rough 使用说明";',
-  "ShowInTaskbar = false;",
-  "FormBorderStyle = FormBorderStyle.SizableToolWindow;",
+  "ShowInTaskbar = true;",
+  "MinimizeBox = true;",
+  "FormBorderStyle = FormBorderStyle.Sizable;",
   "public void ShowAlongsidePowerPoint()",
   "SetVirtualHostNameToFolderMapping",
   'Navigate("https://rough-ppt.local/help.html")',
@@ -65,6 +74,13 @@ for (const snippet of [
   if (!guideWindow.includes(snippet)) violations.push(`UsageGuideWindow.cs missing modeless behavior: ${snippet}`);
 }
 if (guideWindow.includes("ShowDialog(")) violations.push("UsageGuideWindow must remain modeless");
+for (const banned of [
+  "ToggleFullscreen",
+  "Keys.F11",
+  "全屏 (F11)"
+]) {
+  if (guideWindow.includes(banned)) violations.push(`UsageGuideWindow.cs must use native maximize instead of custom fullscreen: ${banned}`);
+}
 
 if (!project.includes('<Compile Include="TaskPane\\UsageGuideWindow.cs" />')) {
   violations.push("RoughPptAddin.csproj missing UsageGuideWindow compile item");

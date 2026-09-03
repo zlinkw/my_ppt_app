@@ -1,6 +1,7 @@
 // 独立 UI 窗口的真实浏览器布局验证。
 // 每个窗口的尺寸取自宿主 WinForms 窗口的 MinimumSize 与默认 Size，
 // 这样验证的是用户真的能拉到的最窄状态，而不是任意猜测的宽度。
+import fs from "node:fs";
 import path from "node:path";
 import {
   startStaticServer,
@@ -55,6 +56,20 @@ const windows = [
 
 const uiRoot = path.join(process.cwd(), "src", "RoughPptAddin", "ui");
 const violations = [];
+
+const galleryCs = fs.readFileSync("src/RoughPptAddin/Ribbon/ShapeGalleryWindow.cs", "utf8");
+const guideCs = fs.readFileSync("src/RoughPptAddin/TaskPane/UsageGuideWindow.cs", "utf8");
+const studioCs = fs.readFileSync("src/RoughPptAddin/TaskPane/ResearchChartStudioWindow.cs", "utf8");
+for (const [name, text] of [["ShapeGalleryWindow.cs", galleryCs], ["UsageGuideWindow.cs", guideCs], ["ResearchChartStudioWindow.cs", studioCs]]) {
+  for (const needle of ["base.MaximizeBox = true;", "base.MinimizeBox = true;", "base.ShowInTaskbar = true;", "FormBorderStyle.Sizable"]) {
+    if (!text.includes(needle)) violations.push(`${name} missing native window contract: ${needle}`);
+  }
+  for (const banned of ["ToggleFullscreen", "Keys.F11", "全屏 (F11)", "FormBorderStyle.SizableToolWindow"]) {
+    if (text.includes(banned)) violations.push(`${name} must use native maximize instead of custom fullscreen: ${banned}`);
+  }
+}
+if (/base\.MaximizeBox\s*=\s*false/.test(galleryCs)) violations.push("ShapeGalleryWindow.cs must not disable MaximizeBox");
+if (/base\.MinimizeBox\s*=\s*false/.test(galleryCs)) violations.push("ShapeGalleryWindow.cs must not disable MinimizeBox");
 
 const server = await startStaticServer(uiRoot);
 const browser = await launchBrowser("ui-window-layout-browser");

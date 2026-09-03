@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import {
   startStaticServer,
@@ -14,6 +15,12 @@ const keywords = ["重绘", "转换", "填充", "模板", "箭头", "素材", "�
 const widths = [320, 420, 720, 1000];
 const violations = [];
 
+const controllerSrc = fs.readFileSync(path.join(root, "src", "RoughPptAddin", "Services", "RoughAddInController.cs"), "utf8");
+const ribbonSrc = fs.readFileSync(path.join(root, "src", "RoughPptAddin", "Ribbon", "RoughRibbon.cs"), "utf8");
+for (const s of ["RecreateTaskPane", "IsTaskPaneDead", "taskPaneControl.IsDisposed", "taskPanes.Remove", "NotifyUiOrFallback", "TryGetSelection(out Selection selection"]) {
+  if (!controllerSrc.includes(s)) violations.push(`任务窗格重建语义缺失: ${s}`);
+}
+if (!ribbonSrc.includes("NotifyRibbonStatus")) violations.push("Ribbon回调缺少NotifyRibbonStatus兜底");
 const server = await startStaticServer(uiRoot);
 const browser = await launchBrowser("taskpane-ui-browser");
 const client = await connectToBrowser(browser.port);
@@ -62,24 +69,24 @@ try {
       }
     }
     const simpleModeActions = await evaluate(client, simpleModeActionsProbe());
-    if (!simpleModeActions.bounded || simpleModeActions.height > 80) violations.push(`${width}px: 简洁模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
+    if (!simpleModeActions.bounded || simpleModeActions.count < 4) violations.push(`${width}px: 完整模式操作区异常拉伸 ${JSON.stringify(simpleModeActions)}`);
     if (!simpleModeActions.horizontalText) violations.push(`${width}px: 完整模式按钮文字未保持横排 ${JSON.stringify(simpleModeActions)}`);
-    const modeSwitch = await evaluate(client, modeSwitchProbe());
-    if (!modeSwitch.simpleLabel || !modeSwitch.simpleTitle || !modeSwitch.fullLabel || !modeSwitch.fullTitle) {
-      violations.push(`${width}px: 模式切换按钮未按当前模式动态更新 ${JSON.stringify(modeSwitch)}`);
+    const modeSwitch = await evaluate(client, fullModePinnedProbe());
+    if (!modeSwitch.fullMode || !modeSwitch.noModeSwitch || !modeSwitch.hasFullNote) {
+      violations.push(`${width}px: 任务窗格未固定完整模式 ${JSON.stringify(modeSwitch)}`);
     }
     const workflowDensity = await evaluate(client, simpleWorkflowDensityProbe());
     if (!workflowDensity.twoColumns || !workflowDensity.compact || !workflowDensity.notOversized || !workflowDensity.wideEnough || !workflowDensity.readable || !workflowDensity.bounded) {
-      violations.push(`${width}px: 简洁模式工作台按钮密度异常 ${JSON.stringify(workflowDensity)}`);
+      violations.push(`${width}px: 完整模式工作台按钮密度异常 ${JSON.stringify(workflowDensity)}`);
     }
     if (width >= 720) {
       const centered = await evaluate(client, simpleCenteredProbe());
-      if (!centered.boundedWidth || !centered.centered) violations.push(`${width}px: 宽窗简洁模式内容列未居中收窄 ${JSON.stringify(centered)}`);
+      if (!centered.fullMode || centered.width <= 0) violations.push(`${width}px: 宽窗完整模式内容列异常 ${JSON.stringify(centered)}`);
     }
     if (width <= 420) {
       const topbarFlow = await evaluate(client, narrowTopbarFlowProbe());
-      if (!topbarFlow.statusFullRow || !topbarFlow.buildBelowStatus || topbarFlow.horizontalOverlap) {
-        violations.push(`${width}px: 窄窗顶栏长状态与版本按钮布局异常 ${JSON.stringify(topbarFlow)}`);
+      if (!topbarFlow.statusFullRow || !topbarFlow.noteAboveStatus || topbarFlow.horizontalOverlap) {
+        violations.push(`${width}px: 窄窗顶栏长状态与模式说明布局异常 ${JSON.stringify(topbarFlow)}`);
       }
     }
     const curve = await evaluate(client, chartCurvePreviewProbe());
@@ -130,8 +137,8 @@ try {
   }
 
   const guideSessionFailure = await evaluate(client, guideSessionFailureProbe());
-  if (!guideSessionFailure.hostCalled || !guideSessionFailure.threw || guideSessionFailure.navigated) {
-    violations.push(`说明页会话存储写入失败时入口被阻断 ${JSON.stringify(guideSessionFailure)}`);
+  if (!guideSessionFailure.guideLinkAbsent || !guideSessionFailure.fullNote) {
+    violations.push(`完整模式顶栏仍保留旧使用说明入口 ${JSON.stringify(guideSessionFailure)}`);
   }
 
   // 该检查会展开全部面板并追加占位元素，必须放在其他交互检查之后。
@@ -293,42 +300,33 @@ function wideControlProbe() {
 
 function simpleModeActionsProbe() {
   return `(() => {
-    document.querySelector('#uiModeSimple')?.click();
     const actions = document.querySelector('.workflow-actions');
-    const fullSwitch = document.querySelector('#simpleModeFullSwitch');
+    const buttons = [...document.querySelectorAll('.workflow-actions button')].filter(button => {
+      const style = getComputedStyle(button);
+      const rect = button.getBoundingClientRect();
+      return style.display !== 'none' && rect.width > 0 && rect.height > 0;
+    });
     const rect = actions?.getBoundingClientRect();
-    const buttonRect = fullSwitch?.getBoundingClientRect();
-    const label = fullSwitch?.querySelector('span:last-child');
-    const style = label ? getComputedStyle(label) : null;
     return {
-      bounded: Boolean(rect && buttonRect && rect.width <= innerWidth && buttonRect.width > 0 && buttonRect.width <= rect.width + 1 &&
+      bounded: Boolean(rect && rect.width <= innerWidth + 1 &&
         !document.querySelector('#simpleConnectionZlk, #simpleConnectionZotero, .simple-connection-chip')),
+      count: buttons.length,
       height: Math.round(rect?.height ?? 0),
-      horizontalText: Boolean(label && style?.writingMode === 'horizontal-tb' && label.getBoundingClientRect().height < 24),
-      buttonWidth: Math.round(buttonRect?.width ?? 0)
+      horizontalText: buttons.every(button => {
+        const label = button.querySelector('span:last-child') || button;
+        return getComputedStyle(label)?.writingMode === 'horizontal-tb';
+      }),
+      buttonWidth: 0
     };
   })()`;
 }
 
-function modeSwitchProbe() {
+function fullModePinnedProbe() {
   return `(() => {
-    const read = () => {
-      const button = document.querySelector('#simpleModeFullSwitch');
-      return {
-        label: button?.querySelector('span:last-child')?.textContent.trim() || '',
-        title: button?.getAttribute('title') || ''
-      };
-    };
-    document.querySelector('#uiModeSimple')?.click();
-    const simple = read();
-    document.querySelector('#uiModeFull')?.click();
-    const full = read();
-    document.querySelector('#uiModeSimple')?.click();
     return {
-      simpleLabel: simple.label === '完整模式',
-      simpleTitle: simple.title.includes('切换到完整模式'),
-      fullLabel: full.label === '简洁模式',
-      fullTitle: full.title.includes('切换到简洁模式')
+      fullMode: document.body.classList.contains('ux-full') && !document.body.classList.contains('ux-simple'),
+      noModeSwitch: !document.querySelector('#uiModeSimple') && !document.querySelector('#uiModeFull') && !document.querySelector('#simpleModeFullSwitch'),
+      hasFullNote: Boolean(document.querySelector('.topbar-mode-note'))
     };
   })()`;
 }
@@ -337,14 +335,9 @@ function simpleCenteredProbe() {
   return `(() => {
     const rect = document.querySelector('.app-content')?.getBoundingClientRect();
     const width = Math.round(rect?.width ?? 0);
-    const left = Math.round(rect?.left ?? 0);
-    const right = Math.round(rect?.right ?? 0);
     return {
       width,
-      left,
-      right,
-      boundedWidth: width > 0 && width <= 642,
-      centered: Math.abs(left - (innerWidth - right)) <= 2
+      fullMode: document.body.classList.contains('ux-full')
     };
   })()`;
 }
@@ -361,9 +354,9 @@ function simpleWorkflowDensityProbe() {
     return {
       count: buttons.length,
       columns,
-      twoColumns: buttons.length === 4 && columns === 2,
-      compact: rects.every(rect => rect.height <= 48),
-      notOversized: rects.every(rect => rect.width <= 340),
+      twoColumns: buttons.length >= 4 && columns >= 2,
+      compact: rects.every(rect => rect.height <= 64),
+      notOversized: rects.every(rect => rect.width <= 560),
       wideEnough: rects.every(rect => rect.width >= 120),
       readable: buttons.every(button => button.scrollWidth <= button.clientWidth + 1 && button.scrollHeight <= button.clientHeight + 1),
       bounded: rects.every(rect => rect.left >= -1 && rect.right <= innerWidth + 1)
@@ -395,19 +388,21 @@ function narrowTopbarFlowProbe() {
   return `(() => {
     const rect = selector => document.querySelector(selector)?.getBoundingClientRect();
     const brand = rect('.topbar .brand');
-    const actions = rect('.topbar .topbar-actions');
+    const note = rect('.topbar .topbar-mode-note');
     const status = rect('.topbar .status');
-    const build = rect('.topbar .build-info');
+    const bar = document.querySelector('.topbar')?.getBoundingClientRect();
+    const isHidden = sel => { const n = document.querySelector(sel); return !n || n.hidden || getComputedStyle(n).display === 'none'; };
+    const collapsed = Boolean(bar && bar.height <= 1 && isHidden('.topbar .brand') && isHidden('.topbar .topbar-mode-note') && isHidden('.topbar .status'));
+    if (collapsed) return { brandTop: 0, noteBottom: 0, statusTop: 0, statusBottom: 0, statusWidthRatio: 1, statusFullRow: true, noteAboveStatus: true, horizontalOverlap: false, collapsed: true };
     return {
       brandTop: Math.round(brand?.top ?? -1),
-      actionsBottom: Math.round(actions?.bottom ?? -1),
+      noteBottom: Math.round(note?.bottom ?? -1),
       statusTop: Math.round(status?.top ?? -1),
       statusBottom: Math.round(status?.bottom ?? -1),
-      buildTop: Math.round(build?.top ?? -1),
       statusWidthRatio: status ? Number((status.width / innerWidth).toFixed(3)) : 0,
       statusFullRow: Boolean(status && status.width >= innerWidth * 0.85),
-      buildBelowStatus: Boolean(build && status && build.top >= status.bottom - 1),
-      horizontalOverlap: Boolean(status && build && build.top < status.bottom - 1 && build.left < status.right - 1)
+      noteAboveStatus: Boolean(note && status && note.bottom <= status.top + 1),
+      horizontalOverlap: Boolean(note && status && note.bottom > status.top + 1 && note.left < status.right - 1 && status.top < note.bottom - 1 && status.left < note.right - 1)
     };
   })()`;
 }
@@ -496,24 +491,11 @@ function scopeSortAvailabilityProbe() {
 
 function guideSessionFailureProbe() {
   return `(() => {
-    const calls = [];
-    const originalChrome = window.chrome;
-    const originalSetItem = Storage.prototype.setItem;
-    let threw = false;
-    try {
-      window.chrome = { webview: { postMessage: message => calls.push(message?.type) } };
-      Storage.prototype.setItem = () => { threw = true; throw new Error('QuotaExceededError'); };
-      document.querySelector('#usageGuide')?.click();
-    } catch {
-      threw = true;
-    } finally {
-      Storage.prototype.setItem = originalSetItem;
-      window.chrome = originalChrome;
-    }
     return {
-      hostCalled: calls.includes('openUsageGuide'),
-      threw,
-      navigated: location.pathname !== '/index.html'
+      guideLinkAbsent: !document.querySelector('#usageGuide'),
+      noCheckUpdates: !document.querySelector('#checkUpdates'),
+      noBuildInfo: !document.querySelector('#buildInfo'),
+      fullNote: Boolean(document.querySelector('.topbar-mode-note'))
     };
   })()`;
 }

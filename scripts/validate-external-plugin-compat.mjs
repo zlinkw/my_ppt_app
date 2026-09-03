@@ -76,7 +76,10 @@ function validateZlkClusterOrchestrator() {
     notes.push("zlk external repo unavailable");
     return;
   }
-  const bridge = readExternal(zlkRoot, "src/PptPlotBridge.ts");
+  // PptPlotBridge.ts 已重构为 7 行 facade (export * from "./PptPlotBridge.legacy")，
+  // 真实现在 524 行 PptPlotBridge.legacy.ts；拼接校验避免口径过严误报，阈值不变。
+  // legacy 用 readExternal（缺失记 violations），勿用 optionalReadExternal。
+  const bridge = readExternal(zlkRoot, "src/PptPlotBridge.ts") + "\n" + readExternal(zlkRoot, "src/PptPlotBridge.legacy.ts");
   const contract = readExternal(zlkRoot, "docs/output-contract-for-plotting.md");
   for (const snippet of [
     "schemaVersion: 1",

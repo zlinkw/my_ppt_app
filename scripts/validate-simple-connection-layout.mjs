@@ -13,14 +13,21 @@ for (const obsolete of ["simpleConnectionZlk", "simpleConnectionZotero", "simple
 if (html.includes('id="simpleModeActions"')) {
   throw new Error("完整模式切换必须复用快捷工作台容器，不得保留独立操作区。");
 }
-if (!html.includes('id="simpleModeFullSwitch"')) throw new Error("完整模式切换按钮被误删。");
+
+// 完整模式固定：顶栏模式切换与快捷工作台切换按钮必须删除，只留完整模式。
+for (const removed of ['id="simpleModeFullSwitch"', 'id="uiModeSimple"', 'id="uiModeFull"']) {
+  if (html.includes(removed)) throw new Error(`完整模式固定后仍残留切换入口：${removed}`);
+}
+if (!html.includes("topbar-mode-note")) throw new Error("完整模式顶栏缺少固定模式说明。");
 const workflowStart = html.indexOf('class="workflow-actions"');
 const featureButton = html.indexOf('id="jumpToFeature"');
-const fullSwitch = html.indexOf('id="simpleModeFullSwitch"');
 const moreDisclosure = html.indexOf('class="workflow-more workflow-quickfind"');
-if (workflowStart < 0 || featureButton < 0 || fullSwitch < 0 || moreDisclosure < 0 ||
-    !(workflowStart < featureButton && featureButton < fullSwitch && fullSwitch < moreDisclosure)) {
-  throw new Error("完整模式切换按钮未纳入简洁模式快捷工作台顺序。");
+if (workflowStart < 0 || featureButton < 0 || moreDisclosure < 0 ||
+    !(workflowStart < featureButton && featureButton < moreDisclosure)) {
+  throw new Error("快捷工作台顺序异常：特征块入口必须位于工作区容器与折叠区之间。");
+}
+if (!html.includes('class="ux-full"') && !app.includes('uiMode: "full"')) {
+  throw new Error("任务窗格必须固定为完整模式。");
 }
 if (!css.includes('body.ux-simple[data-selection-kind="none"] .workflow-actions')) {
   throw new Error("缺少简洁模式快捷工作台两列密度规则。");

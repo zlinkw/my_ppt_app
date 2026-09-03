@@ -7,6 +7,12 @@ const packageJson = fs.readFileSync("package.json", "utf8");
 const violations = [];
 const hasChinese = value => /[\u3400-\u9fff]/.test(value ?? "");
 
+function getLabelReturnsChinese(name) {
+  if (!name) return false;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = ribbon.match(new RegExp(escaped + "\\(IRibbonControl[\\s\\S]{0,500}"));
+  return !!m && hasChinese(m[0]);
+}
 function attrs(tag) {
   const result = {};
   for (const match of tag.matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/g)) {
@@ -142,7 +148,12 @@ const expected = {
   convertSelection: { action: "ConvertSelectionToRough" },
   refreshShape: { action: "RefreshSelection" },
   selectCarrier: { action: "SelectNativeCarrier" },
-  inspectShape: { action: "InspectSelection" }
+  inspectShape: { action: "InspectSelection" },
+  startTemplateSave: { action: "OpenPaneSection", section: "templateSave" },
+  startTemplateRename: { action: "OpenPaneSection", section: "templateRename" },
+  openResearchChartStudio: { action: "OpenResearchChartStudio" },
+  openUsageGuide: { action: "OpenUsageGuide" },
+  assetSelectAll: { action: "ToggleAssetSelectAll", kind: "toggleButton" }
 };
 
 for (let i = 0; i < 12; i++) {
@@ -164,7 +175,9 @@ for (const [id, expectation] of Object.entries(expected)) {
       violations.push(`${id}: quick shape tooltip must be dynamic`);
     }
   } else if (kind !== "dynamicMenu") {
-    if (!attributes.label || !hasChinese(attributes.label)) violations.push(`${id}: missing Chinese label`);
+    if (attributes.label && attributes.getLabel) violations.push(`${id}: Office CustomUI label/getLabel are mutually exclusive`);
+    const dynamicLabelOk = getLabelReturnsChinese(attributes.getLabel);
+    if (!dynamicLabelOk && (!attributes.label || !hasChinese(attributes.label))) violations.push(`${id}: missing Chinese label`);
     if (!attributes.screentip || !hasChinese(attributes.screentip)) violations.push(`${id}: missing Chinese screentip`);
     if (!attributes.supertip || !hasChinese(attributes.supertip)) violations.push(`${id}: missing Chinese supertip`);
   }
@@ -191,6 +204,23 @@ for (const [id, expectation] of Object.entries(expected)) {
 }
 
 for (const snippet of [
+  "id='startStyleGallery'",
+  "GetStylePresetGalleryItemCount",
+  "GetStylePresetGalleryItemId",
+  "GetStylePresetGalleryItemImage",
+  "GetStylePresetGalleryItemLabel",
+  "GetStylePresetGalleryItemScreentip",
+  "ApplyStylePresetFromGallery",
+  "BuiltInStyleGalleryPresetIds",
+  "OpenResearchChartStudio",
+  "ToggleAssetSelectAll",
+  "GetAssetSelectAllPressed",
+  "GetAssetSelectAllLabel"
+]) {
+  if (!ribbon.includes(snippet)) violations.push(`style gallery/research/asset wiring missing: ${snippet}`);
+}
+
+for (const snippet of [
   "AdjustFeatureBlockDirection",
   "FeatureDirectionAdjustment",
   "FeatureDirectionCommand",
@@ -207,6 +237,19 @@ for (const snippet of [
     violations.push(`top command implementation missing: ${snippet}`);
   }
 }
+
+// Ensure重建 + 回调统一try/catch转Notify断言（删窗回归）
+for (const action of [...new Set(Object.values(expected).map(v => v.action).filter(Boolean))]) {
+  const re = new RegExp("public void " + action + "\\(IRibbonControl[\\s\\S]{0,4000}?\\n\\t\\}");
+  const m = ribbon.match(re);
+  if (!m) { violations.push(`${action}: ribbon callback missing`); continue; }
+  if (!/try\s*\{/.test(m[0]) || !/catch/.test(m[0])) violations.push(`${action}: missing try/catch`);
+  if (!m[0].includes("NotifyRibbonStatus")) violations.push(`${action}: missing NotifyRibbonStatus fallback`);
+}
+for (const snippet of ["RecreateTaskPane", "IsTaskPaneDead", "taskPaneControl.IsDisposed", "taskPanes.Add(taskPaneControl", "taskPanes.Remove", "TryGetSelection(out Selection selection"]) {
+  if (!controller.includes(snippet)) violations.push(`Ensure重建语义缺失: ${snippet}`);
+}
+if (!controller.includes("NotifyUiOrFallback")) violations.push("ShowTaskPane/Inspect必须经NotifyUiOrFallback兜底");
 
 if (!packageJson.includes("validate-ribbon-top-commands.mjs")) {
   violations.push("package.json test script must include validate-ribbon-top-commands.mjs");

@@ -1,5 +1,6 @@
 param(
-    [switch]$SkipInstallers
+    [switch]$SkipInstallers,
+    [string]$ReleaseRoot
 )
 
 Set-StrictMode -Version Latest
@@ -8,10 +9,26 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $packageRoot = Join-Path $root "dist\RoughPptAddin"
 $zipPath = Join-Path $root "dist\RoughPptAddin.zip"
-$portableZipPath = Join-Path $root "RoughPptAddin-Windows11.zip"
-$msiPath = Join-Path $root "RoughPptAddin-Windows11.msi"
-$exePath = Join-Path $root "RoughPptAddin-Windows11-Setup.exe"
-$manifestPath = Join-Path $root "dist\installer-manifest.json"
+if ([string]::IsNullOrWhiteSpace($ReleaseRoot)) {
+    $latestRelease = Get-ChildItem -LiteralPath (Join-Path $root "releases") -Directory -Filter "RoughPptAddin-*" -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($null -ne $latestRelease) {
+        $ReleaseRoot = $latestRelease.FullName
+    }
+}
+if (-not [string]::IsNullOrWhiteSpace($ReleaseRoot)) {
+    $releasePath = [IO.Path]::GetFullPath($ReleaseRoot)
+    $portableZipPath = Join-Path $releasePath "RoughPptAddin-Windows11.zip"
+    $msiPath = Join-Path $releasePath "RoughPptAddin-Windows11.msi"
+    $exePath = Join-Path $releasePath "RoughPptAddin-Windows11-Setup.exe"
+    $manifestPath = Join-Path $releasePath "installer-manifest.json"
+}
+else {
+    $portableZipPath = Join-Path $root "RoughPptAddin-Windows11.zip"
+    $msiPath = Join-Path $root "RoughPptAddin-Windows11.msi"
+    $exePath = Join-Path $root "RoughPptAddin-Windows11-Setup.exe"
+    $manifestPath = Join-Path $root "dist\installer-manifest.json"
+}
 
 $required = @(
     "Install-RoughPptAddin.cmd",
@@ -42,10 +59,15 @@ if (-not (Test-Path $zipPath)) {
     throw "Deploy package zip missing."
 }
 
-$catalog = Get-Content -LiteralPath (Join-Path $packageRoot "publish\ui\autoshape-catalog.json") -Raw | ConvertFrom-Json
-if ($catalog.items.Count -lt 180) {
-    throw "Deploy package catalog is incomplete: $($catalog.items.Count)"
+$catalogCountText = (& node -e "console.log(require('./dist/RoughPptAddin/publish/ui/autoshape-catalog.json').items.length)" 2>&1)
+if ($LASTEXITCODE -ne 0 -or $catalogCountText -notmatch "^\d+\s*$") {
+    throw "Deploy package catalog unreadable via node: $catalogCountText"
 }
+$catalogCount = [int]$catalogCountText.Trim()
+if ($catalogCount -lt 180) {
+    throw "Deploy package catalog is incomplete: $catalogCount"
+}
+$catalog = [pscustomobject]@{ items = [pscustomobject]@{ Count = $catalogCount } }
 
 if (-not $SkipInstallers) {
     if (-not (Test-Path $portableZipPath -PathType Leaf)) {
