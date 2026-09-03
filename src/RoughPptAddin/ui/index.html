@@ -6,26 +6,19 @@
   <title>手绘图形 Rough</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="ux-simple" data-selection-kind="none">
+<body class="ux-full" data-selection-kind="none">
   <main class="shell">
     <header class="topbar">
-      <div class="brand" title="插入具有 Rough.js 视觉的 PowerPoint 原生可编辑图形">
+      <!-- 隐藏(非删除)：品牌区/模式说明/状态条保留DOM，仅hidden折叠；回滚时移除hidden即恢复 -->
+      <div class="brand" hidden title="插入具有 Rough.js 视觉的 PowerPoint 原生可编辑图形">
         <span class="brand-mark">R</span>
         <span class="brand-copy">
           <strong>手绘图形 Rough</strong>
           <small>原生 PPT 可编辑</small>
         </span>
       </div>
-      <div class="topbar-actions">
-        <div class="ux-mode-switch" role="group" aria-label="界面模式" title="简洁模式只显示当前右侧工作区；完整模式显示全部专业面板">
-          <button id="uiModeSimple" type="button" data-ui-mode="simple" title="简洁模式：显示当前选区状态或正在使用的单个工作区，其他功能可从顶部入口和搜索定位">简洁</button>
-          <button id="uiModeFull" type="button" data-ui-mode="full" title="完整模式：显示全部参数、素材、配色、特征块和论文库">完整</button>
-      </div>
-        <button id="checkUpdates" class="usage-guide-button update-button" type="button" title="查询 GitHub 正式 Release；发现新版本后可直接打开下载页">检查更新</button>
-        <a id="usageGuide" class="usage-guide-button" href="./help.html" title="在独立非模态窗口中打开完整图文说明，可边看边操作 PowerPoint">使用说明</a>
-      </div>
-      <button id="buildInfo" class="build-info" type="button" title="显示当前插件安装版本、构建提交和构建时间，便于确认是否已安装最新版">版本检测</button>
-      <div id="status" class="status" role="status" tabindex="0" aria-expanded="false" data-status-toggle title="显示插件当前操作状态；点击可展开长文本" aria-live="polite" aria-atomic="true">准备就绪</div>
+      <span class="topbar-mode-note" hidden title="任务窗格固定为完整模式，全部专业面板常显；版本信息请见使用说明版本信息区，快捷操作请用功能区">完整模式</span>
+      <div id="status" class="status" hidden role="status" tabindex="0" aria-expanded="false" data-status-toggle title="显示插件当前操作状态；点击可展开长文本" aria-live="polite" aria-atomic="true">准备就绪</div>
     </header>
     <section id="inlinePrompt" class="inline-prompt" hidden aria-live="polite" title="页面内轻量确认与输入，不使用系统弹窗，避免阻塞 PowerPoint"></section>
 
@@ -46,15 +39,14 @@
         <button id="jumpToPaperPresets" type="button" data-starter-action="paperPresets" title="定位智能模型、多模态、医学图像报告和诊断论文图预设"><span aria-hidden="true">&#9635;</span><span>AI 论文预设</span></button>
         <button id="jumpToAssets" type="button" data-starter-action="library" title="定位我的素材库，可插入、删除、导入和分享素材"><span aria-hidden="true">&#9636;</span><span>素材库</span></button>
         <button id="jumpToFeature" type="button" data-starter-action="featureBlock" title="定位 2D/3D 特征块工具"><span aria-hidden="true">&#9635;</span><span>特征块</span></button>
-        <button type="button" id="simpleModeFullSwitch" title="切换到完整模式以显示全部专业面板"><span aria-hidden="true">&#9634;</span><span>完整模式</span></button>
       </div>
-      <div id="noviceGuideStrip" class="novice-guide-strip" data-command-owner="ribbon" title="高频插入和重绘操作已移至 PowerPoint Ribbon">
-        <button type="button" data-starter-action="catalog" title="第一步：插入 PPT 原生手绘形状"><span class="novice-step">1</span><span>插入形状</span></button>
-        <button type="button" data-starter-action="style" title="第二步：选择风格模板或调整线宽、粗糙度、填充"><span class="novice-step">2</span><span>调风格</span></button>
-        <button type="button" data-starter-action="redraw" title="第三步：选中对象后按当前参数重绘"><span class="novice-step">3</span><span>重绘选区</span></button>
-        <button type="button" data-starter-action="charts" title="打开插件自有的本地科研绘图工作区，配置数据并实时预览"><span class="novice-step">研</span><span>科研图</span></button>
+      <div id="noviceGuideStrip" class="novice-guide-strip" data-command-owner="ribbon" hidden title="高频插入和重绘操作已移至 PowerPoint Ribbon（灰度折叠，可回滚：移除 hidden 即恢复）">
+        <button type="button" data-starter-action="catalog" disabled title="第一步：插入 PPT 原生手绘形状（已移至 Ribbon，此处灰度保留）"><span class="novice-step">1</span><span>插入形状</span></button>
+        <button type="button" data-starter-action="style" disabled title="第二步：选择风格模板或调整线宽、粗糙度、填充（已移至 Ribbon，此处灰度保留）"><span class="novice-step">2</span><span>调风格</span></button>
+        <button type="button" data-starter-action="redraw" disabled title="第三步：选中对象后按当前参数重绘（已移至 Ribbon，此处灰度保留）"><span class="novice-step">3</span><span>重绘选区</span></button>
+        <button type="button" data-starter-action="charts" disabled title="打开插件自有的本地科研绘图工作区，配置数据并实时预览（已移至 Ribbon，此处灰度保留）"><span class="novice-step">研</span><span>科研图</span></button>
       </div>
-      <details class="workflow-more workflow-quickfind" data-workflow-more data-quickfind title="展开更多操作和功能速查；默认收起以降低首屏占位">
+      <details class="workflow-more workflow-quickfind" data-workflow-more data-quickfind hidden title="展开更多操作和功能速查；默认收起以降低首屏占位（灰度折叠，可回滚：移除 hidden 即恢复）">
         <summary title="展开或收起更多操作与功能速查">
           <span class="quickfind-label" title="不常用但仍可快速访问的操作和路径提示">更多与速查</span>
           <span class="quickfind-hint" title="添加常用、转换、重绘、模板、填充、素材等路径提示">添加常用 / 转换 / 重绘 / 路径</span>
@@ -131,12 +123,12 @@
         <button id="emptyStyleHelp" type="button" data-starter-action="style" title="先定位风格参数，设置线宽、粗糙度和填充"><span aria-hidden="true">&#9881;</span>调风格</button>
         <button id="emptySearchHelp" type="button" data-starter-action="search" title="聚焦功能搜索，查找转换、填充、模板或素材等功能"><span aria-hidden="true">&#8981;</span>搜索功能</button>
       </div>
-      <div class="quick-actions" data-command-owner="ribbon">
-        <button id="convertSelection" class="primary-action" type="button" title="把当前选中的一个或多个 PowerPoint 原生形状替换为 Rough.js 手绘视觉的 PPT 原生可编辑对象；已生成的手绘组会自动跳过"><span aria-hidden="true">&#9998;</span>转换</button>
-        <button id="refreshSelection" class="primary-action" type="button" title="按当前 PPT 尺寸、调整点和风格重新生成手绘边界"><span aria-hidden="true">&#8635;</span>重绘选区</button>
-        <button id="inspectSelection" type="button" title="查看当前选区的手绘元数据、图层角色和原生对象状态"><span aria-hidden="true">&#9432;</span>检查</button>
-        <button id="saveSelection" type="button" title="把当前选中的 PPT 原生对象保存到我的素材库"><span aria-hidden="true">&#9636;</span>保存</button>
-        <button id="selectCarrier" type="button" title="选中组内隐藏的 PPT 原生载体，调整圆角、箭头等 PowerPoint 原生调整点后点击“重绘选区”"><span aria-hidden="true">&#9673;</span>载体</button>
+      <div class="quick-actions" data-command-owner="ribbon" hidden title="选区高频命令已移至 PowerPoint Ribbon（灰度折叠，可回滚：移除 hidden 即恢复）">
+        <button id="convertSelection" class="primary-action" type="button" disabled title="把当前选中的一个或多个 PowerPoint 原生形状替换为 Rough.js 手绘视觉的 PPT 原生可编辑对象；已生成的手绘组会自动跳过（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9998;</span>转换</button>
+        <button id="refreshSelection" class="primary-action" type="button" disabled title="按当前 PPT 尺寸、调整点和风格重新生成手绘边界（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#8635;</span>重绘选区</button>
+        <button id="inspectSelection" type="button" disabled title="查看当前选区的手绘元数据、图层角色和原生对象状态（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9432;</span>检查</button>
+        <button id="saveSelection" type="button" disabled title="把当前选中的 PPT 原生对象保存到我的素材库（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9636;</span>保存</button>
+        <button id="selectCarrier" type="button" disabled title="选中组内隐藏的 PPT 原生载体，调整圆角、箭头等 PowerPoint 原生调整点后点击“重绘选区”（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9673;</span>载体</button>
       </div>
     </section>
 
@@ -152,27 +144,27 @@
         <label title="选择预置或自定义风格模板">风格模板
           <select id="styleTemplateSelect" title="选择后可应用到当前风格参数，预置模板不会被覆盖"></select>
         </label>
-        <button id="applyStyleTemplate" type="button" title="把当前选中的风格模板应用到面板参数和选中对象"><span aria-hidden="true">&#10003;</span>应用</button>
+        <button id="applyStyleTemplate" class="primary-action" type="button" title="把当前选中的风格模板应用到面板参数和选中对象"><span aria-hidden="true">&#10003;</span>应用</button>
+        <button id="saveStyleTemplate" type="button" title="把当前风格参数保存为新的自定义模板"><span aria-hidden="true">&#9636;</span><span data-style-template-save-label>保存模板</span></button>
         <button id="redrawFromStyle" class="primary-action style-redraw-cta" data-command-owner="ribbon" type="button" title="按当前风格面板参数立即重绘当前选中的手绘原生组；不会插入新对象"><span aria-hidden="true">&#8635;</span>重绘选区</button>
         <details id="styleTemplateTools" class="style-template-tools" title="展开保存和重命名等低频模板管理操作">
           <summary title="展开或收起模板管理操作">模板管理</summary>
           <div class="style-template-tool-actions">
-            <button id="saveStyleTemplate" type="button" title="把当前风格参数保存为新的自定义模板"><span aria-hidden="true">&#9636;</span><span data-style-template-save-label>保存模板</span></button>
             <button id="renameStyleTemplate" type="button" title="重命名当前自定义风格模板；预置模板不能重命名"><span aria-hidden="true">&#9998;</span>重命名</button>
           </div>
         </details>
       </div>
       <div id="styleTemplatePreview" class="style-template-preview" data-style-template-preview title="点击预览卡可应用对应风格模板，预览只用于界面提示，不生成图片或 SVG 内容"></div>
-      <div class="style-quick-strip" data-command-owner="ribbon" role="group" aria-label="常用样式快捷操作" title="常用样式快捷操作已移至 PowerPoint Ribbon；右侧保留完整参数">
-        <button type="button" data-style-quick="paper" title="应用论文框图默认样式模板"><span aria-hidden="true">&#9733;</span><span>论文</span></button>
-        <button type="button" data-style-quick="whiteFill" title="填充设为白色不透明，适合普通论文节点"><span aria-hidden="true">&#9632;</span><span>白填充</span></button>
-        <button type="button" data-style-quick="noFill" title="关闭填充，适合分组框和辅助边界"><span aria-hidden="true">&#9633;</span><span>无填充</span></button>
-        <button type="button" data-style-quick="brushFill" title="启用宽刷涂刷填充，可在下方继续调整刷宽、密度和重合度"><span aria-hidden="true">&#9682;</span><span>涂刷</span></button>
-        <button type="button" data-style-quick="blackStroke" title="线条设为纯黑不透明"><span aria-hidden="true">&#9473;</span><span>黑线</span></button>
-        <button type="button" data-style-quick="blueStroke" title="线条设为蓝色不透明"><span aria-hidden="true">&#9473;</span><span>蓝线</span></button>
-        <button type="button" data-style-quick="boldLine" title="线条宽度设为 4 磅"><span aria-hidden="true">&#9473;</span><span>粗线</span></button>
-        <button type="button" data-style-quick="dashLine" title="线条设为虚线"><span aria-hidden="true">&#9476;</span><span>虚线</span></button>
-        <button type="button" data-style-quick="endArrow" title="启用末尾箭头，适合流程连接线"><span aria-hidden="true">&#8594;</span><span>末箭头</span></button>
+      <div class="style-quick-strip" data-command-owner="ribbon" role="group" aria-label="常用样式快捷操作" hidden title="常用样式快捷操作已移至 PowerPoint Ribbon；右侧保留完整参数（灰度折叠，可回滚：移除 hidden 即恢复）">
+        <button type="button" data-style-quick="paper" disabled title="应用论文框图默认样式模板（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9733;</span><span>论文</span></button>
+        <button type="button" data-style-quick="whiteFill" disabled title="填充设为白色不透明，适合普通论文节点（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9632;</span><span>白填充</span></button>
+        <button type="button" data-style-quick="noFill" disabled title="关闭填充，适合分组框和辅助边界（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9633;</span><span>无填充</span></button>
+        <button type="button" data-style-quick="brushFill" disabled title="启用宽刷涂刷填充，可在下方继续调整刷宽、密度和重合度（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9682;</span><span>涂刷</span></button>
+        <button type="button" data-style-quick="blackStroke" disabled title="线条设为纯黑不透明（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9473;</span><span>黑线</span></button>
+        <button type="button" data-style-quick="blueStroke" disabled title="线条设为蓝色不透明（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9473;</span><span>蓝线</span></button>
+        <button type="button" data-style-quick="boldLine" disabled title="线条宽度设为 4 磅（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9473;</span><span>粗线</span></button>
+        <button type="button" data-style-quick="dashLine" disabled title="线条设为虚线（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#9476;</span><span>虚线</span></button>
+        <button type="button" data-style-quick="endArrow" disabled title="启用末尾箭头，适合流程连接线（已移至 Ribbon，此处灰度保留）"><span aria-hidden="true">&#8594;</span><span>末箭头</span></button>
       </div>
       <div class="style-param-jump" role="group" aria-label="风格参数分组导航" title="快速展开并定位到对应风格参数组，减少在长参数列表中滚动查找">
         <button type="button" data-param-group-jump="常用" title="定位常用参数：线宽、粗糙度、弯曲度、颜色和填充"><span aria-hidden="true">&#9733;</span><span>常用</span></button>

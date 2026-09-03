@@ -1,9 +1,9 @@
 {
   "name": "rough-ppt-addin",
-  "version": "0.1.0",
-  "commit": "530de3910a85",
-  "branch": "feature/rough-ppt-addin",
-  "dirty": false,
-  "builtAtUtc": "2026-07-19T13:34:19.256Z",
+  "version": "0.1.916",
+  "commit": "51e736a5791f",
+  "branch": "master",
+  "dirty": true,
+  "builtAtUtc": "2026-09-03T18:57:59.037Z",
   "source": "local-build"
 }

@@ -28,6 +28,7 @@
     <a href="#resources" title="跳到素材与配色：我的素材库、配色库、导入与分享">素材与配色</a>
     <a href="#automation" title="跳到外部联动：SimpleExperiment 自动绘图与 Zotero 论文图像库">外部联动</a>
     <a href="#troubleshooting" title="跳到兼容与排障：版本确认、安装没生效和常见故障处理">兼容与排障</a>
+    <a href="#version" title="跳到版本信息：查看当前安装版本、构建提交与更新入口">版本信息</a>
   </nav>
 
   <main id="guideMain" tabindex="-1">
@@ -36,15 +37,15 @@
       <ol class="steps">
         <li><strong>打开入口。</strong>在 PowerPoint Ribbon 中打开“手绘图形 Rough”选项卡；需要精确参数或资源管理时，再打开右侧任务窗格。</li>
         <li><strong>插入或转换。</strong>新建对象用 Ribbon 的形状图库；已有 PowerPoint 形状用“转换手绘”。</li>
-        <li><strong>选中后调整。</strong>选中普通形状或手绘组后，简洁模式会自动显示当前可用的风格工作区；未选中对象时不会显示参数调整功能。</li>
+        <li><strong>选中后调整。</strong>选中普通形状或手绘组后，右侧会显示当前可用的风格工作区；未选中对象时不会显示参数调整功能。</li>
         <li><strong>改完即重绘。</strong>右侧参数和 Ribbon 风格菜单都会同步到选中的手绘对象并触发重绘；需要重新生成边界时也可用 Ribbon 的“重绘选区”。</li>
         <li><strong>保存复用。</strong>常用对象可保存到“我的素材”，常用形状可固定到“快速插入”。</li>
       </ol>
       <aside class="notice"><strong>边看边操作：</strong>从插件右上角打开时，使用说明会显示在独立非模态窗口中，不会替换右侧任务窗格。说明窗口保持打开时，仍可继续点击 Ribbon、选择对象并实时尝试功能。</aside>
       <aside class="notice"><strong>对象原则：</strong>手绘图形、特征块和科研图表最终均为 PowerPoint 原生可编辑对象，可继续拖动、缩放、旋转、改文字、对齐和调整层级。Zotero 论文参考图像是唯一图片例外。</aside>
       <figure class="guide-figure narrow">
-        <img src="./help-assets/taskpane-overview.png" alt="简洁模式无选区时的任务窗格总览">
-        <figcaption>简洁模式只保留当前上下文可用入口。顶部搜索可查找形状、预设、素材和命令。</figcaption>
+        <img src="./help-assets/taskpane-overview.png" alt="完整模式任务窗格总览">
+        <figcaption>完整模式保留全部专业面板入口。顶部搜索可查找形状、预设、素材和命令。</figcaption>
       </figure>
     </section>
 
@@ -77,10 +78,9 @@
           </tbody>
         </table>
       </div>
-      <h3>简洁模式与完整模式</h3>
+      <h3>完整模式</h3>
       <ul>
-        <li><strong>简洁模式：</strong>根据无选区、普通对象、手绘组或特征块选区，只显示当前可用工作区。</li>
-        <li><strong>完整模式：</strong>显示全部专业面板，用于跨功能浏览、资源管理和高级参数设置。</li>
+        <li><strong>完整模式：</strong>任务窗格固定显示全部专业面板，用于跨功能浏览、资源管理和高级参数设置。</li>
         <li><strong>定位入口：</strong>搜索结果和 Ribbon 的“打开窗格”类入口只定位到功能，不会直接执行删除、导入、转换或重绘。</li>
       </ul>
       <aside class="notice"><strong>流式布局：</strong>任务窗格的顶栏、工作区、面板、工具栏、筛选组和操作按钮统一使用 flex/grid 流式布局。拖动改变窗格宽度时，控件会按可用空间自动填充和换行；按钮文字保持完整横排，不会互相覆盖或被截断。</aside>
@@ -260,16 +260,16 @@
       </ul>
       <h3>安装后看不到变化</h3>
       <ol>
-        <li>在右侧顶部点击“检查更新”，确认 GitHub 是否已有更新的正式 Release。</li>
-        <li>在右侧顶部点击“版本检测”，核对安装版本、提交和构建时间。</li>
+        <li>在本页下方“版本信息”区点击“检查更新”，确认 GitHub 是否已有更新的正式 Release。</li>
+        <li>在本页下方“版本信息”区核对安装版本、提交和构建时间。</li>
         <li>确认 PowerPoint 的“文件 → 选项 → 加载项 → COM 加载项”中已启用 RoughPptAddin。</li>
         <li>如果 PowerPoint 在安装时保持运行，请先保存并关闭全部 PowerPoint 窗口，再重新运行安装包；插件不会自动关闭你的窗口。</li>
       </ol>
       <h3>按钮不可用或参数未显示</h3>
       <ul>
-        <li>简洁模式按选区过滤功能。先选择普通形状、手绘组或特征块，再查看对应参数。</li>
+        <li>部分参数按选区显示。先选择普通形状、手绘组或特征块，再查看对应参数。</li>
         <li>普通对象可转换手绘；手绘组可重绘和调风格；特征块只显示特征块参数。</li>
-        <li>需要浏览全部专业功能时切换到“完整”模式，或用顶部搜索定位。</li>
+        <li>不知道入口位置时，用顶部搜索定位功能。</li>
       </ul>
       <h3>科研绘图或 Zotero 未连接</h3>
       <ul>
@@ -278,6 +278,14 @@
         <li>科研网站由系统默认浏览器打开；SVG 插入失败时先确认文件小于 4 MB、使用 UTF-8，且当前为 PowerPoint 2016 或更高版本。</li>
         <li>连接失败不会阻止普通手绘图形、特征块、模板和本机素材功能。</li>
       </ul>
+    </section>
+
+    <section id="version" class="guide-section">
+      <h2>十一、版本信息</h2>
+      <p>任务窗格顶栏不再放置版本按钮，版本核对统一在本区完成；使用说明入口位于 PowerPoint 功能区“手绘图形 Rough”选项卡。</p>
+      <p id="buildInfoDetail" title="显示当前插件安装版本、构建提交和构建时间，便于确认是否已安装最新版">版本信息读取中……</p>
+      <p id="buildInfoMeta" title="版本核对说明：安装包未生效时请关闭全部 PowerPoint 窗口后重装">版本核对以本区为准；安装后无变化时请先关闭全部 PowerPoint 窗口再重装。</p>
+      <button id="checkUpdates" class="usage-guide-button update-button" type="button" title="查询 GitHub 正式 Release；发现新版本后可直接打开下载页">检查更新</button>
     </section>
   </main>
 

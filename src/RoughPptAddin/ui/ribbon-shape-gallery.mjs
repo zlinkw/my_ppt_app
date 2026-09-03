@@ -101,8 +101,53 @@ async function loadCatalog() {
   }
 }
 
+const galleryIconDrawableCache = new Map();
+let galleryIconObserver = null;
+
+function getCachedDrawable(item) {
+  const key = item?.enumName || "";
+  if (key && galleryIconDrawableCache.has(key)) return galleryIconDrawableCache.get(key);
+  const size = item?.defaultSizePt ?? {};
+  const width = 24;
+  const height = Math.max(6, Math.min(24, ((size.height || 80) / Math.max(1, size.width || 120)) * width));
+  const drawable = generator.preview?.(item.enumName, width, height, { ...state.params, roughness: 0, bowing: 0, strokeWidthPt: 1.5 }) ??
+    generator.generate(generator.kindFromMso(item.enumName), { width, height, ...state.params, roughness: 0, bowing: 0, strokeWidthPt: 1.5 });
+  if (key) {
+    if (galleryIconDrawableCache.size > 400) galleryIconDrawableCache.clear();
+    galleryIconDrawableCache.set(key, drawable);
+  }
+  return drawable;
+}
+
+function ensureGalleryIconObserver() {
+  if (galleryIconObserver || typeof IntersectionObserver !== "function") return galleryIconObserver;
+  galleryIconObserver = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const canvas = entry.target;
+      galleryIconObserver.unobserve(canvas);
+      const item = canvas._galleryItem;
+      if (item && document.contains(canvas)) safeDrawNativeIconPreview(canvas, item);
+      canvas._galleryItem = null;
+    }
+  }, { root: null, rootMargin: "200px", threshold: 0.01 });
+  return galleryIconObserver;
+}
+
+function queueLazyIconDraw(canvas, item) {
+  canvas._galleryItem = item;
+  const observer = ensureGalleryIconObserver();
+  if (!observer) {
+    safeDrawNativeIconPreview(canvas, item);
+    canvas._galleryItem = null;
+    return;
+  }
+  observer.observe(canvas);
+}
+
 function renderIconDropdown(container, onClick) {
   if (!container) return;
+  if (galleryIconObserver) galleryIconObserver.disconnect();
   container.innerHTML = "";
   let renderedCount = 0;
   for (const group of galleryGroups) {
@@ -208,7 +253,10 @@ function renderGalleryIcon(item) {
   const canvas = document.createElement("canvas");
   canvas.width = 64;
   canvas.height = 64;
-  safeDrawNativeIconPreview(canvas, item);
+  // 首屏只画轻量占位，真图标由 IntersectionObserver 进入视口时绘制；
+  // generator 计算结果按 enumName 缓存，搜索重排不再重复生成。
+  drawIconFallback(canvas, item);
+  queueLazyIconDraw(canvas, item);
   return canvas;
 }
 
@@ -286,8 +334,7 @@ function drawNativeIconPreview(canvas, item) {
   const width = 24;
   const height = Math.max(6, Math.min(24, ((size.height || 80) / Math.max(1, size.width || 120)) * width));
   const top = (24 - height) / 2;
-  const drawable = generator.preview?.(item.enumName, width, height, { ...state.params, roughness: 0, bowing: 0, strokeWidthPt: 1.5 }) ??
-    generator.generate(generator.kindFromMso(item.enumName), { width, height, ...state.params, roughness: 0, bowing: 0, strokeWidthPt: 1.5 });
+  const drawable = getCachedDrawable(item);
   const visiblePaths = iconVisiblePaths(drawable);
   for (const path of visiblePaths) {
     ctx.beginPath();

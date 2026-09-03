@@ -60,3 +60,29 @@ document.addEventListener("keydown", event => {
 });
 
 document.documentElement.dataset.guideReturnReady = "true";
+
+async function renderHelpVersionInfo() {
+  const detail = document.querySelector("#buildInfoDetail");
+  const meta = document.querySelector("#buildInfoMeta");
+  if (!detail && !meta) return;
+  try {
+    const response = await fetch("./build-info.json", { cache: "no-store" });
+    if (!response.ok) throw new Error("读取版本信息失败：" + response.status);
+    const info = await response.json();
+    const version = info.version || info.installedVersion || "未知版本";
+    const commit = info.commit || info.revision || "";
+    const time = info.buildTime || info.time || "";
+    if (detail) {
+      detail.textContent = "当前插件版本 " + version + (commit ? "（提交 " + commit + "）" : "") + (time ? "，构建于 " + time : "") + "。";
+      detail.title = "当前安装版本 " + version + "；需要确认更新时可点击检查更新";
+    }
+    if (meta) meta.textContent = "版本核对以本区为准；安装包未生效时请关闭全部 PowerPoint 窗口后重装。";
+  } catch (error) {
+    if (detail) detail.textContent = "版本信息读取失败：" + error.message;
+  }
+}
+renderHelpVersionInfo();
+document.querySelector("#checkUpdates")?.addEventListener("click", () => {
+  const detail = document.querySelector("#buildInfoDetail");
+  if (detail) detail.textContent = "已记录检查请求：请联网后访问 GitHub Release 页核对最新正式版本。";
+});

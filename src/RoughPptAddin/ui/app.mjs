@@ -437,7 +437,7 @@ const ZLK_IMPORT_MAX_FILE_BYTES = 2 * 1024 * 1024;
 const ZLK_IMPORT_SUPPORTED_EXTENSIONS = new Set([".json", ".csv", ".tex", ".md"]);
 
 const state = {
-  uiMode: localStorage.getItem("roughPptUiMode") === "full" ? "full" : "simple",
+  uiMode: "full",
   selectedChartPresetId: localStorage.getItem("roughPptChartPresetId") || "leaderboardBar",
   catalog: [],
   catalogDegraded: false,
@@ -2202,11 +2202,17 @@ function focusControl(item) {
 }
 
 function openParamGroup(groupOrTitle) {
+  const sections = Array.from(document.querySelectorAll(".param-section"));
   const group = typeof groupOrTitle === "string"
-    ? Array.from(document.querySelectorAll(".param-section")).find(section => section.dataset.paramGroup === groupOrTitle)
+    ? sections.find(section => section.dataset.paramGroup === groupOrTitle)
     : groupOrTitle;
   if (!group) return null;
-  group.open = true;
+  // 页签语义：仅目标组常驻显示，其余隐藏；不再用 details.open/scroll/toggle 切换。
+  for (const section of sections) {
+    const active = section === group;
+    section.classList.toggle("active", active);
+    section.open = true;
+  }
   syncParamJumpButtons(group.dataset.paramGroup || "");
   return group;
 }
@@ -2215,11 +2221,6 @@ function focusParamGroup(title) {
   if (!focusPanel("style")) return;
   const group = openParamGroup(title);
   if (!group) return;
-  group.scrollIntoView({ behavior: "smooth", block: "center" });
-  group.classList.add("control-focus-pulse");
-  const summary = group.querySelector("summary");
-  window.setTimeout(() => summary?.focus({ preventScroll: true }), 220);
-  window.setTimeout(() => group.classList.remove("control-focus-pulse"), 1100);
   setStatus(`已定位风格参数组：${title}`);
 }
 
@@ -2232,8 +2233,9 @@ function syncParamJumpButtons(activeTitle = "") {
 }
 
 function syncParamJumpButtonsForSectionToggle(details) {
+  // 页签语义下 summary 已隐藏，toggle 不再触发；保留做兼容：以 .active 为准回写高亮。
   const title = details?.dataset?.paramGroup || "";
-  if (details?.open) {
+  if (details?.classList?.contains("active")) {
     syncParamJumpButtons(title);
     return;
   }
@@ -3927,7 +3929,8 @@ function restoreFullPanelLayout() {
 
 function syncStyleSectionsForUiMode(mode = state.uiMode) {
   if (!els.params) return;
-  for (const section of els.params.querySelectorAll("details.param-section")) {
+  // 兼容平铺 div：不再限定 details.param-section，.param-section（含 --flat）统一处理。
+  for (const section of els.params.querySelectorAll(".param-section")) {
     const group = section.dataset.paramGroup || "";
     if (mode === "simple") {
       section.open = group === "常用";
@@ -3940,11 +3943,12 @@ function syncChartPresetDisclosureForUiMode(mode = state.uiMode) {
   els.chartPresetShell.open = mode === "full" || state.chartDatasets.length > 0;
 }
 
+const LEGACY_UI_MODE_KEY = "roughPptUiMode";
 function applyUiMode(mode = state.uiMode, { persist = true } = {}) {
-  const next = mode === "full" ? "full" : "simple";
+  const next = "full";
   state.uiMode = next;
-  document.body.classList.toggle("ux-simple", next === "simple");
-  document.body.classList.toggle("ux-full", next === "full");
+  document.body.classList.remove("ux-simple");
+  document.body.classList.add("ux-full");
   if (els.uiModeSimple) {
     els.uiModeSimple.classList.toggle("is-active", next === "simple");
     els.uiModeSimple.setAttribute("aria-pressed", String(next === "simple"));
@@ -3955,17 +3959,11 @@ function applyUiMode(mode = state.uiMode, { persist = true } = {}) {
   }
   const modeSwitch = document.querySelector("#simpleModeFullSwitch");
   if (modeSwitch) {
-    const label = modeSwitch.querySelector("span:last-child");
-    if (label) label.textContent = next === "full" ? "简洁模式" : "完整模式";
-    modeSwitch.title = next === "full"
-      ? "切换到简洁模式：只显示当前选区状态或正在使用的单个工作区"
-      : "切换到完整模式：显示全部专业面板";
-    modeSwitch.setAttribute("aria-label", modeSwitch.title);
+    modeSwitch.remove();
   }
-  if (persist) persistSetting("roughPptUiMode", next);
+  if (persist) persistSetting(LEGACY_UI_MODE_KEY, next);
   syncStyleSectionsForUiMode(next);
-  if (next === "simple") applySimplePanelLayout();
-  else restoreFullPanelLayout();
+  restoreFullPanelLayout();
   syncChartPresetDisclosureForUiMode(next);
   refreshContextualSearchUi();
   renderBuildInfo();
@@ -4220,22 +4218,7 @@ function renderChartPresetPreview() {
 }
 
 function initUiModeControls() {
-  applyUiMode(state.uiMode, { persist: false });
-  document.querySelector("#simpleModeFullSwitch")?.addEventListener("click", () => {
-    const next = state.uiMode === "full" ? "simple" : "full";
-    applyUiMode(next);
-    setStatus(next === "full"
-      ? "已切换到完整模式：显示全部专业面板与连接详情。"
-      : "已切换到简洁模式：只显示当前右侧工作区；高频命令保留在 PowerPoint Ribbon。");
-  });
-  els.uiModeSimple && els.uiModeSimple.addEventListener("click", () => {
-    applyUiMode("simple");
-    setStatus("已切换到简洁模式：只显示当前右侧工作区；高频命令保留在 PowerPoint Ribbon。");
-  });
-  els.uiModeFull && els.uiModeFull.addEventListener("click", () => {
-    applyUiMode("full");
-    setStatus("已切换到完整模式：显示全部专业面板。");
-  });
+  applyUiMode("full", { persist: false });
 }
 
 function renderChartImportPanel() {
@@ -7068,6 +7051,16 @@ function handleHostMessage(message) {
       if (focusControl(focusTarget)) setStatus(message.status || `已定位：${focusTarget.title}`);
       return;
     }
+    if (section === "fillTexture") {
+      focusParamGroup("填充纹理");
+      if (message.status) setStatus(message.status);
+      return;
+    }
+    if (section === "lineStyle") {
+      focusParamGroup("线条");
+      if (message.status) setStatus(message.status);
+      return;
+    }
     if (section === "search") {
       focusGlobalSearch();
       if (message.status) setStatus(message.status);
@@ -7662,10 +7655,40 @@ function groupLabelsIntoSections(grid, labels, groups, sectionClass, bodyClass, 
   grid.dataset.grouped = "true";
   const byName = new Map(labels.map(label => [nameFromLabel(label), label]));
   const used = new Set();
+  // 单按钮组直接平铺：组内有效 label ≤1 时不建 details/summary，建 div 平铺直接 append。
+  const buildFlatSection = (titleText, hintText, items) => {
+    const wrap = document.createElement("div");
+    wrap.className = `${sectionClass} ${sectionClass}--flat`;
+    wrap.dataset.paramGroup = titleText;
+    wrap.dataset.flatSingle = items.length <= 1 ? "true" : "false";
+    wrap.title = `${titleText}参数组：${hintText}`;
+    // param-section 页签语义靠 .active 控制显隐，平铺 div 须常驻 active 兼容 openParamGroup/wireStyleParamJumps。
+    if (sectionClass === "param-section") wrap.classList.add("active");
+    const body = document.createElement("div");
+    body.className = bodyClass;
+    for (const label of items) body.append(label);
+    wrap.append(body);
+    return wrap;
+  };
   for (const group of groups) {
+    const matched = [];
+    for (const name of group.names) {
+      const label = byName.get(name);
+      if (!label) continue;
+      matched.push(label);
+    }
+    if (!matched.length) continue;
+    if (matched.length <= 1) {
+      for (const label of matched) used.add(label);
+      grid.append(buildFlatSection(group.title, group.hint || "更多参数", matched));
+      continue;
+    }
     const details = document.createElement("details");
     details.className = sectionClass;
-    details.open = group.open;
+    // 页签语义：风格参数组去下拉语义，内容体常驻（open 恒为 true，显隐由 .active/display 控制）；
+    // 功能分组（feature-section）保留原下拉语义。
+    details.open = sectionClass === "param-section" ? true : group.open;
+    if (sectionClass === "param-section" && group.open) details.classList.add("active");
     details.dataset.paramGroup = group.title;
     const hintText = group.hint || "更多参数";
     details.title = `${group.title}参数组：${hintText}，点击可展开或收起`;
@@ -7707,6 +7730,10 @@ function groupLabelsIntoSections(grid, labels, groups, sectionClass, bodyClass, 
 
   const remaining = labels.filter(label => !used.has(label));
   if (remaining.length) {
+    // “其他”兜底组同样：有效 label ≤1 直接平铺，不做 details 下拉。
+    if (remaining.length <= 1) {
+      grid.append(buildFlatSection("其他", "未分组参数", remaining));
+    } else {
     const details = document.createElement("details");
     details.className = sectionClass;
     details.dataset.paramGroup = "其他";
@@ -7740,6 +7767,7 @@ function groupLabelsIntoSections(grid, labels, groups, sectionClass, bodyClass, 
     }
     details.append(summary, body);
     grid.append(details);
+    }
   }
 }
 
@@ -7748,8 +7776,15 @@ function wireStyleParamJumps() {
     button.setAttribute("aria-pressed", "false");
     button.addEventListener("click", () => focusParamGroup(button.dataset.paramGroupJump || ""));
   }
-  const firstOpen = Array.from(document.querySelectorAll(".param-section")).find(section => section.open);
-  syncParamJumpButtons(firstOpen?.dataset.paramGroup || "");
+  // 页签语义：首个 .active 组高亮；若无则默认激活第一组（常驻显示）。
+  const sections = Array.from(document.querySelectorAll(".param-section"));
+  let active = sections.find(section => section.classList.contains("active"));
+  if (!active && sections.length) {
+    active = sections[0];
+    active.classList.add("active");
+    active.open = true;
+  }
+  syncParamJumpButtons(active?.dataset.paramGroup || "");
 }
 
 function createParamNumberRow(sourceInput, reuseSource = false) {
@@ -8310,6 +8345,205 @@ function syncNestedParamAvailability() {
   syncStyleParamAvailability();
 }
 
+// 静态单主题 details 单按钮平铺：wire 阶段判断，有效按钮 ≤1 时 details.replaceWith(div) 直接平铺。
+// 覆盖模板管理等静态单主题入口；summary 文案逻辑(7846附近)保留，details 不再是唯一入口。
+function flattenSingleActionDetails() {
+  const ids = ["styleTemplateTools", "featureDirectionTools", "featureDefaultTools", "paletteToolsDetails", "chartPresetShell"];
+  for (const id of ids) {
+    const details = document.getElementById(id);
+    if (!details || details.tagName !== "DETAILS") continue;
+    if (details.dataset.flattened === "true") continue;
+    let buttons = [];
+    try {
+      buttons = Array.from(details.querySelectorAll("button")).filter(btn => {
+        if (btn.hasAttribute("hidden")) return false;
+        if (btn.disabled) return false;
+        try {
+          const cs = window.getComputedStyle ? window.getComputedStyle(btn) : null;
+          if (cs && (cs.display === "none" || cs.visibility === "hidden")) return false;
+        } catch {}
+        return true;
+      });
+    } catch {
+      buttons = Array.from(details.querySelectorAll("button:not([hidden]):not([disabled])"));
+    }
+    if (buttons.length > 1) continue;
+    const flat = document.createElement("div");
+    flat.id = details.id;
+    flat.className = `${details.className} ${details.className.split(" ")[0]}--flat`.trim();
+    flat.dataset.flattened = "true";
+    flat.dataset.flatFrom = "details";
+    if (details.dataset.templateKind) flat.dataset.templateKind = details.dataset.templateKind;
+    flat.title = details.title || "单项操作已直接平铺，无需展开";
+    for (const child of Array.from(details.children)) {
+      if (child.tagName === "SUMMARY") continue;
+      flat.append(child);
+    }
+    details.replaceWith(flat);
+    // els 缓存仍指向旧 details，同步为平铺 div，后续 summary 文案逻辑按有无 summary 自动降级。
+    if (els.styleTemplateTools === details) els.styleTemplateTools = flat;
+    if (els.featureDirectionTools === details) els.featureDirectionTools = flat;
+    if (els.chartPresetShell === details) els.chartPresetShell = flat;
+  }
+}
+
+const ROUGH_PPT_PANEL_ORDER_KEY = "roughPptPanelOrder";
+
+function panelOrderKey(panel) {
+  if (panel?.dataset?.collapseKey) return panel.dataset.collapseKey;
+  if (panel?.id) return `#${panel.id}`;
+  const order = panel?.dataset?.panelOrder;
+  if (order) return `order:${order}`;
+  return "";
+}
+
+function currentPanelOrderKeys() {
+  return Array.from(document.querySelectorAll(".app-content > section")).map(panelOrderKey).filter(Boolean);
+}
+
+function restorePanelOrder() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem(ROUGH_PPT_PANEL_ORDER_KEY);
+  } catch {
+    saved = null;
+  }
+  if (!saved) return false;
+  let keys = null;
+  try {
+    keys = JSON.parse(saved);
+  } catch {
+    return false;
+  }
+  if (!Array.isArray(keys) || !keys.length) return false;
+  const container = document.querySelector(".app-content");
+  if (!container) return false;
+  const byKey = new Map();
+  for (const panel of container.querySelectorAll(":scope > section")) {
+    const key = panelOrderKey(panel);
+    if (key && !byKey.has(key)) byKey.set(key, panel);
+  }
+  let restored = false;
+  for (const key of keys) {
+    const panel = byKey.get(key);
+    if (!panel) continue;
+    container.append(panel);
+    byKey.delete(key);
+    restored = true;
+  }
+  return restored;
+}
+
+function savePanelOrder() {
+  persistSetting(ROUGH_PPT_PANEL_ORDER_KEY, JSON.stringify(currentPanelOrderKeys()));
+}
+
+// 右侧卡片顺序可编辑：以 .panel-head/.catalog-head 为手柄拖拽排序 .app-content 子 section。
+// 复用 persistSetting(342)/setPanelCollapsed；按钮/输入排除拖拽；Alt+↑/↓ 键盘兜底。
+function initPanelOrderDnD() {
+  if (window.__roughPanelOrderReady) return;
+  window.__roughPanelOrderReady = true;
+  const container = document.querySelector(".app-content");
+  if (!container) return;
+  restorePanelOrder();
+  let dragged = null;
+  const isInteractive = target => target?.closest?.("button, input, select, textarea, a, [contenteditable]");
+
+  const movePanel = (panel, direction) => {
+    if (!panel || !panel.parentNode) return false;
+    const sibling = direction < 0 ? panel.previousElementSibling : panel.nextElementSibling;
+    if (!sibling || sibling.tagName !== "SECTION") return false;
+    if (direction < 0) panel.parentNode.insertBefore(panel, sibling);
+    else panel.parentNode.insertBefore(sibling, panel);
+    savePanelOrder();
+    return true;
+  };
+
+  const panels = () => Array.from(container.querySelectorAll(":scope > section"));
+  for (const panel of panels()) {
+    const head = panel.querySelector(":scope > .panel-head, :scope > .catalog-head, :scope > header");
+    if (!head) continue;
+    head.dataset.dragHandle = "true";
+    head.setAttribute("draggable", "true");
+    // 无障碍：不在手柄上新增 tabindex（避免成为嵌套交互/小尺寸违规）；
+    // Alt+↑/↓ 靠冒泡监听：焦点落在手柄内按钮/控件上时同样可移动卡片。
+    const baseTitle = head.getAttribute("title") || panel.dataset.collapseTitle || "功能区";
+    if (!head.title.includes("拖拽")) head.title = `${baseTitle}：拖拽此处排序，Alt+↑/↓ 也可移动`;
+    for (const control of head.querySelectorAll("button, input, select, textarea, a")) {
+      control.setAttribute("draggable", "false");
+      control.addEventListener("dragstart", event => {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+    }
+    head.addEventListener("dragstart", event => {
+      if (isInteractive(event.target) && event.target !== head) {
+        event.preventDefault();
+        return;
+      }
+      dragged = panel;
+      try {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", panelOrderKey(panel));
+      } catch {}
+      panel.classList.add("panel-dragging");
+    });
+    head.addEventListener("dragend", () => {
+      dragged = null;
+      for (const item of panels()) item.classList.remove("panel-drag-over", "panel-dragging");
+    });
+    head.addEventListener("keydown", event => {
+      if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+      event.preventDefault();
+      const moved = movePanel(panel, event.key === "ArrowUp" ? -1 : 1);
+      if (moved) {
+        try {
+          head.focus({ preventScroll: true });
+        } catch {}
+        const title = panel.dataset.collapseTitle || panelOrderKey(panel) || "卡片";
+        try {
+          setStatus(`已${event.key === "ArrowUp" ? "上移" : "下移"}「${title}」卡片，顺序已保存。`);
+        } catch {}
+      }
+    });
+    panel.addEventListener("dragover", event => {
+      if (!dragged || dragged === panel) return;
+      event.preventDefault();
+      try {
+        event.dataTransfer.dropEffect = "move";
+      } catch {}
+      const rect = panel.getBoundingClientRect();
+      const after = (event.clientY - rect.top) > rect.height / 2;
+      for (const item of panels()) item.classList.remove("panel-drag-over");
+      panel.classList.add("panel-drag-over");
+      panel.dataset.dropAfter = after ? "true" : "false";
+    });
+    panel.addEventListener("drop", event => {
+      if (!dragged || dragged === panel) return;
+      event.preventDefault();
+      const after = panel.dataset.dropAfter === "true";
+      if (after && panel.nextSibling) container.insertBefore(dragged, panel.nextSibling);
+      else container.insertBefore(dragged, panel);
+      savePanelOrder();
+      dragged = null;
+      for (const item of panels()) item.classList.remove("panel-drag-over", "panel-dragging");
+    });
+  }
+  container.addEventListener("dragover", event => {
+    if (!dragged) return;
+    if (event.target === container) event.preventDefault();
+  });
+  container.addEventListener("drop", event => {
+    if (!dragged) return;
+    if (event.target === container) {
+      event.preventDefault();
+      container.append(dragged);
+      savePanelOrder();
+      dragged = null;
+    }
+  });
+}
+
 function initCollapsiblePanels() {
   for (const section of document.querySelectorAll("[data-collapsible]")) {
     const button = section.querySelector(".collapse-toggle");
@@ -8744,7 +8978,9 @@ safeInitStep("风格分区同步", () => syncStyleSectionsForUiMode(state.uiMode
 safeInitStep("风格参数跳转", () => wireStyleParamJumps());
 safeInitStep("风格参数绑定", () => wireParams());
 safeInitStep("风格模板绑定", () => wireStyleTemplates());
+safeInitStep("单按钮平铺", () => flattenSingleActionDetails());
 safeInitStep("折叠面板", () => initCollapsiblePanels());
+safeInitStep("面板顺序拖拽", () => initPanelOrderDnD());
 safeInitStep("界面模式", () => initUiModeControls());
 safeInitStep("功能导航抽屉", () => initSectionNavDrawer());
 safeInitStep("使用说明返回位置", () => initUsageGuideNavigation());

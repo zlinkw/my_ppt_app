@@ -186,6 +186,30 @@ button.selection-primary .function-icon,
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
+/* HIDE-TOPBAR(非删除)：品牌区/模式说明/状态条保留DOM，仅hidden折叠。
+   .brand自身display:flex会覆盖UA的[hidden]{display:none}，故显式折叠；
+   header.topbar节点本身保留，三子节点全hidden时收起高度/padding，避免空白条。 */
+.topbar .brand[hidden],
+.topbar .topbar-mode-note[hidden],
+.topbar #status[hidden] {
+  display: none !important;
+}
+.topbar:has(> .brand[hidden]):has(> .topbar-mode-note[hidden]):has(> #status[hidden]) {
+  display: block;
+  min-height: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: hidden;
+}
+
 .brand-copy small {
   color: var(--muted);
   letter-spacing: 0;
@@ -2727,6 +2751,14 @@ button.selection-primary .function-icon,
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
+/* 风格参数区顶部按钮页签+下方常驻显示：去下拉语义，显隐由 .active 控制。 */
+.param-section {
+  display: none;
+}
+.param-section.active {
+  display: block;
+}
+
 .param-section summary,
 .feature-section summary {
   min-height: 28px;
@@ -2789,11 +2821,17 @@ button.selection-primary .function-icon,
 }
 
 .param-section[open] .param-section-count,
+.param-section.active .param-section-count,
 .feature-section[open] .param-section-count {
   border-color: #9ac7f7;
   background: var(--panel);
   color: #0f6cbd;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+/* 页签模式下去下拉语义：风格组 summary 头隐藏（后置覆盖上面的 grid 显示），内容体常驻。 */
+.param-section summary {
+  display: none;
 }
 
 .param-section summary::-webkit-details-marker,
@@ -2850,6 +2888,40 @@ button.selection-primary .function-icon,
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr) 22px;
   gap: 2px;
+}
+
+/* 单按钮组平铺：组内有效项 ≤1 时 div 直接平铺，不做 details/summary 下拉。 */
+.param-section--flat,
+.feature-section--flat {
+  display: block;
+}
+.param-section--flat.active {
+  display: block;
+}
+.param-section--flat summary,
+.feature-section--flat summary {
+  display: none;
+}
+/* 静态单主题 details 平铺后 div（模板管理/方向增删/默认参数/配色工具/预设壳）。 */
+.style-template-tools--flat,
+.feature-direction-tools--flat,
+.feature-default-tools--flat,
+.palette-tools-details--flat,
+.chart-preset-shell--flat,
+div[data-flattened="true"] {
+  display: block;
+}
+/* 右侧卡片拖拽手柄：仅 .panel-head/.catalog-head 热区可拖，手柄 cursor:move。 */
+.panel-head[data-drag-handle="true"],
+.catalog-head[data-drag-handle="true"] {
+  cursor: move;
+}
+.app-content > section.panel-dragging {
+  opacity: 0.6;
+}
+.app-content > section.panel-drag-over {
+  outline: 1px dashed var(--accent, #0f6cbd);
+  outline-offset: -1px;
 }
 
 .param-number-input {
