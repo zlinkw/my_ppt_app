@@ -145,7 +145,7 @@ function validateZoteroImageSaver() {
   const accessProtocol = readExternal(zoteroRoot, "docs/IMAGE_LIBRARY_ACCESS_AND_UI_PROTOCOL.md");
 
   for (const snippet of [
-    "SHARED_DB_SCHEMA_VERSION = 2",
+    "SHARED_DB_SCHEMA_VERSION = 3",
     "SHARED_LIBRARY_LOCATOR_FILE_NAME = \"library.json\"",
     "SHARED_LIBRARY_LOCATOR_SCHEMA_VERSION = 1",
     "SHARED_LIBRARY_LOCATOR_PRODUCER = \"zotero-pdf-image-saver\"",
@@ -172,7 +172,7 @@ function validateZoteroImageSaver() {
     requireIncludes(saver, snippet, `external Zotero pdf-image-saver.js drift: missing ${snippet}`);
   }
   for (const snippet of [
-    'GLOBAL_LIBRARY_VIEW_VERSION = "37"',
+    'GLOBAL_LIBRARY_VIEW_VERSION = "40"',
     'GLOBAL_LIBRARY_DIRECTORY_NAME = "paper-image-library-view"',
     'command === "refreshLibrary"',
     'openGlobalImageLibrary'
@@ -185,13 +185,13 @@ function validateZoteroImageSaver() {
   ]) {
     requireIncludes(accessProtocol, snippet, `external Zotero access protocol drift: missing ${snippet}`);
   }
-  for (const command of ["deleteImages", "exportImages", "importImages"]) {
+  for (const command of ["deleteImages", "exportImages", "importImages", "readImageBytes", "updateImageNote"]) {
     requirePattern(accessProtocol, new RegExp(`(?:禁止 PPT 发送|PPT 不得(?:直接)?发送)[^\\n]*${command}`), `external Zotero access protocol drift: PPT boundary missing ${command}`);
   }
   for (const snippet of [
     "SHARED_LIBRARY_LOCATOR_FILE_NAME = \"library.json\"",
     "SHARED_LIBRARY_LOCATOR_SCHEMA_VERSION = 1",
-    "SHARED_DB_SCHEMA_VERSION = 2",
+    "SHARED_DB_SCHEMA_VERSION = 3",
     "SHARED_LIBRARY_LOCATOR_PRODUCER = \"zotero-pdf-image-saver\"",
     "isSafeAbsoluteSharedDatabasePath",
     "isZoteroInternalDatabasePath",

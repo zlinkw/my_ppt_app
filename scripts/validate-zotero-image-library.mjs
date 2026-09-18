@@ -170,7 +170,7 @@ for (const file of copiedLibraryFiles) {
     violations.push(`PPT source must not contain a copied complete-library page: ${relative}`);
   }
 }
-for (const forbiddenUiHook of ["openGlobalImageLibrary", "GLOBAL_LIBRARY_VIEW_VERSION", 'command === "deleteImages"', 'command === "exportImages"', 'command === "importImages"']) {
+for (const forbiddenUiHook of ["openGlobalImageLibrary", "GLOBAL_LIBRARY_VIEW_VERSION", 'command === "deleteImages"', 'command === "exportImages"', 'command === "importImages"', 'command === "updateImageNote"', 'command === "readImageBytes"']) {
   if ((index + app).includes(forbiddenUiHook)) violations.push(`PPT task pane must not reimplement Zotero complete-library UI: ${forbiddenUiHook}`);
 }
 

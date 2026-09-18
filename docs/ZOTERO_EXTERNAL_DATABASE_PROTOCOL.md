@@ -8,7 +8,7 @@
 - PPT 插件只读外部 SQLite，负责搜索、预览、取色、插入参考图像和溯源操作。
 - 禁止读取 Zotero 内置数据库；也禁止复制、锁定或推断 Zotero profile 内的 `zotero.sqlite`、`zotero.sqlite-wal`、`zotero.sqlite-shm` 及其 ADS 变体。
 - Zotero 未运行时，PPT 仍必须能从外部 SQLite 预览、搜索、取色和插入已有参考图像。
-- 对 PPT 插件，HTTP bridge 用于“打开 PDF / 定位 Zotero 条目”，并允许 PPT 以 `refreshLibrary` 请求重新生成并打开同一完整图库界面。Zotero 生成的本地图库可在同一受 token 保护的 endpoint 上执行软删除、分享和导入；不提供图片 HTTP 数据接口。PPT 不得发送 `deleteImages`、`exportImages`、`importImages`。bridge 不可用不得影响外部数据库的读操作。
+- 对 PPT 插件，HTTP bridge 用于“打开 PDF / 定位 Zotero 条目”，并允许 PPT 以 `refreshLibrary` 请求重新生成并打开同一完整图库界面。Zotero 生成的本地图库可在同一受 token 保护的 endpoint 上执行软删除、分享和导入；不提供图片 HTTP 数据接口。PPT 不得发送 `deleteImages`、`exportImages`、`importImages`、`readImageBytes`、`updateImageNote`。bridge 不可用不得影响外部数据库的读操作。
 
 ## 完整图库界面复用合同
 
@@ -51,7 +51,7 @@ PPT 以只读 SQLite 连接访问共享库。当前主表名为 `images`；迁�
 | 字段 | 用途 |
 | --- | --- |
 | `image_id` | 稳定图像主标识，用于 bridge 与溯源 |
-| `image_blob` | 原始图像字节，PPT 插入参考图像时读取 |
+| `image_blob` | 原始图像字节，PPT 插入参考图像时读取；格式为 JPEG/PNG/GIF/WebP 之一，或在框选区域含矢量内容且体积更优时为 SVG（矢量） |
 | `thumbnail_blob` | 任务窗格预览，可缺失时降级 |
 | `title`, `year`, `doi`, `page_number`, `created_at` | 搜索、排序和显示 |
 | `source_region_key`, `preview_duplicate_key` | 稳定区域及重复预览溯源 |
@@ -64,11 +64,12 @@ PPT 以只读 SQLite 连接访问共享库。当前主表名为 `images`；迁�
 | `dominant_hex`, `contrast_hex` | 可选主色与对比色 |
 | `content_sha256` | 可选原图 SHA-256，用于分享完整性校验与重复导入拦截 |
 | `origin_type`, `source_match_status`, `imported_at` | 可选来源、文献匹配状态与导入时间 |
+| `user_note` | 可选用户手写描述，上限 300 字，保留换行；PPT 只读展示，不得写入 |
 | `deleted` 或 `is_deleted` | 存在时，活动记录必须为 `0` |
 
 配色侧表固定为 `image_palette_swatches`，至少有 `image_id` 与 `hex`；建议附加 `swatch_index`、`role`。写入侧必须在同一 SQLite 事务中保持图像、配色与溯源字段一致。不要复用或重写已有 `image_id` 对应的不同图像内容。
 
-上述可选元数据列属于 schema 2 的向后兼容扩展，不改变固定数据库路径、locator schema 或 `databaseSchemaVersion`。Zotero 全局浏览器图库只读同一数据库作为图片数据源，按记录读取有界 `image_blob` 并原样写入临时浏览文件，不读取 Zotero 内置数据库、不另建图库数据库，也不增加图片 HTTP endpoint。图库写操作只允许通过下文受 token 保护的固定 endpoint 执行软删除或经过校验的导入。
+上述可选元数据列属于 schema 3 的向后兼容扩展，不改变固定数据库路径、locator schema 或 `databaseSchemaVersion`。Zotero 全局浏览器图库只读同一数据库作为图片数据源，按记录读取有界 `image_blob` 并原样写入临时浏览文件，不读取 Zotero 内置数据库、不另建图库数据库，也不增加图片 HTTP endpoint。图库写操作只允许通过下文受 token 保护的固定 endpoint 执行软删除、经过校验的导入或用户手写描述的更新。
 
 ## 界面语言契约
 
@@ -93,8 +94,8 @@ PPT 以只读 SQLite 连接访问共享库。当前主表名为 `images`；迁�
 - `bridge_state` 存在于同一个共享 SQLite，结构为 `key TEXT PRIMARY KEY, value TEXT`。
 - Zotero 发布 `token`、`status`、`endpoint` 三个 key。`endpoint` 只可为 `/pdf-image-saver/bridge` 或完整默认 URL；PPT 会忽略所有其它值。
 - 请求使用 `application/x-www-form-urlencoded; charset=utf-8`，同时发送 header `X-Rough-Ppt-Token: <token>` 和表单字段 `token`、`command`、`image_id`。
-- PPT 允许命令：`status`、`getStatus`、`openPdfByImageId`、`selectParentItemByImageId`、`selectPdfAttachmentByImageId`，以及仅用于复用完整图库界面的 `refreshLibrary`。PPT 将 `getStatus` 发送为 `status`，不得发送 `deleteImages`、`exportImages`、`importImages` 等图库管理命令。
-- Zotero 生成的本地图库可额外发送 `deleteImages`、`exportImages`、`importImages`。`deleteImages` 接收 JSON 编码的 `image_ids` 并只设置外部库软删除标记；`exportImages` 和 `importImages` 必须在 Zotero 内使用原生文件选择器。三个命令均不得在 HTTP 响应或请求中传输图片字节。
+- PPT 允许命令：`status`、`getStatus`、`openPdfByImageId`、`selectParentItemByImageId`、`selectPdfAttachmentByImageId`，以及仅用于复用完整图库界面的 `refreshLibrary`。PPT 将 `getStatus` 发送为 `status`，不得发送 `deleteImages`、`exportImages`、`importImages`、`readImageBytes`、`updateImageNote` 等图库管理命令。
+- Zotero 生成的本地图库可额外发送 `deleteImages`、`exportImages`、`importImages`、`readImageBytes`、`updateImageNote`。`deleteImages` 接收 JSON 编码的 `image_ids` 并只设置外部库软删除标记；`exportImages` 和 `importImages` 必须在 Zotero 内使用原生文件选择器；`updateImageNote` 接收 `image_id` 与 `user_note` 并只更新 `images.user_note`。`readImageBytes` 接收 `image_id` 并返回 base64 编码的 `image_blob` 与其 MIME 类型，是“不传输图片字节”规则的唯一例外：以 `file://` 打开的图库页无法读取自身同目录的图片（fetch 与 XHR 均被拦截，file:// 图片会污染 canvas），且浏览器会忽略 `download` 属性而直接导航离开页面，所以下载必须由插件回传字节并以 Blob URL 触发。除 `readImageBytes` 外，这些命令均不得在 HTTP 响应或请求中传输图片字节。
 - 本地图库从 `file://` 页面发起表单 POST 时可不发送 PPT 专用 header，但仍必须携带同一个 token。endpoint 可对该生成页返回 CORS 读取许可；所有命令继续执行 token 校验。
 - 响应至少使用 JSON `ok`；建议保留 `registered`、`error`、`fallback_used` 和 `preview_duplicate_key`。`registered:false` 表示 bridge 不可用。
 - token 为空或 status 表示 `disabled`、`shutdown`、`stopped`、`unregistered`、`invalid-shared-db-path` 时，PPT 不发 HTTP 请求，转为白名单 `zotero://open-pdf/...` 或 `zotero://select/...` fallback。
