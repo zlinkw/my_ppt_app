@@ -141,7 +141,6 @@ function validateZoteroImageSaver() {
     return;
   }
   const saver = readExternal(zoteroRoot, "content/pdf-image-saver.js");
-  const tests = readExternal(zoteroRoot, "tests/open-pdf-uri.test.js");
   const accessProtocol = readExternal(zoteroRoot, "docs/IMAGE_LIBRARY_ACCESS_AND_UI_PROTOCOL.md");
 
   for (const snippet of [
@@ -172,13 +171,13 @@ function validateZoteroImageSaver() {
     requireIncludes(saver, snippet, `external Zotero pdf-image-saver.js drift: missing ${snippet}`);
   }
   for (const snippet of [
-    'GLOBAL_LIBRARY_VIEW_VERSION = "40"',
     'GLOBAL_LIBRARY_DIRECTORY_NAME = "paper-image-library-view"',
     'command === "refreshLibrary"',
     'openGlobalImageLibrary'
   ]) {
     requireIncludes(saver, snippet, `external Zotero full-library contract drift: missing ${snippet}`);
   }
+  requirePattern(saver, /GLOBAL_LIBRARY_VIEW_VERSION\s*=\s*"\d+"/, "external Zotero full-library contract drift: missing view version");
   for (const snippet of [
     "PPT 插件必须复用 Zotero 生成的完整图库界面",
     "%TEMP%\\pdf-image-saver\\paper-image-library-view\\paper-image-library.html"

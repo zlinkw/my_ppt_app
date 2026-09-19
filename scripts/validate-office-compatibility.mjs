@@ -106,7 +106,7 @@ function requirePattern(text, pattern, message) {
 function validatePowerShellSyntax(path) {
   const escaped = path.replace(/'/g, "''");
   const command = `$tokens=$null;$errors=$null;[System.Management.Automation.Language.Parser]::ParseFile('${escaped}',[ref]$tokens,[ref]$errors)|Out-Null;if($errors.Count){$errors|ForEach-Object{Write-Error $_.Message};exit 1}`;
-  const result = spawnSync("powershell", ["-NoProfile", "-Command", command], { encoding: "utf8" });
+  const result = spawnSync("pwsh", ["-NoProfile", "-Command", command], { encoding: "utf8" });
   if (result.status !== 0) {
     violations.push(`${path}: PowerShell syntax invalid: ${(result.stderr || result.stdout || "unknown parse error").trim()}`);
   }

@@ -18,7 +18,7 @@ function Invoke-Checked {
 }
 
 Write-Host "Generating AutoShape catalog"
-Invoke-Checked { powershell -ExecutionPolicy Bypass -File scripts\generate-autoshape-catalog.ps1 } "generate-autoshape-catalog"
+Invoke-Checked { pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\generate-autoshape-catalog.ps1 } "generate-autoshape-catalog"
 
 Write-Host "Installing npm dependencies if needed"
 if (-not (Test-Path "node_modules")) {
@@ -39,7 +39,7 @@ if (-not $msbuild) {
 }
 
 if (-not $msbuildPath) {
-    powershell -ExecutionPolicy Bypass -File scripts\diagnose.ps1
+    pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\diagnose.ps1
     throw "MSBuild not found. Install Visual Studio Build Tools with Office/VSTO workload, then rerun scripts\build.ps1."
 }
 
@@ -64,7 +64,7 @@ Invoke-Checked {
 } "MSBuild Rebuild"
 
 Write-Host "Verifying compiled Ribbon icons"
-Invoke-Checked { powershell -ExecutionPolicy Bypass -File scripts\verify-ribbon-icons.ps1 } "verify-ribbon-icons"
+Invoke-Checked { pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\verify-ribbon-icons.ps1 } "verify-ribbon-icons"
 
 New-Item -ItemType Directory -Force publish | Out-Null
 Copy-Item -Recurse -Force src\RoughPptAddin\bin\Release\* publish\

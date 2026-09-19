@@ -190,7 +190,7 @@ foreach ($manifestName in @("RoughPptAddin.dll.manifest", "RoughPptAddin.vsto"))
 }
 
 Invoke-Checked {
-    powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build.ps1
+    pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\build.ps1
 } "MSBuild"
 
 $binRelease = Join-Path $root "src\RoughPptAddin\bin\Release"
@@ -201,7 +201,7 @@ if (-not (Test-Path -LiteralPath $assemblyPath -PathType Leaf)) {
     throw "Fresh VSTO build did not produce required DLL."
 }
 Invoke-Checked {
-    powershell -NoProfile -ExecutionPolicy Bypass -File scripts\verify-ribbon-icons.ps1 -AssemblyPath $assemblyPath
+    pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\verify-ribbon-icons.ps1 -AssemblyPath $assemblyPath
 } "compiled Ribbon verification"
 
 Copy-Item -Path (Join-Path $binRelease "*") -Destination $publishRoot -Recurse -Force

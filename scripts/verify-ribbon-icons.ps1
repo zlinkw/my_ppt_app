@@ -10,7 +10,7 @@ Set-Location $root
 $assemblyFile = Resolve-Path $AssemblyPath
 
 Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName stdole
+Add-Type -Path (Join-Path (Split-Path -Parent $assemblyFile) "stdole.dll")
 Add-Type -AssemblyName Microsoft.VisualBasic
 
 function Move-VerifiedTempDirectoryToRecycleBin {

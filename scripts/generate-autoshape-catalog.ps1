@@ -378,5 +378,14 @@ $catalog = [ordered]@{
 }
 
 $json = $catalog | ConvertTo-Json -Depth 8
+if (Test-Path -LiteralPath $outFile -PathType Leaf) {
+    $existing = [System.IO.File]::ReadAllText($outFile, [System.Text.Encoding]::UTF8)
+    $existingCanonical = ConvertTo-Json -InputObject (ConvertFrom-Json -InputObject $existing -AsHashtable) -Depth 8 -Compress
+    $newCanonical = ConvertTo-Json -InputObject (ConvertFrom-Json -InputObject $json -AsHashtable) -Depth 8 -Compress
+    if ($existingCanonical -eq $newCanonical) {
+        Write-Host "Catalog unchanged: $outFile ($(@($items).Count) shapes)"
+        return
+    }
+}
 [System.IO.File]::WriteAllText($outFile, $json, [System.Text.UTF8Encoding]::new($false))
 Write-Host "Generated $outFile with $(@($items).Count) shapes"
