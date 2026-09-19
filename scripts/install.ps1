@@ -104,7 +104,7 @@ trap {
         }
     }
     if ($suppressUi) {
-        Write-Host ((U "`u5b89`u88c5`u672a`u5b8c`u6210`uff08MSI `u9759`u9ed8`u6a21`u5f0f`uff0c`u5df2`u6291`u5236`u5f39`u7a97`uff09`uff1a{0}") -f $message)
+        Write-Host ((U "\u5b89\u88c5\u672a\u5b8c\u6210\uff08MSI \u9759\u9ed8\u6a21\u5f0f\uff0c\u5df2\u6291\u5236\u5f39\u7a97\uff09\uff1a{0}") -f $message)
         exit 1
     }
     try {
