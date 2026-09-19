@@ -56,6 +56,8 @@ RAWGraphs、Datawrapper、Plotly Chart Studio 和 Vega Editor 仅保留在工作
 
 PowerPoint 2016 及更高版本通过 `ResearchChartStudioService` 的独立 `Shapes.AddPicture` 例外将 SVG 等比居中插入当前幻灯片。PowerPoint 2013 继续受插件其它功能支持，但科研 SVG 入口明确提示改用旧任务窗格的 ZLK 原生绘图链路。该例外不得进入 Rough、ZLK 自动绘图、用户素材或配色链路。
 
+“插入可编辑图形”复用上述校验与同源缓存，先插入当前 SVG，再调用 PowerPoint 自身的 `SVGEdit` 转换命令。宿主检查转换结果是否全为原生形状，失败时撤销本次新增对象并返回中文错误。拆分粒度、文字和复杂效果取决于 Office 的 SVG 转换能力；此入口不调用 draw.io，也不改变 Rough 或 ZLK 绘图链路。
+
 ## User Assets
 
 Saved user assets are stored as native `.pptx` templates plus metadata JSON. Optional PNG thumbnails are generated only for the task pane library preview; thumbnails are never inserted into slides as final content.

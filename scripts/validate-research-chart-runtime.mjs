@@ -19,6 +19,13 @@ window.URL.createObjectURL = () => `blob:research-chart-${++blobIndex}`;
 window.URL.revokeObjectURL = () => {};
 globalThis.URL = window.URL;
 
+const hostMessages = [];
+let receiveHostMessage;
+window.chrome = { webview: {
+  postMessage: message => hostMessages.push(message),
+  addEventListener: (type, listener) => { if (type === "message") receiveHostMessage = listener; }
+} };
+
 window.eval(fs.readFileSync("src/RoughPptAddin/ui/vendor/papaparse.min.js", "utf8"));
 
 const rendered = [];
@@ -56,6 +63,19 @@ async function waitFor(predicate, label, timeout = 5000) {
 
 await import(`${pathToFileURL("src/RoughPptAddin/ui/research-chart-studio.mjs").href}?runtime=${Date.now()}`);
 await waitFor(() => rendered.length > 0, "初始图表");
+await waitFor(() => hostMessages.some(message => message.type === "stageResearchSvg"), "SVG 暂存请求");
+const stage = hostMessages.findLast(message => message.type === "stageResearchSvg");
+const editableButton = window.document.getElementById("insertEditableButton");
+if (!editableButton.disabled) throw new Error("SVG 校验前不可执行可编辑插入。");
+receiveHostMessage({ data: { type: "researchSvgStageResult", requestId: stage.requestId, ok: true, sizeBytes: 1024 } });
+if (editableButton.disabled) throw new Error("SVG 校验后可编辑插入入口未启用。");
+editableButton.click();
+const editableRequest = hostMessages.findLast(message => message.type === "insertEditableResearchSvg");
+if (!editableRequest || !editableButton.disabled) throw new Error("可编辑插入未发送宿主请求或未防止重复点击。");
+receiveHostMessage({ data: { type: "researchSvgInsertResult", requestId: editableRequest.requestId, editable: true, ok: false, error: "测试拒绝" } });
+if (editableButton.disabled || !window.document.getElementById("studioStatus").textContent.includes("测试拒绝")) {
+  throw new Error("可编辑插入失败后未恢复入口和错误反馈。");
+}
 
 const sample = `id,group,facet,a,b,c,m1,m2,m3,m4
 S1,A,F1,30,45,25,1.2,3.1,7.2,9.4

@@ -68,6 +68,7 @@ for (const snippet of [
   'id="websiteList"',
   'id="selectSvgButton"',
   'id="insertButton"',
+  'id="insertEditableButton"',
   'id="svgPreview"'
 ]) {
   if (!html.includes(snippet)) throw new Error(`科研绘图工作区 HTML 合同缺少：${snippet}`);
@@ -89,6 +90,7 @@ for (const snippet of [
   'type: "stageResearchSvg"',
   'type: "selectResearchSvg"',
   'type: "insertResearchSvg"',
+  'type: "insertEditableResearchSvg"',
   'message.type === "researchSvgStageResult"',
   'message.type === "researchSvgSelectionResult"',
   'message.type === "researchSvgInsertResult"',
@@ -181,13 +183,15 @@ if (!taskPane.includes('case "openResearchChartStudio":') || taskPane.includes('
 for (const snippet of ["ResearchChartStudioWindow", "research-chart-studio.html", "WebMessageReceived", "StageResearchSvg", "SelectResearchSvg", "InsertResearchSvg", "PostSvgStageResult", "PostSvgSelectionResult", "PostSvgInsertResult", "OpenResearchChartWebsite", "PostNativeMaximizeResult", "researchChartFullscreenResult", "FormBorderStyle.Sizable", "base.MinimizeBox = true;", "base.ShowInTaskbar = true;"]) {
   if (!windowHost.includes(snippet)) throw new Error(`科研绘图工作台宿主合同缺少：${snippet}`);
 }
+if (!windowHost.includes('messageType, "insertEditableResearchSvg"') || !windowHost.includes('insertEditableSvg(selectedSvg)')) throw new Error("可编辑 SVG 宿主接线缺失。");
+if (!studioService.includes('ExecuteMso("SVGEdit")') || !studioService.includes("IsEditableShape") || !studioService.includes("NewShapes(slide, originalIds)")) throw new Error("可编辑 SVG 转换或失败回滚缺失。");
 for (const snippet of ["StageSvg(string svgText", "StageSvgBytes", "https://app.rawgraphs.io/", "https://app.datawrapper.de/", "https://chart-studio.plotly.com/", "https://vega.github.io/editor/", "UseShellExecute = true", "MaxSvgBytes = 4194304L", "DtdProcessing = DtdProcessing.Prohibit", "ForbiddenElements", "ComputeSha256", "Shapes.AddPicture", "PowerPoint 2016"]) {
   if (!studioService.includes(snippet)) throw new Error(`科研绘图网站或 SVG 安全合同缺少：${snippet}`);
 }
 for (const snippet of ["ShowResearchChartStudio", "researchChartStudioWindow?.Dispose()", "InsertZlkChart", "InsertResearchSvg", "InsertIntoCurrentSlide"]) {
   if (!controller.includes(snippet)) throw new Error(`科研绘图控制器合同缺少：${snippet}`);
 }
-for (const type of ["openResearchChartWebsite", "researchChartStudioReady", "toggleResearchChartStudioFullscreen", "stageResearchSvg", "selectResearchSvg", "insertResearchSvg"]) {
+for (const type of ["openResearchChartWebsite", "researchChartStudioReady", "toggleResearchChartStudioFullscreen", "stageResearchSvg", "selectResearchSvg", "insertResearchSvg", "insertEditableResearchSvg"]) {
   if (!bridgeContract.includes(`${type}: "${type}"`)) throw new Error(`桥接合同缺少科研绘图消息：${type}`);
 }
 for (const file of ["research-chart-studio.html", "research-chart-studio.css", "research-chart-studio.mjs", ...vendorFiles]) {

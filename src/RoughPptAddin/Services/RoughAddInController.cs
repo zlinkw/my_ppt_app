@@ -1450,7 +1450,7 @@ namespace RoughPptAddin.Services
 				researchChartStudioWindow = new ResearchChartStudioWindow(GetPowerPointWindowHandle, delegate(string message, bool isError)
 				{
 					NotifyUi(message, isError);
-				}, InsertZlkChart, InsertResearchSvg);
+				}, InsertZlkChart, InsertResearchSvg, InsertEditableResearchSvg);
 			}
 			researchChartStudioWindow.ShowAlongsidePowerPoint();
 		}
@@ -1464,6 +1464,11 @@ namespace RoughPptAddin.Services
 	private string InsertResearchSvg(ResearchSvgDocument document)
 	{
 		return ResearchChartStudioService.InsertIntoCurrentSlide(application, document);
+	}
+
+	private string InsertEditableResearchSvg(ResearchSvgDocument document)
+	{
+		return ResearchChartStudioService.InsertEditableIntoCurrentSlide(application, document);
 	}
     
     	private static string ToRelativeDisplayPath(string root, string path)

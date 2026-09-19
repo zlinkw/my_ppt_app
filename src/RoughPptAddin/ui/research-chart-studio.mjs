@@ -127,6 +127,7 @@ const els = {
   loadSampleButton: byId("loadSampleButton"),
   selectSvgButton: byId("selectSvgButton"),
   insertButton: byId("insertButton"),
+  insertEditableButton: byId("insertEditableButton"),
   dataEditor: byId("dataEditor"),
   applyDataButton: byId("applyDataButton"),
   resetDataButton: byId("resetDataButton"),
@@ -214,6 +215,8 @@ const state = {
   palette: "simple",
   renderToken: 0,
   pendingStageRequestId: "",
+  pendingInsertRequestId: "",
+  svgReady: false,
   previewUrl: "",
   renderTimer: 0,
   dataTimer: 0,
@@ -1529,7 +1532,21 @@ function clearPreviewUrl() {
 
 function resetSvgOutput() {
   state.latestSvgText = "";
+  state.pendingInsertRequestId = "";
   els.downloadSvgButton.disabled = true;
+  setSvgInsertReady(false);
+}
+
+function setSvgInsertReady(ready) {
+  state.svgReady = Boolean(ready);
+  els.insertButton.disabled = !ready;
+  els.insertEditableButton.disabled = !ready;
+}
+
+function beginSvgInsert(requestId) {
+  state.pendingInsertRequestId = requestId;
+  els.insertButton.disabled = true;
+  els.insertEditableButton.disabled = true;
 }
 
 function showSvgText(svgText, label) {
@@ -1548,7 +1565,7 @@ function showSvgText(svgText, label) {
 function stageGeneratedSvg(svgText, token) {
   const requestId = `research-svg-stage-${Date.now()}-${token}`;
   state.pendingStageRequestId = requestId;
-  els.insertButton.disabled = true;
+  setSvgInsertReady(false);
   if (!postHost({ type: "stageResearchSvg", requestId, fileName: "local-research-chart.svg", svgText })) {
     setRenderState("仅预览", "ready");
     return;
@@ -1559,7 +1576,7 @@ function stageGeneratedSvg(svgText, token) {
 async function renderChart() {
   const token = ++state.renderToken;
   state.pendingStageRequestId = "";
-  els.insertButton.disabled = true;
+  setSvgInsertReady(false);
   resetSvgOutput();
   setRenderState("渲染中");
   els.emptyState.hidden = true;
@@ -1605,7 +1622,7 @@ function applyData(sourceLabel = state.sourceLabel, { render = true } = {}) {
     state.fieldTypes = {};
     resetSvgOutput();
     updateDataSummary();
-    els.insertButton.disabled = true;
+    setSvgInsertReady(false);
     setRenderState("数据错误", "error");
     setStatus(`数据解析失败：${error?.message || "未知错误"}`, true);
   }
@@ -1728,7 +1745,7 @@ function showImportedSvg(message) {
   showSvgText(String(message.svgText || ""), message.fileName || "导入 SVG");
   els.previewTitle.textContent = message.fileName || "导入 SVG";
   els.previewMeta.textContent = `${formatBytes(message.sizeBytes)} · ${message.width && message.height ? `${message.width} x ${message.height}` : "自适应"} · 同源 SVG`;
-  els.insertButton.disabled = false;
+  setSvgInsertReady(true);
   setRenderState("已校验", "ready");
   setStatus("导入 SVG 已通过校验，预览与插入使用同一份内容。");
 }
@@ -1788,14 +1805,19 @@ function bindEvents() {
   els.selectSvgButton.addEventListener("click", () => {
     ++state.renderToken;
     state.pendingStageRequestId = "";
-    els.insertButton.disabled = true;
+    setSvgInsertReady(false);
     resetSvgOutput();
     if (postHost({ type: "selectResearchSvg" })) setStatus("正在选择 SVG 文件。");
   });
   els.insertButton.addEventListener("click", () => {
     const requestId = `research-svg-insert-${Date.now()}`;
-    els.insertButton.disabled = true;
+    beginSvgInsert(requestId);
     if (postHost({ type: "insertResearchSvg", requestId })) setStatus("正在插入当前预览 SVG。");
+  });
+  els.insertEditableButton.addEventListener("click", () => {
+    const requestId = `research-svg-editable-${Date.now()}`;
+    beginSvgInsert(requestId);
+    if (postHost({ type: "insertEditableResearchSvg", requestId })) setStatus("正在将 SVG 转换为可编辑图形。");
   });
   document.addEventListener("keydown", event => {
     if (event.key === "F11") {
@@ -1814,11 +1836,11 @@ window.chrome?.webview?.addEventListener?.("message", event => {
     if (message.requestId !== state.pendingStageRequestId) return;
     state.pendingStageRequestId = "";
     if (message.ok) {
-      els.insertButton.disabled = false;
+      setSvgInsertReady(true);
       setRenderState("已校验", "ready");
       setStatus(`本地 SVG 已通过安全校验，可插入 PowerPoint（${formatBytes(message.sizeBytes)}）。`);
     } else {
-      els.insertButton.disabled = true;
+      setSvgInsertReady(false);
       setRenderState("校验失败", "error");
       setStatus(`SVG 校验失败：${message.error || "未知错误"}`, true);
     }
@@ -1828,8 +1850,10 @@ window.chrome?.webview?.addEventListener?.("message", event => {
     else if (!message.canceled) setStatus(`SVG 读取失败：${message.error || "未知错误"}`, true);
   }
   if (message.type === "researchSvgInsertResult") {
-    els.insertButton.disabled = false;
-    setStatus(message.ok ? "已将当前预览 SVG 插入 PowerPoint。" : `插入失败：${message.error || "未知错误"}`, !message.ok);
+    if (message.requestId !== state.pendingInsertRequestId) return;
+    state.pendingInsertRequestId = "";
+    setSvgInsertReady(state.svgReady);
+    setStatus(message.ok ? (message.editable ? "已插入 PowerPoint 可编辑图形。" : "已将当前预览 SVG 插入 PowerPoint。") : `插入失败：${message.error || "未知错误"}`, !message.ok);
   }
   if (message.type === "researchWebsiteOpenResult" && !message.ok) setStatus(`网站打开失败：${message.error || "未知错误"}`, true);
   if (message.type === "researchChartFullscreenResult") setFullscreenState(message.fullscreen);

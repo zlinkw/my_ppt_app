@@ -9,6 +9,7 @@ export const HOST_MESSAGE_TYPES = {
   stageResearchSvg: "stageResearchSvg",
   selectResearchSvg: "selectResearchSvg",
   insertResearchSvg: "insertResearchSvg",
+  insertEditableResearchSvg: "insertEditableResearchSvg",
   insertShape: "insertShape",
   insertFeatureBlock: "insertFeatureBlock",
   adjustFeatureBlockDirection: "adjustFeatureBlockDirection",

@@ -180,6 +180,87 @@ public static class ResearchChartStudioService
 		return shape.Name;
 	}
 
+	public static string InsertEditableIntoCurrentSlide(Microsoft.Office.Interop.PowerPoint.Application application, ResearchSvgDocument document)
+	{
+		if (!(application?.ActiveWindow?.View?.Slide is Slide slide))
+		{
+			throw new InvalidOperationException("当前没有可用幻灯片。");
+		}
+		HashSet<int> originalIds = new HashSet<int>();
+		foreach (Microsoft.Office.Interop.PowerPoint.Shape item in slide.Shapes)
+		{
+			originalIds.Add(item.Id);
+		}
+		try
+		{
+			InsertIntoCurrentSlide(application, document);
+			if (!application.CommandBars.GetEnabledMso("SVGEdit"))
+			{
+				throw new NotSupportedException("当前 PowerPoint 未启用 SVG 转换为形状命令。请更新 Office，或使用普通 SVG 插入。");
+			}
+			application.CommandBars.ExecuteMso("SVGEdit");
+			List<Microsoft.Office.Interop.PowerPoint.Shape> converted = NewShapes(slide, originalIds);
+			if (converted.Count == 0 || converted.Any(item => !IsEditableShape(item)))
+			{
+				throw new InvalidOperationException("PowerPoint 未将此 SVG 转成可编辑图形。请检查 SVG 内容或使用普通插入。");
+			}
+			Microsoft.Office.Interop.PowerPoint.Shape result = converted.Count == 1
+				? converted[0]
+				: slide.Shapes.Range(converted.Select(item => item.Name).ToArray()).Group();
+			result.Name = "ResearchSvgEditable_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture);
+			result.Select();
+			return result.Name;
+		}
+		catch (Exception ex)
+		{
+			foreach (Microsoft.Office.Interop.PowerPoint.Shape item in NewShapes(slide, originalIds))
+			{
+				item.Delete();
+			}
+			if (ex is NotSupportedException || ex is InvalidDataException || ex is InvalidOperationException)
+			{
+				throw;
+			}
+			throw new NotSupportedException("当前 PowerPoint 无法把此 SVG 转换为可编辑图形。可使用普通 SVG 插入。", ex);
+		}
+	}
+
+	private static List<Microsoft.Office.Interop.PowerPoint.Shape> NewShapes(Slide slide, HashSet<int> originalIds)
+	{
+		List<Microsoft.Office.Interop.PowerPoint.Shape> result = new List<Microsoft.Office.Interop.PowerPoint.Shape>();
+		foreach (Microsoft.Office.Interop.PowerPoint.Shape item in slide.Shapes)
+		{
+			if (!originalIds.Contains(item.Id))
+			{
+				result.Add(item);
+			}
+		}
+		return result;
+	}
+
+	private static bool IsEditableShape(Microsoft.Office.Interop.PowerPoint.Shape shape)
+	{
+		if (shape.Type == MsoShapeType.msoGroup)
+		{
+			if (shape.GroupItems.Count == 0)
+			{
+				return false;
+			}
+			foreach (Microsoft.Office.Interop.PowerPoint.Shape item in shape.GroupItems)
+			{
+				if (!IsEditableShape(item))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+		return shape.Type == MsoShapeType.msoAutoShape
+			|| shape.Type == MsoShapeType.msoFreeform
+			|| shape.Type == MsoShapeType.msoLine
+			|| shape.Type == MsoShapeType.msoTextBox;
+	}
+
 	private static byte[] ReadBoundedSvg(string path)
 	{
 		if (!File.Exists(path))

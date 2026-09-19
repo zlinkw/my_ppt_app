@@ -21,6 +21,7 @@
       <button id="loadSampleButton" class="button secondary" type="button" title="载入内置科研示例数据">示例数据</button>
       <button id="selectSvgButton" class="button secondary" type="button" title="选择已有 SVG 文件并通过宿主安全校验">导入 SVG</button>
       <button id="insertButton" class="button primary" type="button" disabled title="将当前预览使用的同一份 SVG 插入 PowerPoint">插入 PPT</button>
+      <button id="insertEditableButton" class="button secondary" type="button" disabled title="调用 PowerPoint 的转换为形状功能，将当前 SVG 拆分成可单独选择和修改的图形。复杂效果或文字可能无法完整保留">插入可编辑图形</button>
     </div>
   </header>
 
@@ -232,7 +233,7 @@ Ours,0.887,0.015,B</textarea>
         <summary title="仅在明确点击后使用系统浏览器打开外部工具">外部扩展工具</summary>
         <div id="websiteList" class="website-list" role="list" aria-label="可选外部科研绘图网站"></div>
       </details>
-      <p class="compatibility-note">SVG 插入需要 PowerPoint 2016 或更高版本。PowerPoint 2013 可使用任务窗格原生科研绘图入口。</p>
+      <p class="compatibility-note">SVG 插入需要 PowerPoint 2016 或更高版本。可编辑图形依赖当前 Office 的“转换为形状”功能；复杂效果与文字以 PowerPoint 转换结果为准。PowerPoint 2013 可使用任务窗格原生科研绘图入口。</p>
     </aside>
   </main>
 

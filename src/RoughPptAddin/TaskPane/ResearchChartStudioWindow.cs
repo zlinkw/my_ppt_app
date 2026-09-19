@@ -31,6 +31,7 @@ public sealed class ResearchChartStudioWindow : Form
 	private readonly Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart;
 
 	private readonly Func<ResearchSvgDocument, string> insertSvg;
+	private readonly Func<ResearchSvgDocument, string> insertEditableSvg;
 
 	private readonly WebView2 webView = new WebView2();
 
@@ -43,12 +44,13 @@ public sealed class ResearchChartStudioWindow : Form
 
 	private ResearchSvgDocument selectedSvg;
 
-	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart, Func<ResearchSvgDocument, string> insertSvg)
+	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart, Func<ResearchSvgDocument, string> insertSvg, Func<ResearchSvgDocument, string> insertEditableSvg)
 	{
 		this.ownerWindowHandle = ownerWindowHandle;
 		this.reportStatus = reportStatus;
 		this.insertChart = insertChart;
 		this.insertSvg = insertSvg;
+		this.insertEditableSvg = insertEditableSvg;
 		Text = "科研绘图工作区";
 		base.ShowIcon = false;
 		base.ShowInTaskbar = true;
@@ -172,7 +174,12 @@ public sealed class ResearchChartStudioWindow : Form
 			}
 			if (string.Equals(messageType, "insertResearchSvg", StringComparison.OrdinalIgnoreCase))
 			{
-				InsertResearchSvg(ReadString(message, "requestId", string.Empty));
+				InsertResearchSvg(ReadString(message, "requestId", string.Empty), editable: false);
+				return;
+			}
+			if (string.Equals(messageType, "insertEditableResearchSvg", StringComparison.OrdinalIgnoreCase))
+			{
+				InsertResearchSvg(ReadString(message, "requestId", string.Empty), editable: true);
 				return;
 			}
 			if (!string.Equals(messageType, "insertResearchChart", StringComparison.OrdinalIgnoreCase))
@@ -263,7 +270,7 @@ public sealed class ResearchChartStudioWindow : Form
 		}
 	}
 
-	private void InsertResearchSvg(string requestId)
+	private void InsertResearchSvg(string requestId, bool editable)
 	{
 		try
 		{
@@ -271,14 +278,14 @@ public sealed class ResearchChartStudioWindow : Form
 			{
 				throw new InvalidOperationException("请先选择并预览一个 SVG 文件。");
 			}
-			string shapeName = insertSvg(selectedSvg);
-			PostSvgInsertResult(requestId, true, shapeName, null);
-			reportStatus?.Invoke("已将科研 SVG 插入当前幻灯片。", false);
+			string shapeName = editable ? insertEditableSvg(selectedSvg) : insertSvg(selectedSvg);
+			PostSvgInsertResult(requestId, true, shapeName, null, editable);
+			reportStatus?.Invoke(editable ? "已将科研 SVG 转为可编辑图形。" : "已将科研 SVG 插入当前幻灯片。", false);
 		}
 		catch (Exception ex)
 		{
 			AddInLogger.Error("插入科研 SVG 失败。", ex);
-			PostSvgInsertResult(requestId, false, string.Empty, ex.Message);
+			PostSvgInsertResult(requestId, false, string.Empty, ex.Message, editable);
 			reportStatus?.Invoke("插入科研 SVG 失败：" + ex.Message, true);
 		}
 	}
@@ -323,7 +330,7 @@ public sealed class ResearchChartStudioWindow : Form
 		}));
 	}
 
-	private void PostSvgInsertResult(string requestId, bool ok, string shapeName, string error)
+	private void PostSvgInsertResult(string requestId, bool ok, string shapeName, string error, bool editable)
 	{
 		if (webView.CoreWebView2 == null)
 		{
@@ -335,6 +342,7 @@ public sealed class ResearchChartStudioWindow : Form
 			requestId,
 			ok,
 			shapeName = shapeName ?? string.Empty,
+			editable,
 			error = error ?? string.Empty
 		}));
 	}
