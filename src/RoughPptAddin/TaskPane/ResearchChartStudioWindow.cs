@@ -32,6 +32,7 @@ public sealed class ResearchChartStudioWindow : Form
 
 	private readonly Func<ResearchSvgDocument, string> insertSvg;
 	private readonly Func<ResearchSvgDocument, string> insertEditableSvg;
+	private readonly Func<string> convertCroppedSvg;
 
 	private readonly WebView2 webView = new WebView2();
 
@@ -44,13 +45,14 @@ public sealed class ResearchChartStudioWindow : Form
 
 	private ResearchSvgDocument selectedSvg;
 
-	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart, Func<ResearchSvgDocument, string> insertSvg, Func<ResearchSvgDocument, string> insertEditableSvg)
+	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart, Func<ResearchSvgDocument, string> insertSvg, Func<ResearchSvgDocument, string> insertEditableSvg, Func<string> convertCroppedSvg)
 	{
 		this.ownerWindowHandle = ownerWindowHandle;
 		this.reportStatus = reportStatus;
 		this.insertChart = insertChart;
 		this.insertSvg = insertSvg;
 		this.insertEditableSvg = insertEditableSvg;
+		this.convertCroppedSvg = convertCroppedSvg;
 		Text = "科研绘图工作区";
 		base.ShowIcon = false;
 		base.ShowInTaskbar = true;
@@ -182,6 +184,11 @@ public sealed class ResearchChartStudioWindow : Form
 				InsertResearchSvg(ReadString(message, "requestId", string.Empty), editable: true);
 				return;
 			}
+			if (string.Equals(messageType, "convertCroppedResearchSvg", StringComparison.OrdinalIgnoreCase))
+			{
+				ConvertCroppedResearchSvg(ReadString(message, "requestId", string.Empty));
+				return;
+			}
 			if (!string.Equals(messageType, "insertResearchChart", StringComparison.OrdinalIgnoreCase))
 			{
 				return;
@@ -290,6 +297,22 @@ public sealed class ResearchChartStudioWindow : Form
 		}
 	}
 
+	private void ConvertCroppedResearchSvg(string requestId)
+	{
+		try
+		{
+			string shapeName = convertCroppedSvg();
+			PostSvgCropResult(requestId, true, shapeName, null);
+			reportStatus?.Invoke("已按选中 SVG 的裁剪区域转换为可编辑图形。", false);
+		}
+		catch (Exception ex)
+		{
+			AddInLogger.Error("按裁剪区域转换 SVG 失败。", ex);
+			PostSvgCropResult(requestId, false, string.Empty, ex.Message);
+			reportStatus?.Invoke("按裁剪区域转换 SVG 失败：" + ex.Message, true);
+		}
+	}
+
 	private void PostSvgSelectionResult(ResearchSvgDocument document, bool canceled, string error)
 	{
 		if (webView.CoreWebView2 == null)
@@ -343,6 +366,22 @@ public sealed class ResearchChartStudioWindow : Form
 			ok,
 			shapeName = shapeName ?? string.Empty,
 			editable,
+			error = error ?? string.Empty
+		}));
+	}
+
+	private void PostSvgCropResult(string requestId, bool ok, string shapeName, string error)
+	{
+		if (webView.CoreWebView2 == null)
+		{
+			return;
+		}
+		webView.CoreWebView2.PostWebMessageAsJson(serializer.Serialize(new
+		{
+			type = "researchSvgCropResult",
+			requestId,
+			ok,
+			shapeName = shapeName ?? string.Empty,
 			error = error ?? string.Empty
 		}));
 	}

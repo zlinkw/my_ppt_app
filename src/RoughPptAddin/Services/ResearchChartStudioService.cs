@@ -225,6 +225,144 @@ public static class ResearchChartStudioService
 		}
 	}
 
+	public static string ConvertCroppedSelectionToEditable(Microsoft.Office.Interop.PowerPoint.Application application)
+	{
+		if (!(application?.ActiveWindow?.View?.Slide is Slide slide))
+		{
+			throw new InvalidOperationException("当前没有可用幻灯片。");
+		}
+		Selection selection = application.ActiveWindow.Selection;
+		if (selection == null || selection.Type != PpSelectionType.ppSelectionShapes || selection.ShapeRange.Count != 1)
+		{
+			throw new InvalidOperationException("请在 PowerPoint 中选中一张已裁剪的 SVG 图像。");
+		}
+		Microsoft.Office.Interop.PowerPoint.Shape original = selection.ShapeRange[1];
+		// The VSTO Office 2013 interop assembly omits msoGraphic (28), although newer PowerPoint returns it for SVG.
+		if ((int)original.Type != 28)
+		{
+			throw new InvalidOperationException("当前选区不是 SVG 图像。请先插入 SVG 并使用 PowerPoint 的裁剪功能。");
+		}
+		if (original.Rotation > 0.1f && original.Rotation < 359.9f)
+		{
+			throw new NotSupportedException("请先取消 SVG 的旋转，再按矩形裁剪区域转换。");
+		}
+		Microsoft.Office.Interop.PowerPoint.PictureFormat picture = original.PictureFormat;
+		if (Math.Abs(picture.CropLeft) < 0.1f && Math.Abs(picture.CropRight) < 0.1f
+			&& Math.Abs(picture.CropTop) < 0.1f && Math.Abs(picture.CropBottom) < 0.1f)
+		{
+			throw new InvalidOperationException("选中的 SVG 尚未裁剪。未裁剪图像可直接使用“插入可编辑图形”。");
+		}
+		if (!application.CommandBars.GetEnabledMso("SVGEdit"))
+		{
+			throw new NotSupportedException("当前 PowerPoint 未启用 SVG 转换为形状命令。");
+		}
+		float left = original.Left;
+		float top = original.Top;
+		float right = left + original.Width;
+		float bottom = top + original.Height;
+		var cropFrame = picture.Crop;
+		float shiftX = cropFrame.PictureOffsetX + (cropFrame.ShapeWidth - cropFrame.PictureWidth) / 2f;
+		float shiftY = cropFrame.PictureOffsetY + (cropFrame.ShapeHeight - cropFrame.PictureHeight) / 2f;
+		if (right <= left || bottom <= top)
+		{
+			throw new InvalidOperationException("SVG 裁剪区域无效。");
+		}
+		HashSet<int> originalIds = new HashSet<int>();
+		foreach (Microsoft.Office.Interop.PowerPoint.Shape item in slide.Shapes)
+		{
+			originalIds.Add(item.Id);
+		}
+		try
+		{
+			Microsoft.Office.Interop.PowerPoint.Shape duplicate = original.Duplicate()[1];
+			duplicate.Left = left;
+			duplicate.Top = top;
+			duplicate.Select();
+			application.CommandBars.ExecuteMso("SVGEdit");
+			List<Microsoft.Office.Interop.PowerPoint.Shape> converted = UngroupNewShapes(slide, originalIds);
+			if (converted.Count == 0 || converted.Count > 2000 || converted.Any(item => !IsEditableShape(item)))
+			{
+				throw new InvalidOperationException("SVG 转换结果为空、包含图片，或超过 2000 个图形；原图已保留。");
+			}
+			foreach (Microsoft.Office.Interop.PowerPoint.Shape item in converted)
+			{
+				item.Left += shiftX;
+				item.Top += shiftY;
+			}
+			foreach (int id in converted.Select(item => item.Id).ToArray())
+			{
+				Microsoft.Office.Interop.PowerPoint.Shape item = FindShapeById(slide, id);
+				if (item == null)
+				{
+					continue;
+				}
+				float itemRight = item.Left + item.Width;
+				float itemBottom = item.Top + item.Height;
+				if (itemRight <= left || item.Left >= right || itemBottom <= top || item.Top >= bottom)
+				{
+					item.Delete();
+				}
+				else if (item.Left < left || itemRight > right || item.Top < top || itemBottom > bottom)
+				{
+					Microsoft.Office.Interop.PowerPoint.Shape crop = slide.Shapes.AddShape(MsoAutoShapeType.msoShapeRectangle, left, top, right - left, bottom - top);
+					slide.Shapes.Range(new[] { item.Name, crop.Name }).MergeShapes(MsoMergeCmd.msoMergeIntersect, item);
+				}
+			}
+			List<Microsoft.Office.Interop.PowerPoint.Shape> cropped = NewShapes(slide, originalIds);
+			if (cropped.Count == 0 || cropped.Any(item => !IsEditableShape(item)))
+			{
+				throw new InvalidOperationException("裁剪区域内没有可编辑图形；原图已保留。");
+			}
+			Microsoft.Office.Interop.PowerPoint.Shape result = cropped.Count == 1
+				? cropped[0]
+				: slide.Shapes.Range(cropped.Select(item => item.Name).ToArray()).Group();
+			result.Name = "ResearchSvgCropped_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture);
+			result.Select();
+			string resultName = result.Name;
+			original.Delete();
+			return resultName;
+		}
+		catch (Exception ex)
+		{
+			foreach (Microsoft.Office.Interop.PowerPoint.Shape item in NewShapes(slide, originalIds))
+			{
+				try { item.Delete(); } catch { /* Keep the original SVG when PowerPoint refuses cleanup. */ }
+			}
+			try { original.Select(); } catch { /* Preserve the original even if selection changed. */ }
+			if (ex is InvalidOperationException || ex is NotSupportedException)
+			{
+				throw;
+			}
+			throw new InvalidOperationException("按裁剪区域转换失败，原始 SVG 已保留。", ex);
+		}
+	}
+
+	private static List<Microsoft.Office.Interop.PowerPoint.Shape> UngroupNewShapes(Slide slide, HashSet<int> originalIds)
+	{
+		for (int count = 0; count < 2000; count++)
+		{
+			Microsoft.Office.Interop.PowerPoint.Shape group = NewShapes(slide, originalIds).FirstOrDefault(item => item.Type == MsoShapeType.msoGroup);
+			if (group == null)
+			{
+				return NewShapes(slide, originalIds);
+			}
+			group.Ungroup();
+		}
+		throw new InvalidOperationException("SVG 组合数量过多，无法安全裁剪；原图已保留。");
+	}
+
+	private static Microsoft.Office.Interop.PowerPoint.Shape FindShapeById(Slide slide, int id)
+	{
+		foreach (Microsoft.Office.Interop.PowerPoint.Shape item in slide.Shapes)
+		{
+			if (item.Id == id)
+			{
+				return item;
+			}
+		}
+		return null;
+	}
+
 	private static List<Microsoft.Office.Interop.PowerPoint.Shape> NewShapes(Slide slide, HashSet<int> originalIds)
 	{
 		List<Microsoft.Office.Interop.PowerPoint.Shape> result = new List<Microsoft.Office.Interop.PowerPoint.Shape>();

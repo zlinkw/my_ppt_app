@@ -128,6 +128,7 @@ const els = {
   selectSvgButton: byId("selectSvgButton"),
   insertButton: byId("insertButton"),
   insertEditableButton: byId("insertEditableButton"),
+  cropEditableButton: byId("cropEditableButton"),
   dataEditor: byId("dataEditor"),
   applyDataButton: byId("applyDataButton"),
   resetDataButton: byId("resetDataButton"),
@@ -216,6 +217,7 @@ const state = {
   renderToken: 0,
   pendingStageRequestId: "",
   pendingInsertRequestId: "",
+  pendingCropRequestId: "",
   svgReady: false,
   previewUrl: "",
   renderTimer: 0,
@@ -1819,6 +1821,16 @@ function bindEvents() {
     beginSvgInsert(requestId);
     if (postHost({ type: "insertEditableResearchSvg", requestId })) setStatus("正在将 SVG 转换为可编辑图形。");
   });
+  els.cropEditableButton.addEventListener("click", () => {
+    const requestId = `research-svg-crop-${Date.now()}`;
+    state.pendingCropRequestId = requestId;
+    els.cropEditableButton.disabled = true;
+    if (postHost({ type: "convertCroppedResearchSvg", requestId })) setStatus("正在按选中 SVG 的裁剪区域转换图形。");
+    else {
+      state.pendingCropRequestId = "";
+      els.cropEditableButton.disabled = false;
+    }
+  });
   document.addEventListener("keydown", event => {
     if (event.key === "F11") {
       event.preventDefault();
@@ -1854,6 +1866,12 @@ window.chrome?.webview?.addEventListener?.("message", event => {
     state.pendingInsertRequestId = "";
     setSvgInsertReady(state.svgReady);
     setStatus(message.ok ? (message.editable ? "已插入 PowerPoint 可编辑图形。" : "已将当前预览 SVG 插入 PowerPoint。") : `插入失败：${message.error || "未知错误"}`, !message.ok);
+  }
+  if (message.type === "researchSvgCropResult") {
+    if (message.requestId !== state.pendingCropRequestId) return;
+    state.pendingCropRequestId = "";
+    els.cropEditableButton.disabled = false;
+    setStatus(message.ok ? "已按裁剪区域转换为可编辑图形。" : `裁剪转换失败：${message.error || "未知错误"}`, !message.ok);
   }
   if (message.type === "researchWebsiteOpenResult" && !message.ok) setStatus(`网站打开失败：${message.error || "未知错误"}`, true);
   if (message.type === "researchChartFullscreenResult") setFullscreenState(message.fullscreen);

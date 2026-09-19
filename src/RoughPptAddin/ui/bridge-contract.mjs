@@ -10,6 +10,7 @@ export const HOST_MESSAGE_TYPES = {
   selectResearchSvg: "selectResearchSvg",
   insertResearchSvg: "insertResearchSvg",
   insertEditableResearchSvg: "insertEditableResearchSvg",
+  convertCroppedResearchSvg: "convertCroppedResearchSvg",
   insertShape: "insertShape",
   insertFeatureBlock: "insertFeatureBlock",
   adjustFeatureBlockDirection: "adjustFeatureBlockDirection",
