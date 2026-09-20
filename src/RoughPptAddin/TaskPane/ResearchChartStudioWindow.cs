@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.IO;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
@@ -44,6 +45,8 @@ public sealed class ResearchChartStudioWindow : Form
 	private bool initializationStarted;
 
 	private ResearchSvgDocument selectedSvg;
+	private bool tavottoBusy;
+	private string tavottoProjectDirectory;
 
 	public ResearchChartStudioWindow(Func<IntPtr> ownerWindowHandle, Action<string, bool> reportStatus, Func<ChartDataset, ZlkChartSpec, ZlkClusterPlotRequest, ZlkChartRenderResult> insertChart, Func<ResearchSvgDocument, string> insertSvg, Func<ResearchSvgDocument, string> insertEditableSvg, Func<string> convertCroppedSvg)
 	{
@@ -166,6 +169,18 @@ public sealed class ResearchChartStudioWindow : Form
 				SelectResearchSvg();
 				return;
 			}
+			if (string.Equals(messageType, "importTavottoSvg", StringComparison.OrdinalIgnoreCase))
+			{
+				SelectResearchSvg(fromTavotto: true);
+				return;
+			}
+			if (string.Equals(messageType, "checkTavotto", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(messageType, "openCurrentInTavotto", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(messageType, "openFigureInTavotto", StringComparison.OrdinalIgnoreCase))
+			{
+				HandleTavottoHandoff(messageType, ReadString(message, "requestId", string.Empty));
+				return;
+			}
 			if (string.Equals(messageType, "stageResearchSvg", StringComparison.OrdinalIgnoreCase))
 			{
 				StageResearchSvg(
@@ -245,15 +260,16 @@ public sealed class ResearchChartStudioWindow : Form
 		}
 	}
 
-	private void SelectResearchSvg()
+	private void SelectResearchSvg(bool fromTavotto = false)
 	{
 		using (OpenFileDialog dialog = new OpenFileDialog
 		{
-			Title = "选择科研绘图 SVG",
+			Title = fromTavotto ? "选择 Tavotto 导出的 SVG" : "选择科研绘图 SVG",
 			Filter = "SVG 矢量图 (*.svg)|*.svg",
 			CheckFileExists = true,
 			Multiselect = false,
-			RestoreDirectory = true
+			RestoreDirectory = true,
+			InitialDirectory = fromTavotto ? TavottoExportDirectory() : string.Empty
 		})
 		{
 			if (dialog.ShowDialog(this) != DialogResult.OK)
@@ -311,6 +327,81 @@ public sealed class ResearchChartStudioWindow : Form
 			PostSvgCropResult(requestId, false, string.Empty, ex.Message);
 			reportStatus?.Invoke("按裁剪区域转换 SVG 失败：" + ex.Message, true);
 		}
+	}
+
+	private string TavottoExportDirectory()
+	{
+		if (string.IsNullOrWhiteSpace(tavottoProjectDirectory)) return string.Empty;
+		string export = Path.Combine(tavottoProjectDirectory, "tavottofile", "export");
+		return Directory.Exists(export) ? export : tavottoProjectDirectory;
+	}
+
+	private async void HandleTavottoHandoff(string action, string requestId)
+	{
+		if (tavottoBusy)
+		{
+			PostTavottoResult(requestId, action, null, "Tavotto 交接正在进行，请等待当前操作完成。");
+			return;
+		}
+		string figurePath = null;
+		if (string.Equals(action, "openFigureInTavotto", StringComparison.OrdinalIgnoreCase))
+		{
+			using (OpenFileDialog dialog = new OpenFileDialog
+			{
+				Title = "选择交给 Tavotto 的科研图",
+				Filter = "科研图 (*.pdf;*.svg;*.png;*.jpg;*.jpeg;*.eps;*.tif;*.tiff)|*.pdf;*.svg;*.png;*.jpg;*.jpeg;*.eps;*.tif;*.tiff",
+				CheckFileExists = true,
+				Multiselect = false,
+				RestoreDirectory = true
+			})
+			{
+				if (dialog.ShowDialog(this) != DialogResult.OK)
+				{
+					PostTavottoResult(requestId, action, null, string.Empty, canceled: true);
+					return;
+				}
+				figurePath = dialog.FileName;
+			}
+		}
+		tavottoBusy = true;
+		try
+		{
+			ResearchSvgDocument svgSnapshot = selectedSvg;
+			TavottoHandoffResult result = await Task.Run(() =>
+				string.Equals(action, "checkTavotto", StringComparison.OrdinalIgnoreCase) ? TavottoHandoffService.Check() :
+				string.Equals(action, "openCurrentInTavotto", StringComparison.OrdinalIgnoreCase) ? TavottoHandoffService.OpenCurrentSvg(svgSnapshot) :
+				TavottoHandoffService.OpenFigure(figurePath));
+			if (IsDisposed || webView.CoreWebView2 == null) return;
+			if (!string.IsNullOrWhiteSpace(result.Project)) tavottoProjectDirectory = result.Project;
+			PostTavottoResult(requestId, action, result, null);
+		}
+		catch (Exception ex)
+		{
+			AddInLogger.Error("Tavotto 交接失败。", ex);
+			if (!IsDisposed) PostTavottoResult(requestId, action, null, ex.Message);
+		}
+		finally
+		{
+			tavottoBusy = false;
+		}
+	}
+
+	private void PostTavottoResult(string requestId, string action, TavottoHandoffResult result, string error, bool canceled = false)
+	{
+		if (webView.CoreWebView2 == null) return;
+		webView.CoreWebView2.PostWebMessageAsJson(serializer.Serialize(new
+		{
+			type = "tavottoHandoffResult",
+			requestId,
+			action,
+			ok = result != null,
+			canceled,
+			version = result?.Version ?? string.Empty,
+			project = result?.Project ?? string.Empty,
+			launchMode = result?.LaunchMode ?? string.Empty,
+			parameterizable = result?.Parameterizable ?? false,
+			error = error ?? string.Empty
+		}));
 	}
 
 	private void PostSvgSelectionResult(ResearchSvgDocument document, bool canceled, string error)

@@ -234,6 +234,20 @@ Ours,0.887,0.015,B</textarea>
         <summary title="仅在明确点击后使用系统浏览器打开外部工具">外部扩展工具</summary>
         <div id="websiteList" class="website-list" role="list" aria-label="可选外部科研绘图网站"></div>
       </details>
+      <section class="control-section tavotto-section" aria-label="Tavotto 科研图编辑">
+        <div class="section-heading"><h2>Tavotto 科研图编辑</h2><span class="section-meta">外部应用</span></div>
+        <p class="tavotto-help">可把当前 SVG 或已有科研图交给 Tavotto 排版与编辑，再将导出的 SVG 导回预览并插入 PPT。带同目录 Matplotlib 脚本的图可在 Tavotto 中调整图内参数；单独 SVG 仅可作为素材排版。</p>
+        <div class="tavotto-actions">
+          <button id="tavottoCurrentButton" class="compact-button" type="button" disabled title="将已校验的当前 SVG 交给 Tavotto；单独 SVG 只能作为排版素材">当前 SVG 交给 Tavotto</button>
+          <button id="tavottoFigureButton" class="compact-button" type="button" title="选择 PDF、SVG 或其他科研图；若同目录有对应 Matplotlib 脚本，Tavotto 可提供参数编辑">选择科研图交给 Tavotto</button>
+          <button id="tavottoImportButton" class="compact-button" type="button" title="选择 Tavotto 导出的 SVG，经过插件安全校验后预览和插入 PPT">导回 Tavotto SVG</button>
+        </div>
+        <div class="tavotto-links">
+          <button id="tavottoCheckButton" class="compact-button quiet" type="button" title="通过 Tavotto 官方 doctor --json 检查本机命令行安装">检测 Tavotto</button>
+          <button id="tavottoInstallButton" class="compact-button quiet" type="button" title="在浏览器打开 Tavotto 官方 GitHub Releases 页面，安装需自行完成">获取 Tavotto</button>
+        </div>
+        <p id="tavottoStatus" class="tavotto-status" role="status" aria-live="polite">Tavotto 需单独安装。</p>
+      </section>
       <p class="compatibility-note">SVG 插入需要 PowerPoint 2016 或更高版本。可编辑图形依赖当前 Office 的“转换为形状”功能；复杂效果与文字以 PowerPoint 转换结果为准。PowerPoint 2013 可使用任务窗格原生科研绘图入口。</p>
     </aside>
   </main>

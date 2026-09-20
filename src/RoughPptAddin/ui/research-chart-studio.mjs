@@ -129,6 +129,12 @@ const els = {
   insertButton: byId("insertButton"),
   insertEditableButton: byId("insertEditableButton"),
   cropEditableButton: byId("cropEditableButton"),
+  tavottoCurrentButton: byId("tavottoCurrentButton"),
+  tavottoFigureButton: byId("tavottoFigureButton"),
+  tavottoImportButton: byId("tavottoImportButton"),
+  tavottoCheckButton: byId("tavottoCheckButton"),
+  tavottoInstallButton: byId("tavottoInstallButton"),
+  tavottoStatus: byId("tavottoStatus"),
   dataEditor: byId("dataEditor"),
   applyDataButton: byId("applyDataButton"),
   resetDataButton: byId("resetDataButton"),
@@ -218,6 +224,7 @@ const state = {
   pendingStageRequestId: "",
   pendingInsertRequestId: "",
   pendingCropRequestId: "",
+  pendingTavottoRequestId: "",
   svgReady: false,
   previewUrl: "",
   renderTimer: 0,
@@ -1543,6 +1550,19 @@ function setSvgInsertReady(ready) {
   state.svgReady = Boolean(ready);
   els.insertButton.disabled = !ready;
   els.insertEditableButton.disabled = !ready;
+  els.tavottoCurrentButton.disabled = !ready || Boolean(state.pendingTavottoRequestId);
+}
+
+function runTavotto(action, message) {
+  if (state.pendingTavottoRequestId) return;
+  const requestId = `tavotto-${Date.now()}`;
+  if (!postHost({ type: action, requestId })) return;
+  state.pendingTavottoRequestId = requestId;
+  els.tavottoCurrentButton.disabled = true;
+  els.tavottoFigureButton.disabled = true;
+  els.tavottoCheckButton.disabled = true;
+  els.tavottoStatus.textContent = message;
+  els.tavottoStatus.classList.remove("is-error");
 }
 
 function beginSvgInsert(requestId) {
@@ -1811,6 +1831,15 @@ function bindEvents() {
     resetSvgOutput();
     if (postHost({ type: "selectResearchSvg" })) setStatus("正在选择 SVG 文件。");
   });
+  els.tavottoCurrentButton.addEventListener("click", () => runTavotto("openCurrentInTavotto", "正在把当前 SVG 交给 Tavotto。"));
+  els.tavottoFigureButton.addEventListener("click", () => runTavotto("openFigureInTavotto", "正在选择科研图。"));
+  els.tavottoCheckButton.addEventListener("click", () => runTavotto("checkTavotto", "正在检测 Tavotto 命令行。"));
+  els.tavottoImportButton.addEventListener("click", () => {
+    if (postHost({ type: "importTavottoSvg" })) els.tavottoStatus.textContent = "请选择 Tavotto 导出的 SVG。";
+  });
+  els.tavottoInstallButton.addEventListener("click", () => {
+    postHost({ type: "openResearchChartWebsite", siteId: "tavotto" });
+  });
   els.insertButton.addEventListener("click", () => {
     const requestId = `research-svg-insert-${Date.now()}`;
     beginSvgInsert(requestId);
@@ -1860,6 +1889,24 @@ window.chrome?.webview?.addEventListener?.("message", event => {
   if (message.type === "researchSvgSelectionResult") {
     if (message.ok) showImportedSvg(message);
     else if (!message.canceled) setStatus(`SVG 读取失败：${message.error || "未知错误"}`, true);
+  }
+  if (message.type === "tavottoHandoffResult") {
+    if (message.requestId !== state.pendingTavottoRequestId) return;
+    state.pendingTavottoRequestId = "";
+    els.tavottoCurrentButton.disabled = !state.svgReady;
+    els.tavottoFigureButton.disabled = false;
+    els.tavottoCheckButton.disabled = false;
+    if (message.canceled) {
+      els.tavottoStatus.textContent = "已取消选择。";
+    } else if (!message.ok) {
+      els.tavottoStatus.textContent = `Tavotto 交接失败：${message.error || "未知错误"}`;
+      els.tavottoStatus.classList.add("is-error");
+    } else if (message.action === "checkTavotto") {
+      els.tavottoStatus.textContent = `Tavotto ${message.version || ""} 命令行可用。`;
+    } else {
+      const editing = message.parameterizable ? "可在 Tavotto 中调整图内参数" : "可作为素材排版，图内参数不可编辑";
+      els.tavottoStatus.textContent = `已在 Tavotto 打开（${message.launchMode || "界面"}）；${editing}。完成后导出 SVG，再点击“导回 Tavotto SVG”。`;
+    }
   }
   if (message.type === "researchSvgInsertResult") {
     if (message.requestId !== state.pendingInsertRequestId) return;

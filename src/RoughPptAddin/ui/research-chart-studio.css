@@ -84,6 +84,11 @@ h1 { margin: 0; font-size: 19px; line-height: 1.2; }
 .style-panel { border-left: 1px solid var(--line); }
 .control-section { margin: 0 0 14px; padding: 0 0 14px; border-bottom: 1px solid var(--line); }
 .control-section:last-child { margin-bottom: 0; }
+.tavotto-help, .tavotto-status { margin: 0 0 9px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.tavotto-actions, .tavotto-links { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.tavotto-actions .compact-button { flex: 1 1 120px; white-space: normal; text-align: center; }
+.tavotto-status { margin-bottom: 0; }
+.tavotto-status.is-error { color: var(--danger); }
 .section-heading { min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .section-heading h2 { margin: 0; font-size: 13px; }
 .section-meta, .source-label, .muted { min-width: 0; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
