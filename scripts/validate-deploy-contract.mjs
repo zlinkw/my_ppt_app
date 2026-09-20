@@ -68,6 +68,9 @@ for (const needle of ["ExtractToDirectory($converterWheel", "tavotto-vector-conv
 for (const needle of ["prepare-tavotto-bundle.ps1", '"publish\\third-party\\Tavotto\\Tavotto.exe"', "bundledTavotto = "]) {
   requireIncludes(preservingPackage, needle, `Release package must include pinned Tavotto: ${needle}`);
 }
+for (const needle of ["Resolve-SignTool", "Get-AuthenticodeSignature", "SignedCms", "verify-release-signature.ps1"]) {
+  requireIncludes(preservingPackage, needle, `Release signing is incomplete: ${needle}`);
+}
 for (const needle of ["BundledRoot()", "AssertBundledVersion", 'start.EnvironmentVariables["TAVOTTO_DESKTOP_APP"]']) {
   requireIncludes(tavottoHandoff, needle, `Tavotto handoff must prefer bundled runtime: ${needle}`);
 }

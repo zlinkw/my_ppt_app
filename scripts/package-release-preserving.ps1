@@ -122,6 +122,18 @@ function Resolve-Mage {
     throw "Mage.exe was not found. Install the .NET Framework 4.8 Developer Pack."
 }
 
+function Resolve-SignTool {
+    $command = Get-Command signtool.exe -ErrorAction SilentlyContinue
+    if ($command) { return $command.Source }
+    $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
+    $candidate = Get-ChildItem -LiteralPath $sdkBin -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+        Sort-Object FullName -Descending |
+        Select-Object -First 1 -ExpandProperty FullName
+    if (-not $candidate) { throw 'Windows SDK SignTool is required to sign the MSI and EXE.' }
+    return $candidate
+}
+
 $commit = (& git rev-parse HEAD).Trim()
 $shortCommit = (& git rev-parse --short=8 HEAD).Trim()
 $commitCountText = (& git rev-list --count HEAD).Trim()
@@ -398,6 +410,18 @@ RoughPptAddin-Windows11.zip=
 Invoke-Checked { & "$env:WINDIR\System32\iexpress.exe" /N /Q $sedPath } "IExpress"
 Wait-ForFileReady $exePath
 
+$signTool = Resolve-SignTool
+$timestampUrl = 'http://timestamp.digicert.com'
+foreach ($path in @($msiPath, $exePath)) {
+    Invoke-Checked {
+        & $signTool sign /fd SHA256 /sha1 $signingCertificate.Thumbprint /s My /tr $timestampUrl /td SHA256 /d 'Rough PPT Add-in' $path
+    } "SignTool sign $path"
+    $signature = Get-AuthenticodeSignature -LiteralPath $path
+    if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Thumbprint -ne $signingCertificate.Thumbprint) {
+        throw "Installer signature verification failed: $path"
+    }
+}
+
 foreach ($path in @($zipPath, $msiPath, $exePath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or (Get-Item -LiteralPath $path).Length -le 0) {
         throw "Release artifact missing or empty: $path"
@@ -434,6 +458,13 @@ $manifest = [ordered]@{
     generatedAt = [DateTime]::UtcNow.ToString("o")
     gitCommit = $commit
     installerProductVersion = $installerProductVersion
+    signing = [ordered]@{
+        subject = $signingCertificate.Subject
+        thumbprint = $signingCertificate.Thumbprint
+        scope = 'CurrentUser self-signed development certificate'
+        timestampUrl = $timestampUrl
+        signedArtifacts = @('msi', 'exe')
+    }
     bundledTavotto = (Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $tavottoBundle "bundle.json") | ConvertFrom-Json)
     artifacts = [ordered]@{
         portableZip = New-FileManifest $zipPath
@@ -443,12 +474,31 @@ $manifest = [ordered]@{
 }
 $manifestPath = Join-Path $releasePath "installer-manifest.json"
 [IO.File]::WriteAllText($manifestPath, ($manifest | ConvertTo-Json -Depth 5), [Text.UTF8Encoding]::new($false))
+$manifestBytes = [IO.File]::ReadAllBytes($manifestPath)
+Add-Type -AssemblyName System.Security.Cryptography.Pkcs
+$contentInfo = [System.Security.Cryptography.Pkcs.ContentInfo]::new($manifestBytes)
+$cms = [System.Security.Cryptography.Pkcs.SignedCms]::new($contentInfo, $true)
+$cmsSigner = [System.Security.Cryptography.Pkcs.CmsSigner]::new($signingCertificate)
+$cmsSigner.DigestAlgorithm = [System.Security.Cryptography.Oid]::new('2.16.840.1.101.3.4.2.1')
+$cms.ComputeSignature($cmsSigner)
+$manifestSignaturePath = "$manifestPath.p7s"
+[IO.File]::WriteAllBytes($manifestSignaturePath, $cms.Encode())
+$verification = [System.Security.Cryptography.Pkcs.SignedCms]::new($contentInfo, $true)
+$verification.Decode([IO.File]::ReadAllBytes($manifestSignaturePath))
+$verification.CheckSignature($true)
+if ($verification.SignerInfos.Count -ne 1 -or $verification.SignerInfos[0].Certificate.Thumbprint -ne $signingCertificate.Thumbprint) {
+    throw 'Installer manifest signature verification failed.'
+}
+Invoke-Checked {
+    pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\verify-release-signature.ps1 -ReleaseRoot $releasePath
+} 'signed release verification'
 
 Write-Host "ReleaseRoot=$releasePath"
 Write-Host "ZIP=$zipPath"
 Write-Host "MSI=$msiPath"
 Write-Host "EXE=$exePath"
 Write-Host "Manifest=$manifestPath"
+Write-Host "ManifestSignature=$manifestSignaturePath"
 }
 finally {
     [IO.File]::WriteAllBytes($buildInfoSourcePath, $originalBuildInfoBytes)
