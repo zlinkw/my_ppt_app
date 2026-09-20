@@ -1831,11 +1831,11 @@ function bindEvents() {
     resetSvgOutput();
     if (postHost({ type: "selectResearchSvg" })) setStatus("正在选择 SVG 文件。");
   });
-  els.tavottoCurrentButton.addEventListener("click", () => runTavotto("openCurrentInTavotto", "正在把当前 SVG 交给 Tavotto。"));
+  els.tavottoCurrentButton.addEventListener("click", () => runTavotto("openCurrentInTavotto", "正在把当前 SVG 转为矢量 PDF 并交给 Tavotto。"));
   els.tavottoFigureButton.addEventListener("click", () => runTavotto("openFigureInTavotto", "正在选择科研图。"));
   els.tavottoCheckButton.addEventListener("click", () => runTavotto("checkTavotto", "正在检测 Tavotto 命令行。"));
   els.tavottoImportButton.addEventListener("click", () => {
-    if (postHost({ type: "importTavottoSvg" })) els.tavottoStatus.textContent = "请选择 Tavotto 导出的 SVG。";
+    if (postHost({ type: "importTavottoSvg" })) els.tavottoStatus.textContent = "请选择 Tavotto 导出的 PDF。";
   });
   els.tavottoInstallButton.addEventListener("click", () => {
     postHost({ type: "openResearchChartWebsite", siteId: "tavotto" });
@@ -1905,7 +1905,7 @@ window.chrome?.webview?.addEventListener?.("message", event => {
       els.tavottoStatus.textContent = `Tavotto ${message.version || ""} 命令行可用。`;
     } else {
       const editing = message.parameterizable ? "可在 Tavotto 中调整图内参数" : "可作为素材排版，图内参数不可编辑";
-      els.tavottoStatus.textContent = `已在 Tavotto 打开（${message.launchMode || "界面"}）；${editing}。完成后导出 SVG，再点击“导回 Tavotto SVG”。`;
+      els.tavottoStatus.textContent = `已在 Tavotto 打开（${message.launchMode || "界面"}）；${editing}。完成后导出 PDF，再点击“导回 Tavotto PDF”。`;
     }
   }
   if (message.type === "researchSvgInsertResult") {

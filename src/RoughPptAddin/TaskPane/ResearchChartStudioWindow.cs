@@ -264,8 +264,8 @@ public sealed class ResearchChartStudioWindow : Form
 	{
 		using (OpenFileDialog dialog = new OpenFileDialog
 		{
-			Title = fromTavotto ? "选择 Tavotto 导出的 SVG" : "选择科研绘图 SVG",
-			Filter = "SVG 矢量图 (*.svg)|*.svg",
+			Title = fromTavotto ? "选择 Tavotto 导出的 PDF 或 SVG" : "选择科研绘图 SVG",
+			Filter = fromTavotto ? "Tavotto 矢量图 (*.pdf;*.svg)|*.pdf;*.svg" : "SVG 矢量图 (*.svg)|*.svg",
 			CheckFileExists = true,
 			Multiselect = false,
 			RestoreDirectory = true,
@@ -279,7 +279,10 @@ public sealed class ResearchChartStudioWindow : Form
 			}
 			try
 			{
-				selectedSvg = ResearchChartStudioService.LoadSvg(dialog.FileName);
+				string svgPath = fromTavotto && string.Equals(Path.GetExtension(dialog.FileName), ".pdf", StringComparison.OrdinalIgnoreCase)
+					? TavottoHandoffService.ConvertPdfToSvg(dialog.FileName)
+					: dialog.FileName;
+				selectedSvg = ResearchChartStudioService.LoadSvg(svgPath);
 				PostSvgSelectionResult(selectedSvg, canceled: false, null);
 				reportStatus?.Invoke("科研 SVG 已通过安全校验。", false);
 			}

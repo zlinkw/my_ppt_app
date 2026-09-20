@@ -87,6 +87,23 @@ public static class TavottoHandoffService
 		{
 			throw new InvalidOperationException("请选择已有的 PDF、SVG 或 Tavotto 支持的图像文件。");
 		}
+		if (string.Equals(Path.GetExtension(fullPath), ".svg", StringComparison.OrdinalIgnoreCase))
+		{
+			if (new FileInfo(fullPath).Length > ResearchChartStudioService.MaxSvgBytes)
+			{
+				throw new InvalidDataException("SVG 超过 4 MB，无法交给 Tavotto。");
+			}
+			string project = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "RoughPptAddin", "Tavotto");
+			Directory.CreateDirectory(project);
+			using (SHA256 sha = SHA256.Create())
+			using (FileStream source = File.OpenRead(fullPath))
+			{
+				string hash = BitConverter.ToString(sha.ComputeHash(source)).Replace("-", string.Empty).Substring(0, 12).ToLowerInvariant();
+				string pdfPath = Path.Combine(project, "research-chart-" + hash + ".pdf");
+				RunVectorConverter("svg-to-pdf", fullPath, pdfPath);
+				fullPath = pdfPath;
+			}
+		}
 		string cli = ResolveCli();
 		Dictionary<string, object> health = RunJson(cli, 15000, "doctor", "--json");
 		AssertBundledVersion(cli, health);
@@ -101,6 +118,64 @@ public static class TavottoHandoffService
 			LaunchMode = ReadString(launch, "mode"),
 			Parameterizable = ReadBool(registry, "parameterizable")
 		};
+	}
+
+	public static string ConvertPdfToSvg(string pdfPath)
+	{
+		string fullPath = Path.GetFullPath(pdfPath ?? string.Empty);
+		if (!string.Equals(Path.GetExtension(fullPath), ".pdf", StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath))
+		{
+			throw new InvalidOperationException("请选择 Tavotto 导出的 PDF 文件。");
+		}
+		string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RoughPptAddin", "ResearchSvg", "Tavotto");
+		Directory.CreateDirectory(directory);
+		using (SHA256 sha = SHA256.Create())
+		using (FileStream source = File.OpenRead(fullPath))
+		{
+			string hash = BitConverter.ToString(sha.ComputeHash(source)).Replace("-", string.Empty).Substring(0, 12).ToLowerInvariant();
+			string output = Path.Combine(directory, "tavotto-" + hash + ".svg");
+			RunVectorConverter("pdf-to-svg", fullPath, output);
+			return output;
+		}
+	}
+
+	private static void RunVectorConverter(string mode, string source, string destination)
+	{
+		string root = BundledRoot();
+		string python = Path.Combine(root, "sidecar", "Tavotto", "_internal", "runtime", "python.exe");
+		string script = Path.Combine(root, "converter", "tavotto-vector-converter.py");
+		if (!File.Exists(python) || !File.Exists(script))
+		{
+			throw new InvalidOperationException("插件内置 Tavotto 矢量转换组件不完整，请重新安装插件。");
+		}
+		ProcessStartInfo start = new ProcessStartInfo
+		{
+			FileName = python,
+			Arguments = string.Join(" ", new[] { script, mode, source, destination }.Select(QuoteArgument)),
+			UseShellExecute = false,
+			RedirectStandardError = true,
+			CreateNoWindow = true,
+			WindowStyle = ProcessWindowStyle.Hidden,
+			StandardErrorEncoding = Encoding.UTF8
+		};
+		start.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
+		StringBuilder error = new StringBuilder();
+		using (Process process = new Process { StartInfo = start })
+		{
+			process.ErrorDataReceived += (sender, e) => AppendBounded(error, e.Data);
+			process.Start();
+			process.BeginErrorReadLine();
+			if (!process.WaitForExit(30000))
+			{
+				try { process.Kill(); } catch { }
+				throw new TimeoutException("Tavotto 矢量转换超时。");
+			}
+			process.WaitForExit();
+			if (process.ExitCode != 0 || !File.Exists(destination))
+			{
+				throw new InvalidDataException("Tavotto 矢量转换失败：" + error.ToString().Trim());
+			}
+		}
 	}
 
 	private static string ResolveCli()

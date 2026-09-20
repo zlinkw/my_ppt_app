@@ -236,11 +236,11 @@ Ours,0.887,0.015,B</textarea>
       </details>
       <section class="control-section tavotto-section" aria-label="Tavotto 科研图编辑">
         <div class="section-heading"><h2>Tavotto 科研图编辑</h2><span class="section-meta">外部应用</span></div>
-        <p class="tavotto-help">可把当前 SVG 或已有科研图交给 Tavotto 排版与编辑，再将导出的 SVG 导回预览并插入 PPT。带同目录 Matplotlib 脚本的图可在 Tavotto 中调整图内参数；单独 SVG 仅可作为素材排版。</p>
+        <p class="tavotto-help">当前 SVG 会先转成矢量 PDF，再交给 Tavotto 排版。完成后导出 PDF，导回时转成 SVG 供预览和插入 PPT。带同目录 Matplotlib 脚本的图可调整图内参数；单独 SVG 仅可作为素材排版。</p>
         <div class="tavotto-actions">
-          <button id="tavottoCurrentButton" class="compact-button" type="button" disabled title="将已校验的当前 SVG 交给 Tavotto；单独 SVG 只能作为排版素材">当前 SVG 交给 Tavotto</button>
-          <button id="tavottoFigureButton" class="compact-button" type="button" title="选择 PDF、SVG 或其他科研图；若同目录有对应 Matplotlib 脚本，Tavotto 可提供参数编辑">选择科研图交给 Tavotto</button>
-          <button id="tavottoImportButton" class="compact-button" type="button" title="选择 Tavotto 导出的 SVG，经过插件安全校验后预览和插入 PPT">导回 Tavotto SVG</button>
+          <button id="tavottoCurrentButton" class="compact-button" type="button" disabled title="将已校验的当前 SVG 转成矢量 PDF 交给 Tavotto；单独 SVG 只能作为排版素材">当前 SVG 交给 Tavotto</button>
+          <button id="tavottoFigureButton" class="compact-button" type="button" title="选择 PDF、SVG 或其他科研图；SVG 自动转成矢量 PDF，Matplotlib 脚本图可编辑图内参数">选择科研图交给 Tavotto</button>
+          <button id="tavottoImportButton" class="compact-button" type="button" title="选择 Tavotto 导出的 PDF，转为 SVG 并安全校验后预览和插入 PPT；也可选择 SVG">导回 Tavotto PDF</button>
         </div>
         <div class="tavotto-links">
           <button id="tavottoCheckButton" class="compact-button quiet" type="button" title="通过 Tavotto 官方 doctor --json 检查本机命令行安装">检测 Tavotto</button>

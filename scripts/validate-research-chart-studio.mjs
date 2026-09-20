@@ -199,8 +199,13 @@ for (const action of ["checkTavotto", "openCurrentInTavotto", "openFigureInTavot
 for (const snippet of ['"doctor", "--json"', '"open", fullPath, "--json"', '"parameterizable"', '"protocol"', '"TAVOTTO_CLI"']) {
   if (!tavottoService.includes(snippet)) throw new Error(`Tavotto CLI v1 合同缺失：${snippet}`);
 }
-if (!windowHost.includes("ResearchChartStudioService.LoadSvg(dialog.FileName)") || !windowHost.includes("PostSvgSelectionResult(selectedSvg")) {
-  throw new Error("Tavotto SVG 导回必须复用现有校验和预览链路。");
+if (!windowHost.includes("TavottoHandoffService.ConvertPdfToSvg(dialog.FileName)") ||
+    !windowHost.includes("ResearchChartStudioService.LoadSvg(svgPath)") ||
+    !windowHost.includes("PostSvgSelectionResult(selectedSvg")) {
+  throw new Error("Tavotto PDF 导回必须转换为 SVG 并复用现有校验和预览链路。");
+}
+if (!tavottoService.includes('RunVectorConverter("svg-to-pdf"') || !html.includes("导回 Tavotto PDF")) {
+  throw new Error("Tavotto SVG 转 PDF 交接或 PDF 导回入口缺失。");
 }
 if (!windowHost.includes('messageType, "insertEditableResearchSvg"') || !windowHost.includes('insertEditableSvg(selectedSvg)')) throw new Error("可编辑 SVG 宿主接线缺失。");
 if (!windowHost.includes('messageType, "convertCroppedResearchSvg"') || !windowHost.includes('convertCroppedSvg()')) throw new Error("裁剪 SVG 宿主接线缺失。");
