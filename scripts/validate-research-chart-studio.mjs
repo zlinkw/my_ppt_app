@@ -7,6 +7,7 @@ const app = read("src/RoughPptAddin/ui/research-chart-studio.mjs");
 const taskPaneApp = read("src/RoughPptAddin/ui/app.mjs");
 const windowHost = read("src/RoughPptAddin/TaskPane/ResearchChartStudioWindow.cs");
 const studioService = read("src/RoughPptAddin/Services/ResearchChartStudioService.cs");
+const tavottoService = read("src/RoughPptAddin/Services/TavottoHandoffService.cs");
 const controller = read("src/RoughPptAddin/Services/RoughAddInController.cs");
 const taskPane = read("src/RoughPptAddin/TaskPane/RoughTaskPaneControl.cs");
 const bridge = read("src/RoughPptAddin/Services/RoughJsBridge.cs");
@@ -185,6 +186,21 @@ if (!taskPane.includes('case "openResearchChartStudio":') || taskPane.includes('
 
 for (const snippet of ["ResearchChartStudioWindow", "research-chart-studio.html", "WebMessageReceived", "StageResearchSvg", "SelectResearchSvg", "InsertResearchSvg", "PostSvgStageResult", "PostSvgSelectionResult", "PostSvgInsertResult", "OpenResearchChartWebsite", "PostNativeMaximizeResult", "researchChartFullscreenResult", "FormBorderStyle.Sizable", "base.MinimizeBox = true;", "base.ShowInTaskbar = true;"]) {
   if (!windowHost.includes(snippet)) throw new Error(`科研绘图工作台宿主合同缺少：${snippet}`);
+}
+
+for (const id of ["tavottoCurrentButton", "tavottoFigureButton", "tavottoImportButton", "tavottoCheckButton", "tavottoInstallButton", "tavottoStatus"]) {
+  if (!html.includes(`id="${id}"`) || !app.includes(`byId("${id}")`)) throw new Error(`Tavotto 工作区入口缺失：${id}`);
+}
+for (const action of ["checkTavotto", "openCurrentInTavotto", "openFigureInTavotto", "importTavottoSvg"]) {
+  if (!app.includes(`"${action}"`) || !windowHost.includes(`"${action}"`) || !bridgeContract.includes(`${action}: "${action}"`)) {
+    throw new Error(`Tavotto 宿主消息未闭环：${action}`);
+  }
+}
+for (const snippet of ['"doctor", "--json"', '"open", fullPath, "--json"', '"parameterizable"', '"protocol"', '"TAVOTTO_CLI"']) {
+  if (!tavottoService.includes(snippet)) throw new Error(`Tavotto CLI v1 合同缺失：${snippet}`);
+}
+if (!windowHost.includes("ResearchChartStudioService.LoadSvg(dialog.FileName)") || !windowHost.includes("PostSvgSelectionResult(selectedSvg")) {
+  throw new Error("Tavotto SVG 导回必须复用现有校验和预览链路。");
 }
 if (!windowHost.includes('messageType, "insertEditableResearchSvg"') || !windowHost.includes('insertEditableSvg(selectedSvg)')) throw new Error("可编辑 SVG 宿主接线缺失。");
 if (!windowHost.includes('messageType, "convertCroppedResearchSvg"') || !windowHost.includes('convertCroppedSvg()')) throw new Error("裁剪 SVG 宿主接线缺失。");
