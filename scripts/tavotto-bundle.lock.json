@@ -3,6 +3,19 @@
   "tag": "v0.15.0",
   "commit": "eb1404942ad60a776403fd4a9d3c85459bc5a8b0",
   "protocol": 1,
+  "converter": {
+    "version": "1.28.2",
+    "wheel": {
+      "name": "pymupdf-1.28.2-cp310-abi3-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/4a/61/d563bbccba262f9dd6d2d35ccb72593648184d886188efb12d9ce8f34dd6/pymupdf-1.28.2-cp310-abi3-win_amd64.whl",
+      "sha256": "ebd244918798502d7b4504c90410d1711a4d7675a32584ca30f1bab419ecbffe"
+    },
+    "source": {
+      "name": "pymupdf-1.28.2.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/a3/fb/b6761fa2d5266f2cdb24c3b91f4023070ab7848381417678e7a289a1d52a/pymupdf-1.28.2.tar.gz",
+      "sha256": "5e0be7908a715aa20333caddd73f1d6f01e4cd0c26e869fa2dd0b7f344da2249"
+    }
+  },
   "assets": [
     {
       "name": "Tavotto-0.15.0-Windows-Setup.exe",

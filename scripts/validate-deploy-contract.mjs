@@ -55,8 +55,15 @@ if (tavottoLock.version !== "0.15.0" || tavottoLock.protocol !== 1 || tavottoLoc
 for (const asset of tavottoLock.assets ?? []) {
   if (!/^[a-f0-9]{64}$/.test(asset.sha256) || !asset.url.startsWith("https://")) violations.push(`Tavotto asset is not pinned: ${asset.name}`);
 }
+if (tavottoLock.converter?.version !== "1.28.2") violations.push("Tavotto vector converter version must be pinned");
+for (const asset of [tavottoLock.converter?.wheel, tavottoLock.converter?.source]) {
+  if (!asset || !/^[a-f0-9]{64}$/.test(asset.sha256) || !asset.url.startsWith("https://")) violations.push("Tavotto vector converter asset is not pinned");
+}
 for (const needle of ["Get-FileHash", "Pinned asset SHA256 mismatch", "tavotto-cli.exe", "doctor --json", "source\\tavotto-v0.15.0-full-source.tar.gz", "LICENSE"]) {
   requireIncludes(tavottoPreparation, needle, `Tavotto bundle preparation missing: ${needle}`);
+}
+for (const needle of ["ExtractToDirectory($converterWheel", "tavotto-vector-converter.py", "source\\pymupdf-1.28.2.tar.gz"]) {
+  requireIncludes(tavottoPreparation, needle, `Tavotto vector converter preparation missing: ${needle}`);
 }
 for (const needle of ["prepare-tavotto-bundle.ps1", '"publish\\third-party\\Tavotto\\Tavotto.exe"', "bundledTavotto = "]) {
   requireIncludes(preservingPackage, needle, `Release package must include pinned Tavotto: ${needle}`);

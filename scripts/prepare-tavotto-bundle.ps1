@@ -24,6 +24,10 @@ function Get-PinnedAsset([object]$Asset, [string]$Directory) {
 $setup = Get-PinnedAsset $lock.assets[0] $cache
 $source = Get-PinnedAsset $lock.assets[1] $cache
 $license = Get-PinnedAsset $lock.assets[2] $cache
+$converterCache = Join-Path $cache 'converter-cache'
+[IO.Directory]::CreateDirectory($converterCache) | Out-Null
+$converterWheel = Get-PinnedAsset $lock.converter.wheel $converterCache
+$converterSource = Get-PinnedAsset $lock.converter.source $converterCache
 $bootstrap = Get-PinnedAsset $lock.extractor.bootstrap $extractorCache
 $extractorPackage = Get-PinnedAsset $lock.extractor.package $extractorCache
 $extractorBin = Join-Path $extractorCache 'full'
@@ -64,6 +68,17 @@ finally {
 [IO.Directory]::CreateDirectory((Join-Path $destinationPath 'source')) | Out-Null
 Copy-Item -LiteralPath $source -Destination (Join-Path $destinationPath 'source\tavotto-v0.15.0-full-source.tar.gz')
 Copy-Item -LiteralPath $license -Destination (Join-Path $destinationPath 'source\LICENSE')
+$converterRoot = Join-Path $destinationPath 'converter'
+$converterPackages = Join-Path $converterRoot 'site-packages'
+[IO.Directory]::CreateDirectory($converterPackages) | Out-Null
+[IO.Compression.ZipFile]::ExtractToDirectory($converterWheel, $converterPackages)
+$converterScript = Join-Path $converterRoot 'tavotto-vector-converter.py'
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'tavotto-vector-converter.py') -Destination $converterScript
+Copy-Item -LiteralPath $converterSource -Destination (Join-Path $destinationPath 'source\pymupdf-1.28.2.tar.gz')
+$runtimePython = Join-Path $destinationPath 'sidecar\Tavotto\_internal\runtime\python.exe'
+if (-not (Test-Path -LiteralPath $runtimePython -PathType Leaf)) { throw 'Tavotto bundled Python runtime is missing.' }
+& $runtimePython $converterScript --help | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Bundled Tavotto vector converter is unavailable.' }
 $bundleInfo = [ordered]@{
     version = $lock.version
     tag = $lock.tag
@@ -75,6 +90,11 @@ $bundleInfo = [ordered]@{
     sourceSha256 = $lock.assets[1].sha256
     sourceUrl = $lock.assets[1].url
     license = 'AGPL-3.0-only'
+    converterVersion = $lock.converter.version
+    converterWheelSha256 = $lock.converter.wheel.sha256
+    converterSourceSha256 = $lock.converter.source.sha256
+    converterScriptSha256 = (Get-FileHash -LiteralPath $converterScript -Algorithm SHA256).Hash.ToLowerInvariant()
+    converterNativeSha256 = (Get-FileHash -LiteralPath (Join-Path $converterPackages 'pymupdf\_mupdf.pyd') -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 [IO.File]::WriteAllText((Join-Path $destinationPath 'bundle.json'), ($bundleInfo | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
 Write-Host "TavottoBundle=$destinationPath;Version=$($lock.version)"

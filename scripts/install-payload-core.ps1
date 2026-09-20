@@ -131,14 +131,18 @@ function Assert-RoughPublishPayload {
             throw 'Tavotto bundle metadata is missing.'
         }
         $bundle = Get-Content -Raw -Encoding UTF8 -LiteralPath $bundlePath | ConvertFrom-Json
-        if ($bundle.version -ne '0.15.0' -or $bundle.protocol -ne 1) {
+        if ($bundle.version -ne '0.15.0' -or $bundle.protocol -ne 1 -or
+            $bundle.converterVersion -ne '1.28.2') {
             throw 'Tavotto bundle version or protocol mismatch.'
         }
         foreach ($entry in @(
             @{ path = 'Tavotto.exe'; hash = $bundle.desktopSha256 },
             @{ path = 'sidecar\Tavotto\tavotto-cli.exe'; hash = $bundle.cliSha256 },
             @{ path = 'source\tavotto-v0.15.0-full-source.tar.gz'; hash = $bundle.sourceSha256 },
-            @{ path = 'source\LICENSE'; hash = '0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0' }
+            @{ path = 'source\LICENSE'; hash = '0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0' },
+            @{ path = 'source\pymupdf-1.28.2.tar.gz'; hash = $bundle.converterSourceSha256 },
+            @{ path = 'converter\tavotto-vector-converter.py'; hash = $bundle.converterScriptSha256 },
+            @{ path = 'converter\site-packages\pymupdf\_mupdf.pyd'; hash = $bundle.converterNativeSha256 }
         )) {
             $file = Join-Path $tavottoRoot $entry.path
             if (-not (Test-Path -LiteralPath $file -PathType Leaf) -or
