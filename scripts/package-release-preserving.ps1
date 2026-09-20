@@ -24,7 +24,7 @@ function XmlEscape([string]$Value) {
 }
 
 function Wait-ForFileReady {
-    param([string]$Path, [int]$TimeoutSeconds = 90)
+    param([string]$Path, [int]$TimeoutSeconds = 900)
     $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
     $lastLength = -1L
     $stableChecks = 0
