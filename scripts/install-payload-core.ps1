@@ -123,6 +123,30 @@ function Assert-RoughPublishPayload {
             throw "安装本体包含空文件：$relativePath"
         }
     }
+
+    $tavottoRoot = Join-Path $PublishDirectory 'third-party\Tavotto'
+    $bundlePath = Join-Path $tavottoRoot 'bundle.json'
+    if (Test-Path -LiteralPath $tavottoRoot -PathType Container) {
+        if (-not (Test-Path -LiteralPath $bundlePath -PathType Leaf)) {
+            throw 'Tavotto bundle metadata is missing.'
+        }
+        $bundle = Get-Content -Raw -Encoding UTF8 -LiteralPath $bundlePath | ConvertFrom-Json
+        if ($bundle.version -ne '0.15.0' -or $bundle.protocol -ne 1) {
+            throw 'Tavotto bundle version or protocol mismatch.'
+        }
+        foreach ($entry in @(
+            @{ path = 'Tavotto.exe'; hash = $bundle.desktopSha256 },
+            @{ path = 'sidecar\Tavotto\tavotto-cli.exe'; hash = $bundle.cliSha256 },
+            @{ path = 'source\tavotto-v0.15.0-full-source.tar.gz'; hash = $bundle.sourceSha256 },
+            @{ path = 'source\LICENSE'; hash = '0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0' }
+        )) {
+            $file = Join-Path $tavottoRoot $entry.path
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf) -or
+                -not [string]::Equals((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash, $entry.hash, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Tavotto bundle is incomplete or altered: $($entry.path)"
+            }
+        }
+    }
 }
 
 function Restore-RoughInterruptedPayloadTransaction {

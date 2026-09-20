@@ -266,6 +266,11 @@ Invoke-Checked {
 Invoke-Checked { & $mage -ver $applicationManifestPath } "VSTO application manifest verification"
 Invoke-Checked { & $mage -ver $vstoPath } "VSTO deployment manifest verification"
 
+$tavottoBundle = Join-Path $publishRoot "third-party\Tavotto"
+Invoke-Checked {
+    pwsh -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-tavotto-bundle.ps1 -Destination $tavottoBundle
+} "pinned Tavotto bundle"
+
 Copy-Item -Path (Join-Path $publishRoot "*") -Destination $portablePublish -Recurse
 Copy-Item -Path scripts\install.ps1,scripts\install-payload-core.ps1,scripts\uninstall.ps1,scripts\uninstall-completely.ps1,scripts\diagnose.ps1,scripts\install-prereqs.ps1 -Destination $portableScripts
 Copy-Item -Path README.md -Destination $portableRoot
@@ -405,6 +410,11 @@ $requiredPortable = @(
     "Diagnose-RoughPptAddin.cmd",
     "publish\RoughPptAddin.vsto",
     "publish\RoughPptAddin.dll",
+    "publish\third-party\Tavotto\bundle.json",
+    "publish\third-party\Tavotto\Tavotto.exe",
+    "publish\third-party\Tavotto\sidecar\Tavotto\tavotto-cli.exe",
+    "publish\third-party\Tavotto\source\LICENSE",
+    "publish\third-party\Tavotto\source\tavotto-v0.15.0-full-source.tar.gz",
     "publish\ui\index.html",
     "scripts\install.ps1",
     "scripts\uninstall.ps1",
@@ -421,6 +431,7 @@ $manifest = [ordered]@{
     generatedAt = [DateTime]::UtcNow.ToString("o")
     gitCommit = $commit
     installerProductVersion = $installerProductVersion
+    bundledTavotto = (Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $tavottoBundle "bundle.json") | ConvertFrom-Json)
     artifacts = [ordered]@{
         portableZip = New-FileManifest $zipPath
         msi = New-FileManifest $msiPath

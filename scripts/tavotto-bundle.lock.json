@@ -1,0 +1,36 @@
+{
+  "version": "0.15.0",
+  "tag": "v0.15.0",
+  "commit": "eb1404942ad60a776403fd4a9d3c85459bc5a8b0",
+  "protocol": 1,
+  "assets": [
+    {
+      "name": "Tavotto-0.15.0-Windows-Setup.exe",
+      "url": "https://github.com/Tavotto/Tavotto/releases/download/v0.15.0/Tavotto-0.15.0-Windows-Setup.exe",
+      "sha256": "9f75b6ff204bdd6cc3de4d2b919ef7b16bb99bc9e9fbb7cd24a724c1aa1cbdda"
+    },
+    {
+      "name": "tavotto-v0.15.0-full-source.tar.gz",
+      "url": "https://codeload.github.com/Tavotto/Tavotto/tar.gz/eb1404942ad60a776403fd4a9d3c85459bc5a8b0",
+      "sha256": "e0cc355ab2418fd72db75b2e4ee7aa300dd8a52834fa1f9658655ba67a8b3a1c"
+    },
+    {
+      "name": "LICENSE",
+      "url": "https://github.com/Tavotto/Tavotto/releases/download/v0.15.0/LICENSE",
+      "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+    }
+  ],
+  "extractor": {
+    "version": "26.03",
+    "bootstrap": {
+      "name": "7zr.exe",
+      "url": "https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe",
+      "sha256": "ad4c82fadcbdf93c03b4fc440f300509c7d60c5c2f4d183e35d9d70d6957037d"
+    },
+    "package": {
+      "name": "7z2603-x64.exe",
+      "url": "https://github.com/ip7z/7zip/releases/download/26.03/7z2603-x64.exe",
+      "sha256": "0859c524b8a63551848f0c246abddcb1d0b7b656b0fbfe879f8d85e61a9e6edd"
+    }
+  }
+}

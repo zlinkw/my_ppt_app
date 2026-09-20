@@ -82,6 +82,7 @@
 7. B660（已完成）：本机构建与打包调用改为 pwsh；目录生成结果语义相同时保留原文件，Ribbon 验证从构建输出加载 stdole。外部 Zotero 仓库当前图库版本为 44，兼容校验改为检查冻结协议，不依赖旧版本号和外部测试文件路径。`npm test`、UI 构建、Release 构建及 Ribbon 图标验证通过；仅有既有 stdole 版本冲突告警。安装包生成和本机安装按用户本次要求执行。
 8. B661（已完成）：安装脚本的 MSI 错误提示含 PowerShell 7 无法解析的 `` `uXXXX `` 字符串。改用现有 `U` 函数支持的 `\uXXXX`，保持提示语义和安装流程；语法及安装合同验证通过。
 9. B662（已完成）：科研绘图工作区增加 Tavotto 官方 CLI v1 的检测、当前 SVG 与已有科研图交接、SVG 导回入口，复用既有 SVG 安全校验与 PowerPoint 插入链路。保留 Vega、原生绘图和原 SVG 入口；未打包、未安装。完整 `npm test`、`npm run build:ui`、Release 编译、科研绘图合同与编码检查通过；伪 CLI 验证了 `doctor/open --json`、中文及空格和 `&` 路径传递。代码提交 `4b3a894` 已同步 `origin/master`。本机未安装 Tavotto，真实桌面编辑效果仍需安装后核对。
+10. B663（进行中）：固定 Tavotto v0.15.0 随 Windows 安装包交付。范围为发布锁定清单、上游 SHA256 校验、桌面二进制提取、AGPL 许可证和完整源码归档、安装载荷校验、插件优先使用内置 CLI、用户说明及部署验证；保持现有科研绘图和外部 CLI 回退。不得安装或关闭本机 PowerPoint。验证覆盖上游真实 CLI `doctor/open --no-launch`、`npm test`、UI 构建、Release 编译和 ZIP/MSI/EXE 载荷核对；每小批最多 8 个文件。内置 Tavotto 后续不自动升级。
 
 ## 近期锚点
 

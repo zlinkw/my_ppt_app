@@ -20,11 +20,12 @@ public sealed class TavottoHandoffResult
 }
 
 /// <summary>
-/// Uses Tavotto's documented v1 CLI handoff. No Tavotto code or runtime is bundled.
+/// Uses Tavotto's documented v1 CLI handoff. Release packages carry v0.15.0 as a separate process.
 /// </summary>
 public static class TavottoHandoffService
 {
 	private const int ProtocolVersion = 1;
+	private const string BundledVersion = "0.15.0";
 	private const int MaxJsonBytes = 32768;
 	private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 	private static readonly HashSet<string> FigureExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -36,6 +37,7 @@ public static class TavottoHandoffService
 	{
 		string cli = ResolveCli();
 		Dictionary<string, object> result = RunJson(cli, 15000, "doctor", "--json");
+		AssertBundledVersion(cli, result);
 		return new TavottoHandoffResult { Version = ReadString(result, "version") };
 	}
 
@@ -87,6 +89,7 @@ public static class TavottoHandoffService
 		}
 		string cli = ResolveCli();
 		Dictionary<string, object> health = RunJson(cli, 15000, "doctor", "--json");
+		AssertBundledVersion(cli, health);
 		Dictionary<string, object> opened = RunJson(cli, 60000, "open", fullPath, "--json");
 		Dictionary<string, object> registry = ReadObject(opened, "registry");
 		Dictionary<string, object> launch = ReadObject(opened, "launch");
@@ -111,6 +114,16 @@ public static class TavottoHandoffService
 				throw new InvalidOperationException("TAVOTTO_CLI 指向的命令行程序不存在。请检查该环境变量。");
 			}
 			return resolved;
+		}
+		string bundledRoot = BundledRoot();
+		string bundledCli = Path.Combine(bundledRoot, "sidecar", "Tavotto", "tavotto-cli.exe");
+		if (Directory.Exists(bundledRoot))
+		{
+			if (!File.Exists(Path.Combine(bundledRoot, "bundle.json")) || !File.Exists(bundledCli) || !File.Exists(Path.Combine(bundledRoot, "Tavotto.exe")))
+			{
+				throw new InvalidOperationException("插件内置 Tavotto 文件不完整，请重新安装插件。");
+			}
+			return bundledCli;
 		}
 		foreach (string directory in (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(';'))
 		{
@@ -165,6 +178,24 @@ public static class TavottoHandoffService
 		throw new InvalidOperationException("未找到 Tavotto 命令行。请先安装 Tavotto 桌面版或 pipx 版，然后重试。");
 	}
 
+	private static string BundledRoot()
+	{
+		return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RoughPptAddin", "publish", "third-party", "Tavotto");
+	}
+
+	private static bool IsBundledCli(string cli)
+	{
+		return string.Equals(cli, Path.Combine(BundledRoot(), "sidecar", "Tavotto", "tavotto-cli.exe"), StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static void AssertBundledVersion(string cli, Dictionary<string, object> response)
+	{
+		if (IsBundledCli(cli) && !string.Equals(ReadString(response, "version"), BundledVersion, StringComparison.Ordinal))
+		{
+			throw new InvalidOperationException("插件内置 Tavotto 版本不符；需要 " + BundledVersion + "，请重新安装插件。");
+		}
+	}
+
 	private static string ExistingCli(string candidate)
 	{
 		if (string.IsNullOrWhiteSpace(candidate)) return null;
@@ -189,6 +220,11 @@ public static class TavottoHandoffService
 			StandardOutputEncoding = Encoding.UTF8,
 			StandardErrorEncoding = Encoding.UTF8
 		};
+		if (IsBundledCli(cli))
+		{
+			start.EnvironmentVariables["TAVOTTO_DESKTOP_APP"] = Path.Combine(BundledRoot(), "Tavotto.exe");
+			start.EnvironmentVariables["TAVOTTO_NO_UPDATE_CHECK"] = "1";
+		}
 		StringBuilder stdout = new StringBuilder();
 		StringBuilder stderr = new StringBuilder();
 		using (Process process = new Process { StartInfo = start })
