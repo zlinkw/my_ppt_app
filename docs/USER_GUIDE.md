@@ -137,13 +137,13 @@ Ribbon 的风格模板同样同步重绘已选中的手绘对象。未选中可�
 
 ### Tavotto 科研图编辑
 
-先单独安装 [Tavotto 桌面版](https://github.com/Tavotto/Tavotto/releases) 或其命令行版。工作区的“检测 Tavotto”会调用官方 `doctor --json` 协议检查安装。若安装在自定义位置，可将 `TAVOTTO_CLI` 设为 `tavotto-cli.exe` 的绝对路径。
+安装包内置并固定 [Tavotto v0.15.0](https://github.com/Tavotto/Tavotto/releases/tag/v0.15.0)。工作区的“检测 Tavotto”会调用官方 `doctor --json` 协议检查随插件安装的命令行；未打包的开发环境仍可用 `TAVOTTO_CLI` 指向外部命令行。插件不会自动追踪 Tavotto 新版本。
 
 - “当前 SVG 交给 Tavotto”将已通过插件校验的预览 SVG 保存到文档目录，再用 Tavotto 官方 `open <文件> --json` 打开。此 SVG 只有图像，Tavotto 可将它作为排版素材，不能据此恢复数据或 Matplotlib 参数。
 - “选择科研图交给 Tavotto”可选择已有 PDF、SVG 等图像。若图像旁有对应的 Matplotlib 脚本，以 Tavotto 返回的 `registry.parameterizable` 为准判断图内参数是否可编辑；界面会显示结果。
 - 在 Tavotto 中编辑并导出 SVG 后，点击“导回 Tavotto SVG”选择导出文件。插件会再次执行原有的 SVG 安全校验，并允许预览、直接插入 PPT 或使用原有“插入可编辑图形”。Tavotto 导回本身不会自动拆成 PowerPoint 原生对象。
 
-Tavotto 由其自身安装并运行；插件仅按官方命令行协议交接文件，不包含 Tavotto 代码或运行时。交接失败时原有科研绘图与 SVG 插入仍可使用。
+Tavotto 作为独立桌面程序随插件安装包携带，由插件通过官方命令行协议调用。安装包及本机安装目录包含 Tavotto 的 AGPL 许可证和对应版本完整源码归档。交接失败时原有科研绘图与 SVG 插入仍可使用。
 
 ### 图表能力
 

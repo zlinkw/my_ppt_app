@@ -54,7 +54,7 @@ public static class ResearchChartStudioService
 		["datawrapper"] = "https://app.datawrapper.de/",
 		["plotly"] = "https://chart-studio.plotly.com/",
 		["vega"] = "https://vega.github.io/editor/",
-		["tavotto"] = "https://github.com/Tavotto/Tavotto/releases"
+		["tavotto"] = "https://github.com/Tavotto/Tavotto"
 	};
 
 	public static string OpenWebsite(string websiteId)

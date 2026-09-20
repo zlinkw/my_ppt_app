@@ -5,6 +5,10 @@ const build = read("scripts/build.ps1");
 const verify = read("scripts/verify-deploy-package.ps1");
 const installers = read("scripts/package-installers.ps1");
 const preservingPackage = read("scripts/package-release-preserving.ps1");
+const tavottoPreparation = read("scripts/prepare-tavotto-bundle.ps1");
+const tavottoHandoff = read("src/RoughPptAddin/Services/TavottoHandoffService.cs");
+const tavottoLock = JSON.parse(read("scripts/tavotto-bundle.lock.json"));
+const chartHtml = read("src/RoughPptAddin/ui/research-chart-studio.html");
 const packageJson = JSON.parse(read("package.json"));
 const readme = read("README.md");
 const deployment = read("docs/DEPLOYMENT.md");
@@ -45,6 +49,22 @@ requireIncludes(preservingPackage, "version = $installerProductVersion", "packag
 requireIncludes(preservingPackage, 'source = "release-package"', "package-release-preserving.ps1: build metadata must identify release source");
 requireIncludes(preservingPackage, "[IO.File]::WriteAllBytes($buildInfoSourcePath, $originalBuildInfoBytes)", "package-release-preserving.ps1: packaging must restore tracked build metadata");
 requireIncludes(deployment, "Rerunning the same MSI after closing PowerPoint repairs and overwrites the local payload", "docs/DEPLOYMENT.md: same-MSI overwrite behavior and PowerPoint precondition must be documented");
+if (tavottoLock.version !== "0.15.0" || tavottoLock.protocol !== 1 || tavottoLock.assets?.length !== 3) {
+  violations.push("Tavotto release lock must pin v0.15.0 and its three redistributable assets");
+}
+for (const asset of tavottoLock.assets ?? []) {
+  if (!/^[a-f0-9]{64}$/.test(asset.sha256) || !asset.url.startsWith("https://")) violations.push(`Tavotto asset is not pinned: ${asset.name}`);
+}
+for (const needle of ["Get-FileHash", "Pinned asset SHA256 mismatch", "tavotto-cli.exe", "doctor --json", "source\\tavotto-v0.15.0-full-source.tar.gz", "LICENSE"]) {
+  requireIncludes(tavottoPreparation, needle, `Tavotto bundle preparation missing: ${needle}`);
+}
+for (const needle of ["prepare-tavotto-bundle.ps1", '"publish\\third-party\\Tavotto\\Tavotto.exe"', "bundledTavotto = "]) {
+  requireIncludes(preservingPackage, needle, `Release package must include pinned Tavotto: ${needle}`);
+}
+for (const needle of ["BundledRoot()", "AssertBundledVersion", 'start.EnvironmentVariables["TAVOTTO_DESKTOP_APP"]']) {
+  requireIncludes(tavottoHandoff, needle, `Tavotto handoff must prefer bundled runtime: ${needle}`);
+}
+requireIncludes(chartHtml, "安装包内置 Tavotto v0.15.0", "Research chart UI must describe bundled Tavotto");
 
 const testScript = packageJson.scripts?.test ?? "";
 requireIncludes(testScript, "node scripts/validate-deploy-contract.mjs", "package.json: npm test must include deploy contract validation");
